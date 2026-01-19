@@ -7,12 +7,11 @@ from ideas.models import Idea, Season
 User = settings.AUTH_USER_MODEL
 
 
-#///////////////////////////
+# /////////////////////////// CRITERIA ///////////////////////////
 
 class EvaluationCriterion(BaseModel):
     """
-    Represents a single evaluation criterion used by the evaluation committee.
-    Managed by the administration.
+    معيار تقييم ثابت تديره الإدارة
     """
 
     title = models.CharField(max_length=255)
@@ -27,13 +26,12 @@ class EvaluationCriterion(BaseModel):
     def __str__(self):
         return self.title
 
-#//////////////////////////
 
+# /////////////////////////// EVALUATION ///////////////////////////
 
 class Evaluation(BaseModel):
     """
-    Represents one evaluation performed by one evaluator
-    on one idea within a season.
+    تقييم واحد لفكرة واحدة من مقيم واحد
     """
 
     evaluator = models.ForeignKey(
@@ -51,7 +49,9 @@ class Evaluation(BaseModel):
     season = models.ForeignKey(
         Season,
         on_delete=models.CASCADE,
-        related_name="evaluations"
+        related_name="evaluations",
+        null=True,
+        blank=True
     )
 
     is_submitted = models.BooleanField(default=False)
@@ -61,15 +61,14 @@ class Evaluation(BaseModel):
         unique_together = ("evaluator", "idea")
 
     def __str__(self):
-        return f"Evaluation of {self.idea_id} by {self.evaluator_id}"
-    
+        return f"Evaluation #{self.id}"
 
-#////////////////////////
 
+# /////////////////////////// SCORES ///////////////////////////
 
 class EvaluationScore(BaseModel):
     """
-    Stores the score for a single criterion within an evaluation.
+    درجة معيار واحد ضمن تقييم
     """
 
     evaluation = models.ForeignKey(
@@ -84,7 +83,13 @@ class EvaluationScore(BaseModel):
         related_name="scores"
     )
 
-    score = models.PositiveIntegerField()
+    score = models.PositiveIntegerField(
+        null=True,
+        blank=True
+    )
 
     class Meta:
         unique_together = ("evaluation", "criterion")
+
+    def __str__(self):
+        return f"{self.criterion} - {self.score}"
