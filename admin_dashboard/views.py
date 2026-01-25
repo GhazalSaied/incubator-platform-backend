@@ -18,6 +18,8 @@ class AdminDashboardStats(APIView):
     """
 
     permission_classes = []
+    
+    
     def get(self, request):
         # ----------------------------------------------------------------
         # 1. إحصائيات المستخدمين
