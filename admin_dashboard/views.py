@@ -18,8 +18,9 @@ class AdminDashboardStats(APIView):
     """
 
     permission_classes = []
-    
-    
+
+     
+     
     def get(self, request):
         # ----------------------------------------------------------------
         # 1. إحصائيات المستخدمين
@@ -33,7 +34,9 @@ class AdminDashboardStats(APIView):
             role__in=volunteer_roles,
             is_active=True
         ).values('user_id').distinct().count()
-
+ 
+ 
+ 
         # ----------------------------------------------------------------
         # 2. عدد المتقدمين في الموسم الحالي (SUBMITTED فقط)
         # ----------------------------------------------------------------
