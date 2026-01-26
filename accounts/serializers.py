@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import User
+from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
@@ -40,4 +41,30 @@ class LoginSerializer(TokenObtainPairSerializer):
 
         return token
 
+#////////////////////// PROFILE SERIALIZER (display & edit) ////////////////////////////////////////
 
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "full_name",
+            "phone",
+            "city",
+            "bio",
+            "avatar",
+        ]
+
+#//////////////////////// CHANGE PASSWORD SERIALIZER ///////////////////////////////////////
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField()
+    new_password = serializers.CharField()
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value
+
+#////////////////////////// FORGOT PASSWORD SERIALIZER  phase 1 ////////////////////////////////////
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
