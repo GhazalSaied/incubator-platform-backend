@@ -39,4 +39,31 @@ class IdeaDetailSerializer(serializers.ModelSerializer):
             'created_at'
         ]
 
+#//////////////////////// IDEA FOR EVALUATER ///////////////////////
+
+
+class IdeaForEvaluationSerializer(serializers.ModelSerializer):
+    owner_name = serializers.CharField(source="owner.full_name", read_only=True)
+    form = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Idea
+        fields = [
+            "id",
+            "title",
+            "description",
+            "status",
+            "owner_name",
+            "answers",
+            "form",
+            "created_at",
+        ]
+
+    def get_form(self, obj):
+        season = getattr(obj, "season", None)
+        if not season or not hasattr(season, "form"):
+            return None
+
+        return IdeaFormSerializer(season.form).data
+
 

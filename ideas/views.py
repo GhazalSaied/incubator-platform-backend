@@ -114,6 +114,7 @@ class IdeaUpdateAPIView(APIView):
  #////////////////////////  WITHDRIDEAVIEW //////////////////////////////////////////
 
 class WithdrawIdeaView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, idea_id):
         try:
