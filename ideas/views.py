@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated , AllowAny
 from rest_framework import status
 
 from .models import Idea, Season , IdeaStatus
@@ -11,6 +11,7 @@ from .serializers import (
 )
 from notifications.models import Notification
 from ideas.services.idea_validation import IdeaFormValidator
+from ideas.services.season_phase_service import SeasonPhaseService
 
 #///////////////////////////GET CUURENT IDEA FORM SERIALIZER /////////////////////////////////
 
@@ -141,3 +142,30 @@ class WithdrawIdeaView(APIView):
             {"detail": "تم سحب الفكرة بنجاح"},
             status=status.HTTP_200_OK
         )
+
+#///////////////////////////////// ////////////////////////////////////////
+
+class CurrentSeasonPhaseAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        season = SeasonPhaseService.get_current_season()
+        phase = SeasonPhaseService.get_current_phase(season)
+
+        if not season or not phase:
+            return Response({
+                "season": None,
+                "phase": None
+            })
+
+        return Response({
+            "season": {
+                "id": season.id,
+                "name": season.name
+            },
+            "phase": {
+                "code": phase.phase,
+                "start_date": phase.start_date,
+                "end_date": phase.end_date
+            }
+        })
