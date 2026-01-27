@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import VolunteerProfile, VolunteerAvailability
 
 
-#//////////////////////////////////  VolunteerProfile Serializer ///////////////////////////
+#///////////////////////////////// VolunteerAvailabilitySerializer  ///////////////////////////
 
 
 class VolunteerAvailabilitySerializer(serializers.ModelSerializer):
@@ -10,7 +10,7 @@ class VolunteerAvailabilitySerializer(serializers.ModelSerializer):
         model = VolunteerAvailability
         fields = ["day", "start_time", "end_time"]
 
-#////////////////
+#////////////////////////////// VolunteerProfile Serializer ///////////////////
 
 class VolunteerProfileSerializer(serializers.ModelSerializer):
     availabilities = VolunteerAvailabilitySerializer(many=True, read_only=True)

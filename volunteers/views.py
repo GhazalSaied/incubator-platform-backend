@@ -87,3 +87,30 @@ class VolunteerAvailabilityAPIView(APIView):
             {"detail": "تم تحديث التوفر الأسبوعي بنجاح"},
             status=status.HTTP_200_OK
         )
+
+#/////////////////////////// UPDATE VOLUNTEER PROFILE ///////////////////////
+
+class VolunteerProfileUpdateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        try:
+            profile = request.user.volunteer_profile
+        except VolunteerProfile.DoesNotExist:
+            return Response(
+                {"detail": "أنت لست متطوعاً"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = VolunteerProfileSerializer(
+            profile,
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            VolunteerProfileSerializer(profile).data,
+            status=status.HTTP_200_OK
+        )
