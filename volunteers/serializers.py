@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VolunteerProfile, VolunteerAvailability
+from .models import VolunteerProfile, VolunteerAvailability , ConsultationRequest
 
 
 #///////////////////////////////// VolunteerAvailabilitySerializer  ///////////////////////////
@@ -43,3 +43,20 @@ class VolunteerAvailabilityCreateUpdateSerializer(serializers.ModelSerializer):
                 "وقت البداية يجب أن يكون قبل وقت النهاية"
             )
         return data
+    
+#///////////////////////////////// onsultationRequestSerializer ///////////////////////////////////////
+
+class ConsultationRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConsultationRequest
+        fields = [
+            "id",
+            "requester_name",
+            "requester_email",
+            "project_title",
+            "consultation_type",
+            "description",
+            "status",
+            "created_at",
+        ]
+        read_only_fields = ["status", "created_at"]

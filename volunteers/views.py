@@ -3,11 +3,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import VolunteerProfile, VolunteerAvailability
+from .models import VolunteerProfile, VolunteerAvailability , ConsultationRequest
 from .serializers import (
     VolunteerProfileSerializer,
     VolunteerAvailabilitySerializer,
-    VolunteerAvailabilityCreateUpdateSerializer
+    VolunteerAvailabilityCreateUpdateSerializer,
+    ConsultationRequestSerializer,
 )
 from core.permissions import IsVolunteer
 
@@ -186,3 +187,59 @@ class VolunteerAvailabilityDeleteAPIView(APIView):
 
         availability.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+#///////////////////////// Consultation REQUEST VIEW ///////////////////////////////////
+
+class MyConsultationRequestsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            profile = request.user.volunteer_profile
+        except VolunteerProfile.DoesNotExist:
+            return Response(
+                {"detail": "أنت لست متطوعاً"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        requests = profile.consultation_requests.all().order_by("-created_at")
+        serializer = ConsultationRequestSerializer(requests, many=True)
+        return Response(serializer.data)
+
+
+#///////////////////////// [ACCEPT/REJECT] Consultation ///////////////////////////////////
+
+class ConsultationRequestDecisionAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, request_id):
+        action = request.data.get("action")
+
+        if action not in ["accept", "reject"]:
+            return Response(
+                {"detail": "إجراء غير صالح"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            consultation = ConsultationRequest.objects.get(
+                id=request_id,
+                volunteer=request.user.volunteer_profile
+            )
+        except (ConsultationRequest.DoesNotExist, VolunteerProfile.DoesNotExist):
+            return Response(
+                {"detail": "غير مسموح"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        consultation.status = (
+            ConsultationRequest.ACCEPTED
+            if action == "accept"
+            else ConsultationRequest.REJECTED
+        )
+        consultation.save()
+
+        return Response(
+            ConsultationRequestSerializer(consultation).data
+        )
+

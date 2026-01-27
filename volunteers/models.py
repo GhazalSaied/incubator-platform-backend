@@ -109,3 +109,41 @@ class VolunteerAvailability(models.Model):
 
     def __str__(self):
         return f"{self.volunteer.user.email} - {self.day}"
+
+#//////////////////////////////// ConsultationRequest ////////////////////////////////////////////
+
+class ConsultationRequest(models.Model):
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+
+    STATUS_CHOICES = [
+        (PENDING, "قيد المراجعة"),
+        (ACCEPTED, "مقبول"),
+        (REJECTED, "مرفوض"),
+    ]
+
+    volunteer = models.ForeignKey(
+        "VolunteerProfile",
+        on_delete=models.CASCADE,
+        related_name="consultation_requests"
+    )
+
+    requester_name = models.CharField(max_length=255)
+    requester_email = models.EmailField()
+
+    project_title = models.CharField(max_length=255)
+    consultation_type = models.CharField(max_length=100)
+
+    description = models.TextField()
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=PENDING
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.project_title} - {self.volunteer.user.email}"

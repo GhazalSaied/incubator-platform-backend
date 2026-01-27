@@ -5,6 +5,7 @@ from .views import (
     VolunteerAvailabilityAPIView,
     VolunteerProfileUpdateAPIView,VolunteerAvailabilityCreateAPIView,
     VolunteerAvailabilityUpdateAPIView , VolunteerAvailabilityDeleteAPIView,
+    MyConsultationRequestsAPIView,ConsultationRequestDecisionAPIView,
 )
 
 urlpatterns = [
@@ -15,4 +16,8 @@ urlpatterns = [
     path("availability/", VolunteerAvailabilityCreateAPIView.as_view()),
     path("availability/<int:availability_id>/update/", VolunteerAvailabilityUpdateAPIView.as_view()),
     path("availability/<int:availability_id>/delete/", VolunteerAvailabilityDeleteAPIView.as_view()),
+    path("consultations/", MyConsultationRequestsAPIView.as_view()),
+    path("consultations/<int:request_id>/decision/",ConsultationRequestDecisionAPIView.as_view()),
+        
+        
 ]
