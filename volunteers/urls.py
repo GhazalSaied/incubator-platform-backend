@@ -3,7 +3,8 @@ from .views import (
     VolunteerApplyAPIView,
     VolunteerProfileAPIView,
     VolunteerAvailabilityAPIView,
-    VolunteerProfileUpdateAPIView,
+    VolunteerProfileUpdateAPIView,VolunteerAvailabilityCreateAPIView,
+    VolunteerAvailabilityUpdateAPIView , VolunteerAvailabilityDeleteAPIView,
 )
 
 urlpatterns = [
@@ -11,4 +12,7 @@ urlpatterns = [
     path("me/", VolunteerProfileAPIView.as_view()),
     path("availability/", VolunteerAvailabilityAPIView.as_view()),
     path("me/update/", VolunteerProfileUpdateAPIView.as_view()),
+    path("availability/", VolunteerAvailabilityCreateAPIView.as_view()),
+    path("availability/<int:availability_id>/update/", VolunteerAvailabilityUpdateAPIView.as_view()),
+    path("availability/<int:availability_id>/delete/", VolunteerAvailabilityDeleteAPIView.as_view()),
 ]

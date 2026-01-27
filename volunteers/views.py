@@ -6,7 +6,8 @@ from rest_framework import status
 from .models import VolunteerProfile, VolunteerAvailability
 from .serializers import (
     VolunteerProfileSerializer,
-    VolunteerAvailabilitySerializer
+    VolunteerAvailabilitySerializer,
+    VolunteerAvailabilityCreateUpdateSerializer
 )
 from core.permissions import IsVolunteer
 
@@ -114,3 +115,74 @@ class VolunteerProfileUpdateAPIView(APIView):
             VolunteerProfileSerializer(profile).data,
             status=status.HTTP_200_OK
         )
+    
+#/////////////////////////// AVAILABLITY  CREATE ///////////////////////
+
+class VolunteerAvailabilityCreateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            profile = request.user.volunteer_profile
+        except VolunteerProfile.DoesNotExist:
+            return Response(
+                {"detail": "أنت لست متطوعاً"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = VolunteerAvailabilityCreateUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        availability = serializer.save(volunteer=profile)
+
+        return Response(
+            VolunteerAvailabilityCreateUpdateSerializer(availability).data,
+            status=status.HTTP_201_CREATED
+        )
+
+#////////////////////////////// AVAILABLITY UPDATE //////////////////////////////
+
+class VolunteerAvailabilityUpdateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, availability_id):
+        try:
+            availability = VolunteerAvailability.objects.get(
+                id=availability_id,
+                volunteer=request.user.volunteer_profile
+            )
+        except (VolunteerAvailability.DoesNotExist, VolunteerProfile.DoesNotExist):
+            return Response(
+                {"detail": "غير مسموح"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = VolunteerAvailabilityCreateUpdateSerializer(
+            availability,
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+
+#///////////////////////// AVAILABLITY DELETE ///////////////////////////
+
+
+class VolunteerAvailabilityDeleteAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, availability_id):
+        try:
+            availability = VolunteerAvailability.objects.get(
+                id=availability_id,
+                volunteer=request.user.volunteer_profile
+            )
+        except (VolunteerAvailability.DoesNotExist, VolunteerProfile.DoesNotExist):
+            return Response(
+                {"detail": "غير مسموح"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        availability.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -30,3 +30,16 @@ class VolunteerProfileSerializer(serializers.ModelSerializer):
             "cv",
             "availabilities",
         ]
+#////////////////////////////// AVAILABLITY UPDATE / CREATE/////////////////////////
+
+class VolunteerAvailabilityCreateUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VolunteerAvailability
+        fields = ["id", "day", "start_time", "end_time"]
+
+    def validate(self, data):
+        if data["start_time"] >= data["end_time"]:
+            raise serializers.ValidationError(
+                "وقت البداية يجب أن يكون قبل وقت النهاية"
+            )
+        return data
