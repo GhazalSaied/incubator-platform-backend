@@ -1,0 +1,31 @@
+from rest_framework import serializers
+from .models import VolunteerProfile, VolunteerAvailability
+
+
+#//////////////////////////////////  VolunteerProfile Serializer ///////////////////////////
+
+
+class VolunteerAvailabilitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VolunteerAvailability
+        fields = ["day", "start_time", "end_time"]
+
+
+class VolunteerProfileSerializer(serializers.ModelSerializer):
+    availabilities = VolunteerAvailabilitySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = VolunteerProfile
+        fields = [
+            "id",
+            "status",
+            "residence",
+            "years_of_experience",
+            "primary_skills",
+            "additional_skills",
+            "volunteer_type",
+            "availability_type",
+            "motivation",
+            "cv",
+            "availabilities",
+        ]
