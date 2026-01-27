@@ -10,6 +10,7 @@ class VolunteerAvailabilitySerializer(serializers.ModelSerializer):
         model = VolunteerAvailability
         fields = ["day", "start_time", "end_time"]
 
+#////////////////
 
 class VolunteerProfileSerializer(serializers.ModelSerializer):
     availabilities = VolunteerAvailabilitySerializer(many=True, read_only=True)

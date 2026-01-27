@@ -3,13 +3,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import VolunteerProfile
-from .serializers import VolunteerProfileSerializer
+from .models import VolunteerProfile, VolunteerAvailability
+from .serializers import (
+    VolunteerProfileSerializer,
+    VolunteerAvailabilitySerializer
+)
+from core.permissions import IsVolunteer
 
 
-
-#/////////////////////////// VOLUNTREE REQUEST ///////////////////////
-
+#/////////////////////////// VOLUNTEER APPLY ///////////////////////
 
 class VolunteerApplyAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -31,20 +33,57 @@ class VolunteerApplyAPIView(APIView):
             status=status.HTTP_201_CREATED
         )
 
-#///////////////////////////////// VOLUNTREE PROFILE VIEW ////////////////////////
+
+#/////////////////////////// VOLUNTEER PROFILE ///////////////////////
 
 class VolunteerProfileAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsVolunteer]
 
     def get(self, request):
-        try:
-            profile = request.user.volunteer_profile
-        except VolunteerProfile.DoesNotExist:
+        return Response(
+            VolunteerProfileSerializer(
+                request.user.volunteer_profile
+            ).data
+        )
+
+
+#/////////////////////////// VOLUNTEER AVAILABILITY ///////////////////////
+
+class VolunteerAvailabilityAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsVolunteer]
+
+    def get(self, request):
+        availability = VolunteerAvailability.objects.filter(
+            volunteer=request.user
+        ).order_by("day")
+
+        serializer = VolunteerAvailabilitySerializer(availability, many=True)
+        return Response(serializer.data)
+
+    def put(self, request):
+        if not isinstance(request.data, list):
             return Response(
-                {"detail": "أنت لست متطوعاً"},
-                status=status.HTTP_404_NOT_FOUND
+                {"detail": "البيانات يجب أن تكون قائمة"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        VolunteerAvailability.objects.filter(
+            volunteer=request.user
+        ).delete()
+
+        serializer = VolunteerAvailabilitySerializer(
+            data=request.data,
+            many=True
+        )
+        serializer.is_valid(raise_exception=True)
+
+        for item in serializer.validated_data:
+            VolunteerAvailability.objects.create(
+                volunteer=request.user,
+                **item
             )
 
         return Response(
-            VolunteerProfileSerializer(profile).data
+            {"detail": "تم تحديث التوفر الأسبوعي بنجاح"},
+            status=status.HTTP_200_OK
         )
