@@ -50,3 +50,31 @@ class SeasonPublishView(APIView):
             {"message": "تم نشر الموسم بنجاح"},
             status=status.HTTP_200_OK
         )
+
+
+
+class CloseSeasonAPIView(APIView):
+    permission_classes = [IsDirector]
+
+    def post(self, request, season_id):
+        try:
+            season = Season.objects.get(id=season_id)
+        except Season.DoesNotExist:
+            return Response(
+                {"detail": "الموسم غير موجود"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not season.is_open:
+            return Response(
+                {"detail": "الموسم مغلق بالفعل"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        season.is_open = False
+        season.save()
+
+        return Response(
+            {"detail": "تم إغلاق الموسم بنجاح"},
+            status=status.HTTP_200_OK
+        )
