@@ -39,6 +39,9 @@ INSTALLED_APPS = [
     'ideas',
     'admin_dashboard',
     'evaluations',    
+    'admin_users',
+    'incubator_admin',
+
 
     'django.contrib.admin',
     'django.contrib.auth',

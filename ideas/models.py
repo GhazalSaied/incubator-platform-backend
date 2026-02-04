@@ -91,11 +91,13 @@ class FormQuestion(models.Model):
     NUMBER = 'number'
     SELECT = 'select'
     BOOLEAN = 'boolean'
+    SELECT_MULTIPLE = 'select_multiple'
 
     QUESTION_TYPES = [
         (TEXT, 'Text'),
         (NUMBER, 'Number'),
-        (SELECT, 'Select'),
+        (SELECT, 'Select (single)'),
+        (SELECT_MULTIPLE, 'Select (multiple)'),
         (BOOLEAN, 'Yes / No'),
     ]
 
@@ -118,6 +120,28 @@ class FormQuestion(models.Model):
                 name='unique_question_key_per_form'
             )
         ]
+
+    def __str__(self):
+        return self.label
+class FormQuestionChoice(models.Model):
+    question = models.ForeignKey(
+        FormQuestion,
+        on_delete=models.CASCADE,
+        related_name='choices'
+    )
+
+    value = models.CharField(max_length=100)
+    label = models.CharField(max_length=255)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['question', 'value'],
+                name='unique_choice_value_per_question'
+            )
+        ]
+        ordering = ['order']
 
     def __str__(self):
         return self.label

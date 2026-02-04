@@ -17,6 +17,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    
 
     email_verified_at = models.DateTimeField(null=True, blank=True)
 
@@ -27,7 +28,8 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
 
     def __str__(self):
         return self.email
-
+    
+    
 #/////////////////////////// ROLE MODEL /////////////////////////////////////
 
 class Role(BaseModel):
