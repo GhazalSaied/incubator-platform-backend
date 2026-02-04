@@ -20,27 +20,36 @@ class SeasonCreateSerializer(serializers.ModelSerializer):
                 )
 
         return data
+
+
 class SeasonPublishSerializer(serializers.ModelSerializer):
     class Meta:
         model = Season
         fields = ['id']
 
     def validate(self, attrs):
-        season = self.instance  # الموسم اللي عم ننشرو
+        season = self.instance
 
-        # 1️⃣ ما في موسم تاني مفتوح غيره
+        # 1️⃣ تأكد في فورم
+        if not hasattr(season, 'form'):
+            raise serializers.ValidationError(
+                "لا يمكن نشر الموسم قبل إنشاء فورم الأسئلة."
+            )
+
+        # 2️⃣ تأكد الفورم فيه أسئلة
+        if season.form.questions.count() == 0:
+            raise serializers.ValidationError(
+                "لا يمكن نشر الموسم قبل إضافة أسئلة إلى الفورم."
+            )
+
+        # 3️⃣ تأكد ما في موسم مفتوح
         if Season.objects.filter(is_open=True).exclude(id=season.id).exists():
             raise serializers.ValidationError(
                 "يوجد موسم منشور حالياً، يجب إغلاقه قبل نشر موسم جديد."
             )
 
-        # 2️⃣ لازم يكون في فورم جاهز
-        if not hasattr(season, 'form'):
-            raise serializers.ValidationError(
-                "لا يمكن نشر الموسم قبل تجهيز فورم التقديم."
-            )
         return attrs
-    
+
     def save(self, **kwargs):
         season = self.instance
         season.is_open = True
