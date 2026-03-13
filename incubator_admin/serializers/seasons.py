@@ -55,3 +55,5 @@ class SeasonPublishSerializer(serializers.ModelSerializer):
         season.is_open = True
         season.save()
         return season
+
+
