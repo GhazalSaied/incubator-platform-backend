@@ -68,6 +68,7 @@ class SeasonSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_status(self, obj):
+
         phase = SeasonPhaseService.get_current_phase(obj)
 
         if obj.is_open:
@@ -76,7 +77,20 @@ class SeasonSerializer(serializers.ModelSerializer):
         if not phase:
             return "منتهي"
 
-        return phase.phase
+        if phase.phase == "EVALUATION":
+            return "مغلق (قيد التقييم)"
+
+        if phase.phase == "BOOTCAMP":
+            return "مغلق (مرحلة المعسكر)"
+
+        if phase.phase == "INCUBATION":
+            return "مغلق (مرحلة الاحتضان)"
+
+        return "مغلق"
     
     def get_ideas_count(self, obj):
         return Idea.objects.filter(season=obj).count()
+    
+    
+    
+    
