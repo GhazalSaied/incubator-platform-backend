@@ -2,10 +2,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-
+from rest_framework.generics import ListAPIView
 from ideas.models import Season
 from core.permissions import IsDirector
-from incubator_admin.serializers.seasons import SeasonCreateSerializer,SeasonPublishSerializer
+from incubator_admin.serializers.seasons import SeasonCreateSerializer,SeasonPublishSerializer,SeasonSerializer
 
 
 class SeasonCreateView(APIView):
@@ -78,3 +78,20 @@ class CloseSeasonAPIView(APIView):
             {"detail": "تم إغلاق الموسم بنجاح"},
             status=status.HTTP_200_OK
         )
+
+
+
+
+class SeasonListAPIView(ListAPIView):
+    serializer_class = SeasonSerializer
+    permission_classes = [IsAuthenticated, IsDirector]
+
+    def get_queryset(self):
+        return Season.objects.all().order_by('-id')
+    
+class SeasonListAPIView(ListAPIView):
+    serializer_class = SeasonSerializer
+    permission_classes = [IsAuthenticated, IsDirector]
+
+    def get_queryset(self):
+        return Season.objects.all().order_by('-id')

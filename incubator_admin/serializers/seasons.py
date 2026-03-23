@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from ideas.models import Season
-
+from ideas.services.season_phase_service import SeasonPhaseService
 class SeasonCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Season
@@ -57,3 +57,22 @@ class SeasonPublishSerializer(serializers.ModelSerializer):
         return season
 
 
+from ideas.services.season_phase_service import SeasonPhaseService
+
+class SeasonSerializer(serializers.ModelSerializer):
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Season
+        fields = "__all__"
+
+    def get_status(self, obj):
+        phase = SeasonPhaseService.get_current_phase(obj)
+
+        if obj.is_open:
+            return "مفتوح"
+
+        if not phase:
+            return "منتهي"
+
+        return phase.phase
