@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ideas.models import Season
+from ideas.models import Season,Idea
 from ideas.services.season_phase_service import SeasonPhaseService
 class SeasonCreateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -61,7 +61,8 @@ from ideas.services.season_phase_service import SeasonPhaseService
 
 class SeasonSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
-
+    ideas_count = serializers.SerializerMethodField()
+    
     class Meta:
         model = Season
         fields = "__all__"
@@ -76,3 +77,6 @@ class SeasonSerializer(serializers.ModelSerializer):
             return "منتهي"
 
         return phase.phase
+    
+    def get_ideas_count(self, obj):
+        return Idea.objects.filter(season=obj).count()
