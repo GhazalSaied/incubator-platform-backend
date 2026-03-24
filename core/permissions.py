@@ -1,8 +1,24 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 from django.utils import timezone
 from django.db import models
+from ideas.phases import SeasonPhase
+from ideas.services.season_phase_service import SeasonPhaseService
 from accounts.models import UserRole
 
+#//////////////////////// PUBLIC PERMISSION (REUSABLE) ///////////////////////////////
+
+class IsInPhase(BasePermission):
+    """
+    يسمح بالوصول فقط إذا كانت المنصة في مرحلة محددة
+    """
+
+    required_phase = None
+
+    def has_permission(self, request, view):
+        if not self.required_phase:
+            return False
+
+        return SeasonPhaseService.is_phase(self.required_phase)
 
 # ──────────────── الأدوار القديمة  ────────────────
 class HasRole(BasePermission):
@@ -32,8 +48,25 @@ class IsIdeaOwner(HasRole):
     required_role_code = "IDEA_OWNER"
 
 
+
+#//////////////////// VOLUNTEER ///////////////////////////
+
 class IsVolunteer(HasRole):
     required_role_code = "VOLUNTEER"
+
+    def has_permission(self, request, view):
+        base_permission = super().has_permission(request, view)
+
+        if not base_permission:
+            return False
+
+        if not hasattr(request.user, "volunteer_profile"):
+            return False
+
+        return (
+            request.user.volunteer_profile.status ==
+            request.user.volunteer_profile.APPROVED
+        )
 
 
 class IsEvaluator(HasRole):
@@ -44,6 +77,26 @@ class IsAdmin(HasRole):
     required_role_code = "ADMIN"
 
 
+<<<<<<< HEAD
+#/////////////////// SUBMIT IDEA ///////////////////////
+
+class CanSubmitIdea(IsIdeaOwner, IsInPhase):
+    
+    required_phase = SeasonPhase.SUBMISSION
+
+
+#////////////////// EDIT IDEA ////////////////////////////
+
+class CanEditIdea(IsIdeaOwner, IsInPhase):
+    
+    required_phase = SeasonPhase.SUBMISSION
+
+#//////////////////// EVALUATE IDEA /////////////////////
+
+class CanEvaluateIdea(IsEvaluator, IsInPhase):
+
+    required_phase = SeasonPhase.EVALUATION
+=======
 # ──────────────── الغروبات الجديدة (Groups) اللي رتبتيها بالإنجليزي ────────────────
 class IsDirector(BasePermission):
     """
@@ -96,3 +149,4 @@ class IsReadOnly(BasePermission):
     """
     def has_permission(self, request, view):
         return request.method in SAFE_METHODS
+>>>>>>> ccab7f1ece81ebcb767f75e45a08f9e5e349eb64

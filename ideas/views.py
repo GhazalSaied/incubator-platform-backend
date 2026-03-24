@@ -2,16 +2,18 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated , AllowAny
 from rest_framework import status
-
+from core.permissions import CanSubmitIdea
 from .models import Idea, Season , IdeaStatus
 from .serializers import (
     IdeaFormSerializer,
     IdeaCreateUpdateSerializer,
-    IdeaDetailSerializer
+    IdeaDetailSerializer,
+    MyIdeaListSerializer
 )
 from notifications.models import Notification
 from ideas.services.idea_validation import IdeaFormValidator
 from ideas.services.season_phase_service import SeasonPhaseService
+from ideas.phases  import SeasonPhase
 
 #///////////////////////////GET CUURENT IDEA FORM SERIALIZER /////////////////////////////////
 
@@ -32,7 +34,7 @@ class CurrentIdeaFormAPIView(APIView):
 #/////////////////////////// CREATE IDEA VIEW /////////////////////////////////
 
 class IdeaCreateAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanSubmitIdea]
 
     def post(self, request):
         #  تحقق من وجود موسم مفتوح
@@ -91,17 +93,31 @@ class IdeaUpdateAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request, idea_id):
+
+        #  جلب الفكرة والتأكد من الملكية
         try:
             idea = Idea.objects.get(id=idea_id, owner=request.user)
         except Idea.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        if not idea.can_be_edited():
             return Response(
-                {"detail": "لا يمكن تعديل الفكرة في هذه المرحلة"},
+                {"detail": "الفكرة غير موجودة أو لا تملك صلاحية تعديلها"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        #  التحقق من مرحلة الموسم
+        if not SeasonPhaseService.is_phase(SeasonPhase.SUBMISSION):
+            return Response(
+                {"detail": "لا يمكن تعديل الفكرة خارج مرحلة التقديم"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
+        #  التحقق من حالة الفكرة
+        if not idea.can_be_edited():
+            return Response(
+                {"detail": "لا يمكن تعديل الفكرة في حالتها الحالية"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        #  التعديل
         serializer = IdeaCreateUpdateSerializer(
             idea,
             data=request.data,
@@ -110,7 +126,11 @@ class IdeaUpdateAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response(IdeaDetailSerializer(idea).data)
+        return Response(
+            IdeaDetailSerializer(idea).data,
+            status=status.HTTP_200_OK
+        )
+
 
  #////////////////////////  WITHDRIDEAVIEW //////////////////////////////////////////
 
@@ -118,23 +138,33 @@ class WithdrawIdeaView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, idea_id):
+        #  جلب الفكرة والتأكد من الملكية
         try:
             idea = Idea.objects.get(id=idea_id, owner=request.user)
         except Idea.DoesNotExist:
             return Response(
-                {"detail": "الفكرة غير موجودة"},
+                {"detail": "الفكرة غير موجودة أو لا تملك صلاحية الوصول إليها"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        #  التحقق من مرحلة الموسم
+        if not SeasonPhaseService.is_phase(SeasonPhase.SUBMISSION):
+            return Response(
+                {"detail": "لا يمكن سحب الفكرة خارج مرحلة التقديم"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        #  التحقق من حالة الفكرة
         if idea.status not in [
             IdeaStatus.DRAFT,
             IdeaStatus.SUBMITTED
         ]:
             return Response(
-                {"detail": "لا يمكن سحب الفكرة في هذه المرحلة"},
+                {"detail": "لا يمكن سحب هذه الفكرة في حالتها الحالية"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        #  سحب الفكرة
         idea.status = IdeaStatus.WITHDRAWN
         idea.save()
 
@@ -143,7 +173,8 @@ class WithdrawIdeaView(APIView):
             status=status.HTTP_200_OK
         )
 
-#///////////////////////////////// ////////////////////////////////////////
+
+#///////////////////////////////// CURRENT SEASON PHASE ////////////////////////////////////////
 
 class CurrentSeasonPhaseAPIView(APIView):
     permission_classes = [AllowAny]
@@ -169,3 +200,16 @@ class CurrentSeasonPhaseAPIView(APIView):
                 "end_date": phase.end_date
             }
         })
+
+#//////////////////////////// MY IDEA VIEW (DISPLAY IDEA INFO TO THE USER ) /////////////////////////////////////
+
+class MyIdeasAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        ideas = Idea.objects.filter(
+            owner=request.user
+        ).order_by("-created_at")
+
+        serializer = MyIdeaListSerializer(ideas, many=True)
+        return Response(serializer.data)

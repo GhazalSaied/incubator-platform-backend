@@ -67,3 +67,14 @@ class IdeaForEvaluationSerializer(serializers.ModelSerializer):
         return IdeaFormSerializer(season.form).data
 
 
+#//////////////////////////////IDEA LIST (VIEW ONLY)/////////////////////////////////////
+
+class MyIdeaListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Idea
+        fields = [
+            "id",
+            "title",
+            "status",
+            "created_at",
+        ]

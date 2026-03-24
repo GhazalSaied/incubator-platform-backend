@@ -38,11 +38,11 @@ INSTALLED_APPS = [
     'notifications',   
     'ideas',
     'admin_dashboard',
-    'evaluations',    
+    'evaluations',  
+    'profiles',  
+    'volunteers',   
     'admin_users',
     'incubator_admin',
-
-
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

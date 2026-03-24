@@ -8,6 +8,8 @@ urlpatterns = [
     path('api/ideas/', include('ideas.urls')),
     path('api/', include('admin_dashboard.urls')),
     path('api/evaluations/', include('evaluations.urls')),
+    path("api/profile/", include("profiles.urls")),
+    path("api/volunteers/", include("volunteers.urls")),
     path('api/admin-users/', include('admin_users.urls')),
     path('admin-panel/', include('incubator_admin.urls')),
 
