@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from .models import VolunteerProfile, VolunteerAvailability , ConsultationRequest,VolunteerJoinRequest
 
-
 #///////////////////////////////// VolunteerAvailabilitySerializer  ///////////////////////////
 
 
@@ -47,19 +46,26 @@ class VolunteerAvailabilityCreateUpdateSerializer(serializers.ModelSerializer):
 #///////////////////////////////// ConsultationRequestSerializer ///////////////////////////////////////
 
 class ConsultationRequestSerializer(serializers.ModelSerializer):
+    requester = serializers.SerializerMethodField()
+
     class Meta:
         model = ConsultationRequest
         fields = [
             "id",
-            "requester_name",
-            "requester_email",
+            "requester",
+            "request_type",
             "project_title",
             "consultation_type",
             "description",
             "status",
             "created_at",
         ]
-        read_only_fields = ["status", "created_at"]
+
+    def get_requester(self, obj):
+        return {
+            "email": obj.requester.email,
+            "name": obj.requester.full_name if hasattr(obj.requester, "full_name") else ""
+        }
 
 
 #////////////////////////////////// VolunteerJoinRequestSerializer ///////////////////////////////////////////////////////

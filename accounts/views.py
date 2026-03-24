@@ -9,7 +9,7 @@ from rest_framework import status
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
-
+from django.contrib.auth import authenticate
 
 from .models import User
 from .serializers import (
@@ -181,3 +181,46 @@ class ForgotPasswordAPIView(APIView):
             {"detail": "تم إرسال طلب إعادة تعيين كلمة المرور"},
             status=status.HTTP_200_OK
         )
+        
+        
+        
+        
+        
+
+
+
+
+class AdminLoginAPIView(APIView):
+
+    permission_classes = []   # مهم لأن المستخدم غير مسجل بعد
+
+    def post(self, request):
+
+        email = request.data.get("email")
+        password = request.data.get("password")
+
+        user = authenticate(request, email=email, password=password)
+
+        if not user:
+            return Response(
+                {"detail": "بيانات الدخول غير صحيحة"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # السماح فقط للإدارة
+        if not (
+            user.groups.filter(name="incubator directors").exists()
+            or
+            user.groups.filter(name="incubator secretary").exists()
+        ):
+            return Response(
+                {"detail": "هذا الحساب ليس له صلاحية الدخول إلى لوحة الإدارة"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh)
+        })

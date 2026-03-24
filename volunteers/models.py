@@ -103,6 +103,14 @@ class ConsultationRequest(models.Model):
         (REJECTED, "مرفوض"),
     ]
 
+    CONSULTATION = "CONSULTATION"
+    JOIN_REQUEST = "JOIN"
+
+    TYPE_CHOICES = [
+        (CONSULTATION, "استشارة"),
+        (JOIN_REQUEST, "انضمام لفريق"),
+    ]
+
     volunteer = models.ForeignKey(
         "VolunteerProfile",
         on_delete=models.CASCADE,
@@ -112,10 +120,17 @@ class ConsultationRequest(models.Model):
     requester = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="sent_consultations",
-        null=True,
+        related_name="sent_consultation_requests",
+        null=True,  
         blank=True
-)
+    )
+
+    request_type = models.CharField(
+        max_length=20,
+        choices=TYPE_CHOICES ,
+        default=CONSULTATION
+    )
+
     project_title = models.CharField(max_length=255)
     consultation_type = models.CharField(max_length=100)
 
