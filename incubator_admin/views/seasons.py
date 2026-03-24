@@ -6,7 +6,7 @@ from rest_framework.generics import ListAPIView
 from ideas.models import Season
 from core.permissions import IsDirector
 from incubator_admin.serializers.seasons import SeasonCreateSerializer,SeasonPublishSerializer,SeasonSerializer
-
+from rest_framework.generics import RetrieveUpdateAPIView
 
 class SeasonCreateView(APIView):
     permission_classes = [
@@ -95,3 +95,18 @@ class SeasonListAPIView(ListAPIView):
 
     def get_queryset(self):
         return Season.objects.all().order_by('-id')
+    
+    
+    
+class SeasonDetailAPIView(RetrieveUpdateAPIView):
+    serializer_class = SeasonSerializer
+    permission_classes = [IsAuthenticated, IsDirector ]
+    lookup_url_kwarg = "season_id"
+
+    def get_queryset(self):
+        return Season.objects.all()
+    
+
+   
+   
+   

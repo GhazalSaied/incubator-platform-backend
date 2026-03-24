@@ -1,5 +1,5 @@
 from django.urls import path
-from .views.seasons import SeasonCreateView,SeasonPublishView,CloseSeasonAPIView,SeasonListAPIView
+from .views.seasons import SeasonCreateView,SeasonPublishView,CloseSeasonAPIView,SeasonListAPIView, SeasonDetailAPIView
 from incubator_admin.views.idea_form import IdeaFormCreateView
 from incubator_admin.views.form_question import FormQuestionListCreateView,FormQuestionDetailView
 from incubator_admin.views.form_choice import (FormQuestionChoiceListCreateView,FormQuestionChoiceDetailView)
@@ -15,4 +15,6 @@ urlpatterns = [
     path("forms/<int:form_id>/questions/<int:question_id>/",FormQuestionDetailView.as_view(),name="admin-form-question-detail"),
     path('seasons/', SeasonListAPIView.as_view()),
     path('seasons/list/', SeasonListAPIView.as_view()),
+    path("seasons/<int:season_id>/",SeasonDetailAPIView.as_view(),name="admin-season-detail"),
+    
 ]
