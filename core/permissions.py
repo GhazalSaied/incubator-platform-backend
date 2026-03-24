@@ -77,7 +77,7 @@ class IsAdmin(HasRole):
     required_role_code = "ADMIN"
 
 
-<<<<<<< HEAD
+
 #/////////////////// SUBMIT IDEA ///////////////////////
 
 class CanSubmitIdea(IsIdeaOwner, IsInPhase):
@@ -96,7 +96,7 @@ class CanEditIdea(IsIdeaOwner, IsInPhase):
 class CanEvaluateIdea(IsEvaluator, IsInPhase):
 
     required_phase = SeasonPhase.EVALUATION
-=======
+
 # ──────────────── الغروبات الجديدة (Groups) اللي رتبتيها بالإنجليزي ────────────────
 class IsDirector(BasePermission):
     """
@@ -149,4 +149,4 @@ class IsReadOnly(BasePermission):
     """
     def has_permission(self, request, view):
         return request.method in SAFE_METHODS
->>>>>>> ccab7f1ece81ebcb767f75e45a08f9e5e349eb64
+

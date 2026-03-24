@@ -3,7 +3,7 @@ from .views.seasons import SeasonCreateView,SeasonPublishView,CloseSeasonAPIView
 from incubator_admin.views.idea_form import IdeaFormCreateView
 from incubator_admin.views.form_question import FormQuestionListCreateView,FormQuestionDetailView
 from incubator_admin.views.form_choice import (FormQuestionChoiceListCreateView,FormQuestionChoiceDetailView)
-
+from incubator_admin.views.ideas import IdeaListAPIView,IdeaDetailAPIView
 urlpatterns = [
     path('seasons/', SeasonCreateView.as_view()),
     path('seasons/<int:pk>/publish/', SeasonPublishView.as_view()),
@@ -16,5 +16,6 @@ urlpatterns = [
     path('seasons/', SeasonListAPIView.as_view()),
     path('seasons/list/', SeasonListAPIView.as_view()),
     path("seasons/<int:season_id>/",SeasonDetailAPIView.as_view(),name="admin-season-detail"),
-    
+    path("ideas/", IdeaListAPIView.as_view()),
+    path("ideas/<int:idea_id>/", IdeaDetailAPIView.as_view()),
 ]
