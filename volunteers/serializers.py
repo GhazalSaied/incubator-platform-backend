@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VolunteerProfile, VolunteerAvailability , ConsultationRequest
+from .models import VolunteerProfile, VolunteerAvailability , ConsultationRequest,VolunteerJoinRequest
 
 
 #///////////////////////////////// VolunteerAvailabilitySerializer  ///////////////////////////
@@ -44,7 +44,7 @@ class VolunteerAvailabilityCreateUpdateSerializer(serializers.ModelSerializer):
             )
         return data
     
-#///////////////////////////////// onsultationRequestSerializer ///////////////////////////////////////
+#///////////////////////////////// ConsultationRequestSerializer ///////////////////////////////////////
 
 class ConsultationRequestSerializer(serializers.ModelSerializer):
     class Meta:
@@ -60,3 +60,31 @@ class ConsultationRequestSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["status", "created_at"]
+
+
+#////////////////////////////////// VolunteerJoinRequestSerializer ///////////////////////////////////////////////////////
+
+
+class VolunteerJoinRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VolunteerJoinRequest
+        fields = [
+            "id",
+            "requester_name",
+            "requester_email",
+            "project_title",
+            "description",
+            "target_audience",
+            "problem_statement",
+            "status",
+            "created_at",
+        ]
+        read_only_fields = ["status", "created_at"]
+
+
+#/////////////////////////////////// VOLUNTEER DASHBOARD  /////////////////////////////////////////////////
+
+class VolunteerDashboardSerializer(serializers.Serializer):
+    profile = VolunteerProfileSerializer()
+    availability = VolunteerAvailabilitySerializer(many=True)
+    consultations = serializers.DictField()

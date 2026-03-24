@@ -66,28 +66,8 @@ class VolunteerProfile(models.Model):
 
 #////////////////////////// VOLUNTREE ACTIVITY /////////////////////////////////////////
 
-class VolunteerAvailability(models.Model):
-    volunteer = models.ForeignKey(
-        VolunteerProfile,
-        on_delete=models.CASCADE,
-        related_name="availabilities"
-    )
 
-    day = models.CharField(
-        max_length=15,
-        choices=WeekDay.choices
-    )
-
-    start_time = models.TimeField()
-    end_time = models.TimeField()
-
-    class Meta:
-        unique_together = ("volunteer", "day", "start_time", "end_time")
-
-    def __str__(self):
-        return f"{self.volunteer.user.email} - {self.day}"
-
-#//////////////////////////// ////////////////////////////////////////
+#//////////////////////////// VOLUNTEER AVAILABILITY ////////////////////////////////////////
 
 class VolunteerAvailability(models.Model):
     volunteer = models.ForeignKey(
@@ -129,13 +109,61 @@ class ConsultationRequest(models.Model):
         related_name="consultation_requests"
     )
 
-    requester_name = models.CharField(max_length=255)
-    requester_email = models.EmailField()
-
+    requester = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="sent_consultations",
+        null=True,
+        blank=True
+)
     project_title = models.CharField(max_length=255)
     consultation_type = models.CharField(max_length=100)
 
     description = models.TextField()
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=PENDING
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.project_title} - {self.volunteer.user.email}"
+    
+
+#//////////////////////////////// VolunteerJoinRequest /////////////////////////////////
+
+
+class VolunteerJoinRequest(models.Model):
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+
+    STATUS_CHOICES = [
+        (PENDING, "قيد المراجعة"),
+        (ACCEPTED, "مقبول"),
+        (REJECTED, "مرفوض"),
+    ]
+
+    volunteer = models.ForeignKey(
+        "VolunteerProfile",
+        on_delete=models.CASCADE,
+        related_name="join_requests"
+    )
+
+    # صاحب الطلب (صاحب الفكرة / المشروع)
+    requester_name = models.CharField(max_length=255)
+    requester_email = models.EmailField()
+
+    project_title = models.CharField(max_length=255)
+
+    description = models.TextField()
+
+    # معلومات إضافية تظهر عند التفاصيل
+    target_audience = models.TextField(blank=True)
+    problem_statement = models.TextField(blank=True)
 
     status = models.CharField(
         max_length=20,

@@ -38,7 +38,9 @@ INSTALLED_APPS = [
     'notifications',   
     'ideas',
     'admin_dashboard',
-    'evaluations',    
+    'evaluations',  
+    'profiles',  
+    'volunteers',
 
     'django.contrib.admin',
     'django.contrib.auth',

@@ -2,13 +2,15 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from django.shortcuts import get_object_or_404
 
-from .models import VolunteerProfile, VolunteerAvailability , ConsultationRequest
+from .models import VolunteerProfile, VolunteerAvailability ,ConsultationRequest, VolunteerJoinRequest
 from .serializers import (
     VolunteerProfileSerializer,
     VolunteerAvailabilitySerializer,
     VolunteerAvailabilityCreateUpdateSerializer,
     ConsultationRequestSerializer,
+    VolunteerJoinRequestSerializer,
 )
 from core.permissions import IsVolunteer
 
@@ -44,7 +46,7 @@ class VolunteerProfileAPIView(APIView):
     def get(self, request):
         return Response(
             VolunteerProfileSerializer(
-                request.user.volunteer_profile
+                request.user.VolunteerProfile
             ).data
         )
 
@@ -56,7 +58,7 @@ class VolunteerAvailabilityAPIView(APIView):
 
     def get(self, request):
         availability = VolunteerAvailability.objects.filter(
-            volunteer=request.user
+            volunteer=request.user.volunteer_profile
         ).order_by("day")
 
         serializer = VolunteerAvailabilitySerializer(availability, many=True)
@@ -70,7 +72,7 @@ class VolunteerAvailabilityAPIView(APIView):
             )
 
         VolunteerAvailability.objects.filter(
-            volunteer=request.user
+            volunteer=request.user.volunteer_profile
         ).delete()
 
         serializer = VolunteerAvailabilitySerializer(
@@ -81,7 +83,7 @@ class VolunteerAvailabilityAPIView(APIView):
 
         for item in serializer.validated_data:
             VolunteerAvailability.objects.create(
-                volunteer=request.user,
+                volunteer=request.user.volunteer_profile
                 **item
             )
 
@@ -210,7 +212,7 @@ class MyConsultationRequestsAPIView(APIView):
 #///////////////////////// [ACCEPT/REJECT] Consultation ///////////////////////////////////
 
 class ConsultationRequestDecisionAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsVolunteer]
 
     def post(self, request, request_id):
         action = request.data.get("action")
@@ -222,7 +224,8 @@ class ConsultationRequestDecisionAPIView(APIView):
             )
 
         try:
-            consultation = ConsultationRequest.objects.get(
+            consultation = get_object_or_404(
+                ConsultationRequest,
                 id=request_id,
                 volunteer=request.user.volunteer_profile
             )
@@ -243,3 +246,89 @@ class ConsultationRequestDecisionAPIView(APIView):
             ConsultationRequestSerializer(consultation).data
         )
 
+#/////////////////////////////// VOLUNTEER DASHBOARD VIEW //////////////////////////////////////////////
+
+class VolunteerDashboardAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsVolunteer]
+
+    def get(self, request):
+        profile = request.user.volunteer_profile
+
+        availability = VolunteerAvailability.objects.filter(
+            volunteer=profile
+        ).order_by("day")
+
+        consultations = ConsultationRequest.objects.filter(
+            volunteer=profile
+        )
+
+        data = {
+            "profile": VolunteerProfileSerializer(profile).data,
+            "availability": VolunteerAvailabilitySerializer(
+                availability,
+                many=True
+            ).data,
+            "consultations": {
+                "pending": consultations.filter(
+                    status=ConsultationRequest.PENDING
+                ).count(),
+                "accepted": consultations.filter(
+                    status=ConsultationRequest.ACCEPTED
+                ).count(),
+                "rejected": consultations.filter(
+                    status=ConsultationRequest.REJECTED
+                ).count(),
+            }
+        }
+
+        return Response(data)
+
+
+#//////////////////////////////////  VOLUNTEER ALL REQUESTS  /////////////////////////////////////////
+
+class VolunteerAllRequestsAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsVolunteer]
+
+    def get(self, request):
+        profile = request.user.volunteer_profile
+
+        consultations = ConsultationRequest.objects.filter(
+            volunteer=profile
+        )
+
+        joins = VolunteerJoinRequest.objects.filter(
+            volunteer=profile
+        )
+
+        return Response({
+            "consultations": ConsultationRequestSerializer(consultations, many=True).data,
+            "join_requests": VolunteerJoinRequestSerializer(joins, many=True).data,
+        })
+    
+#//////////////////////////////////// ONLY CONSULTATION REQUESTS /////////////////////////////////////////////
+
+class VolunteerConsultationRequestsAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsVolunteer]
+
+    def get(self, request):
+        profile = request.user.volunteer_profile
+
+        requests = profile.consultation_requests.all().order_by("-created_at")
+
+        return Response(
+            ConsultationRequestSerializer(requests, many=True).data
+        )
+    
+#/////////////////////////////////// ONLY JOIN REQUESTS  ///////////////////////////////////////////
+
+class VolunteerJoinRequestsAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsVolunteer]
+
+    def get(self, request):
+        profile = request.user.volunteer_profile
+
+        requests = profile.join_requests.all().order_by("-created_at")
+
+        return Response(
+            VolunteerJoinRequestSerializer(requests, many=True).data
+        )
