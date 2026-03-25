@@ -194,18 +194,22 @@ class VolunteerAvailabilityDeleteAPIView(APIView):
 #///////////////////////// Consultation REQUEST VIEW ///////////////////////////////////
 
 class MyConsultationRequestsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsVolunteer]
 
     def get(self, request):
-        try:
-            profile = request.user.volunteer_profile
-        except VolunteerProfile.DoesNotExist:
-            return Response(
-                {"detail": "أنت لست متطوعاً"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        profile = request.user.volunteer_profile
 
-        requests = profile.consultation_requests.all().order_by("-created_at")
+        request_type = request.query_params.get("type")
+
+        requests = ConsultationRequest.objects.filter(
+            volunteer=profile
+        )
+
+        if request_type:
+            requests = requests.filter(request_type=request_type)
+
+        requests = requests.order_by("-created_at")
+
         serializer = ConsultationRequestSerializer(requests, many=True)
         return Response(serializer.data)
 
@@ -351,3 +355,32 @@ class CreateConsultationRequestAPIView(APIView):
             ConsultationRequestSerializer(consultation).data,
             status=status.HTTP_201_CREATED
         )
+
+#//////////////////////////////////// CONSULTATION REQUEST DETAILS ///////////////////////////////////
+
+class ConsultationRequestDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsVolunteer]
+
+    def get(self, request, request_id):
+        try:
+            consultation = ConsultationRequest.objects.get(
+                id=request_id,
+                volunteer=request.user.volunteer_profile
+            )
+        except ConsultationRequest.DoesNotExist:
+            return Response(
+                {"detail": "غير موجود"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        data = {
+            "id": consultation.id,
+            "idea_title": consultation.idea.title,
+            "idea_description": consultation.idea.description,
+            "request_type": consultation.request_type,
+            "description": consultation.description,
+            "status": consultation.status,
+            "requester_email": consultation.requester.email,
+        }
+
+        return Response(data)

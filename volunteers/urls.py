@@ -12,6 +12,7 @@ from .views import (
     MyConsultationRequestsAPIView,
     ConsultationRequestDecisionAPIView,
     CreateConsultationRequestAPIView,
+    ConsultationRequestDetailAPIView,
 
     VolunteerDashboardAPIView,
 )
@@ -34,6 +35,7 @@ urlpatterns = [
     # ================== CONSULTATIONS ==================
     path("consultations/", MyConsultationRequestsAPIView.as_view()),
     path("consultations/<int:request_id>/decision/", ConsultationRequestDecisionAPIView.as_view()),
+    path("consultations/<int:request_id>/", ConsultationRequestDetailAPIView.as_view()),
     path("consultations/create/", CreateConsultationRequestAPIView.as_view()),
 
     # ================== DASHBOARD ==================
