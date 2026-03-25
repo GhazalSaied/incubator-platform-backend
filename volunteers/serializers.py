@@ -46,15 +46,18 @@ class VolunteerAvailabilityCreateUpdateSerializer(serializers.ModelSerializer):
 #///////////////////////////////// ConsultationRequestSerializer ///////////////////////////////////////
 
 class ConsultationRequestSerializer(serializers.ModelSerializer):
+
     requester = serializers.SerializerMethodField()
+    idea_title = serializers.CharField(source="idea.title", read_only=True)
 
     class Meta:
         model = ConsultationRequest
         fields = [
             "id",
             "requester",
+            "idea",
+            "idea_title",
             "request_type",
-            "project_title",
             "consultation_type",
             "description",
             "status",
@@ -63,8 +66,7 @@ class ConsultationRequestSerializer(serializers.ModelSerializer):
 
     def get_requester(self, obj):
         return {
-            "email": obj.requester.email,
-            "name": obj.requester.full_name if hasattr(obj.requester, "full_name") else ""
+            "email": obj.requester.email if obj.requester else None,
         }
 
 
@@ -94,3 +96,15 @@ class VolunteerDashboardSerializer(serializers.Serializer):
     profile = VolunteerProfileSerializer()
     availability = VolunteerAvailabilitySerializer(many=True)
     consultations = serializers.DictField()
+
+#//////////////////////////// CREATE CONSULTATION REQUEST ///////////////////////////////////////
+
+class CreateConsultationRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConsultationRequest
+        fields = [
+            "volunteer",
+            "idea",
+            "request_type",
+            "description",
+        ]

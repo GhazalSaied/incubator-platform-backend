@@ -121,18 +121,23 @@ class ConsultationRequest(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name="sent_consultation_requests",
-        null=True,  
+        null=True,
         blank=True
+    )
+
+    idea = models.ForeignKey(
+    "ideas.Idea",
+    on_delete=models.CASCADE,
+    related_name="consultation_requests",
+    null=True,    # مؤقت
+    blank=True
     )
 
     request_type = models.CharField(
         max_length=20,
-        choices=TYPE_CHOICES ,
+        choices=TYPE_CHOICES,
         default=CONSULTATION
     )
-
-    project_title = models.CharField(max_length=255)
-    consultation_type = models.CharField(max_length=100)
 
     description = models.TextField()
 
@@ -143,9 +148,6 @@ class ConsultationRequest(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.project_title} - {self.volunteer.user.email}"
     
 
 #//////////////////////////////// VolunteerJoinRequest /////////////////////////////////

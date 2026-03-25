@@ -11,6 +11,7 @@ from .serializers import (
     VolunteerAvailabilityCreateUpdateSerializer,
     ConsultationRequestSerializer,
     VolunteerJoinRequestSerializer,
+    CreateConsultationRequestSerializer,
 )
 from core.permissions import IsVolunteer
 
@@ -331,4 +332,22 @@ class VolunteerJoinRequestsAPIView(APIView):
 
         return Response(
             VolunteerJoinRequestSerializer(requests, many=True).data
+        )
+    
+#//////////////////////////// CREATE CONSULTATION REQUEST /////////////////////////////////////////
+
+class CreateConsultationRequestAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = CreateConsultationRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        consultation = serializer.save(
+            requester=request.user
+        )
+
+        return Response(
+            ConsultationRequestSerializer(consultation).data,
+            status=status.HTTP_201_CREATED
         )
