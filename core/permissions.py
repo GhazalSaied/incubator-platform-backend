@@ -5,26 +5,20 @@ from ideas.phases import SeasonPhase
 from ideas.services.season_phase_service import SeasonPhaseService
 from accounts.models import UserRole
 
-#//////////////////////// PUBLIC PERMISSION (REUSABLE) ///////////////////////////////
+#//////////////////////// PUBLIC PERMISSION ///////////////////////////////
 
 class IsInPhase(BasePermission):
-    """
-    يسمح بالوصول فقط إذا كانت المنصة في مرحلة محددة
-    """
-
     required_phase = None
 
     def has_permission(self, request, view):
         if not self.required_phase:
             return False
-
         return SeasonPhaseService.is_phase(self.required_phase)
 
-# ──────────────── الأدوار القديمة  ────────────────
+
+#//////////////////////// ROLE SYSTEM ///////////////////////////////
+
 class HasRole(BasePermission):
-    """
-    فحص إذا كان لليوزر دور معين (role.code) ونشط ولم ينتهي صلاحيته
-    """
     required_role_code = None
 
     def has_permission(self, request, view):
@@ -47,9 +41,6 @@ class HasRole(BasePermission):
 class IsIdeaOwner(HasRole):
     required_role_code = "IDEA_OWNER"
 
-
-
-#//////////////////// VOLUNTEER ///////////////////////////
 
 class IsVolunteer(HasRole):
     required_role_code = "VOLUNTEER"
@@ -77,31 +68,23 @@ class IsAdmin(HasRole):
     required_role_code = "ADMIN"
 
 
-<<<<<<< HEAD
-#/////////////////// SUBMIT IDEA ///////////////////////
+#//////////////////////// IDEA PERMISSIONS ///////////////////////////////
 
 class CanSubmitIdea(IsIdeaOwner, IsInPhase):
-    
     required_phase = SeasonPhase.SUBMISSION
 
-
-#////////////////// EDIT IDEA ////////////////////////////
 
 class CanEditIdea(IsIdeaOwner, IsInPhase):
-    
     required_phase = SeasonPhase.SUBMISSION
 
-#//////////////////// EVALUATE IDEA /////////////////////
 
 class CanEvaluateIdea(IsEvaluator, IsInPhase):
-
     required_phase = SeasonPhase.EVALUATION
-=======
-# ──────────────── الغروبات الجديدة (Groups) اللي رتبتيها بالإنجليزي ────────────────
+
+
+#//////////////////////// GROUP PERMISSIONS ///////////////////////////////
+
 class IsDirector(BasePermission):
-    """
-    اليوزر لازم يكون في غروب 'Incubator Director'
-    """
     message = "يجب أن تكون مديرة الحاضنة للوصول إلى هذه الوظيفة."
 
     def has_permission(self, request, view):
@@ -113,9 +96,6 @@ class IsDirector(BasePermission):
 
 
 class IsSecretary(BasePermission):
-    """
-    اليوزر لازم يكون في غروب 'Incubator Secretary'
-    """
     message = "يجب أن تكون سكرتيرة الحاضنة للوصول إلى هذه الوظيفة."
 
     def has_permission(self, request, view):
@@ -127,9 +107,6 @@ class IsSecretary(BasePermission):
 
 
 class IsAdminOrSecretary(BasePermission):
-    """
-    اليوزر لازم يكون مديرة أو سكرتيرة
-    """
     message = "يجب أن تكون مديرة أو سكرتيرة الحاضنة."
 
     def has_permission(self, request, view):
@@ -144,9 +121,5 @@ class IsAdminOrSecretary(BasePermission):
 
 
 class IsReadOnly(BasePermission):
-    """
-    الوصول للقراءة فقط (GET, HEAD, OPTIONS)
-    """
     def has_permission(self, request, view):
         return request.method in SAFE_METHODS
->>>>>>> ccab7f1ece81ebcb767f75e45a08f9e5e349eb64
