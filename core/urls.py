@@ -12,6 +12,7 @@ urlpatterns = [
     path("api/volunteers/", include("volunteers.urls")),
     path('api/admin-users/', include('admin_users.urls')),
     path('admin-panel/', include('incubator_admin.urls')),
+    path("api/messages/", include("messaging.urls")),
 
 
    
