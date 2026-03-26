@@ -46,20 +46,26 @@ class VolunteerAvailabilityCreateUpdateSerializer(serializers.ModelSerializer):
 #///////////////////////////////// ConsultationRequestSerializer ///////////////////////////////////////
 
 class ConsultationRequestSerializer(serializers.ModelSerializer):
+    requester = serializers.SerializerMethodField()
     idea_title = serializers.CharField(source="idea.title", read_only=True)
-    requester_email = serializers.CharField(source="requester.email", read_only=True)
 
     class Meta:
         model = ConsultationRequest
         fields = [
             "id",
+            "requester",
             "idea_title",
-            "requester_email",
             "request_type",
+            "consultation_type",
             "description",
             "status",
             "created_at",
         ]
+
+    def get_requester(self, obj):
+        return {
+            "email": obj.requester.email if obj.requester else None,
+        }
 
 
 #////////////////////////////////// VolunteerJoinRequestSerializer ///////////////////////////////////////////////////////

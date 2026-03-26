@@ -145,3 +145,24 @@ class FormQuestionChoice(models.Model):
 
     def __str__(self):
         return self.label
+
+#////////////////////////////////// TIME MEMBER /////////////////////////
+
+class TeamMember(models.Model):
+    idea = models.ForeignKey(
+        "Idea",
+        on_delete=models.CASCADE,
+        related_name="team_members"
+    )
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE
+    )
+
+    role = models.CharField(
+        max_length=50,
+        default="MEMBER"
+    )
+
+    joined_at = models.DateTimeField(auto_now_add=True)

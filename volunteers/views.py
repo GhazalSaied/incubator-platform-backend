@@ -223,33 +223,32 @@ class ConsultationRequestDecisionAPIView(APIView):
         action = request.data.get("action")
 
         if action not in ["accept", "reject"]:
-            return Response(
-                {"detail": "إجراء غير صالح"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "إجراء غير صالح"}, status=400)
 
         try:
-            consultation = get_object_or_404(
-                ConsultationRequest,
+            consultation = ConsultationRequest.objects.get(
                 id=request_id,
                 volunteer=request.user.volunteer_profile
             )
-        except (ConsultationRequest.DoesNotExist, VolunteerProfile.DoesNotExist):
-            return Response(
-                {"detail": "غير مسموح"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        except ConsultationRequest.DoesNotExist:
+            return Response({"detail": "غير موجود"}, status=404)
 
-        consultation.status = (
-            ConsultationRequest.ACCEPTED
-            if action == "accept"
-            else ConsultationRequest.REJECTED
-        )
+        if action == "accept":
+            consultation.status = ConsultationRequest.ACCEPTED
+
+            
+            if consultation.request_type == ConsultationRequest.JOIN_REQUEST:
+                print("User joined project team")  # مؤقت
+
+            elif consultation.request_type == ConsultationRequest.CONSULTATION:
+                print("Consultation accepted")  # مؤقت
+
+        else:
+            consultation.status = ConsultationRequest.REJECTED
+
         consultation.save()
 
-        return Response(
-            ConsultationRequestSerializer(consultation).data
-        )
+        return Response(ConsultationRequestSerializer(consultation).data)
 
 #/////////////////////////////// VOLUNTEER DASHBOARD VIEW //////////////////////////////////////////////
 

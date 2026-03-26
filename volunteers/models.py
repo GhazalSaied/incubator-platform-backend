@@ -192,3 +192,4 @@ class VolunteerJoinRequest(models.Model):
 
     def __str__(self):
         return f"{self.project_title} - {self.volunteer.user.email}"
+
