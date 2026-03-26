@@ -15,6 +15,8 @@ from .views import (
     ConsultationRequestDetailAPIView,
 
     VolunteerDashboardAPIView,
+
+    AssignedProjectsAPIView,
 )
 
 urlpatterns = [
@@ -40,4 +42,7 @@ urlpatterns = [
 
     # ================== DASHBOARD ==================
     path("dashboard/", VolunteerDashboardAPIView.as_view()),
+
+    # ================== ASSIGNED PROJECTS  ==================
+    path("assigned-projects/", AssignedProjectsAPIView.as_view()),
 ]

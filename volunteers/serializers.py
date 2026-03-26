@@ -106,3 +106,10 @@ class CreateConsultationRequestSerializer(serializers.ModelSerializer):
             "request_type",
             "description",
         ]
+
+#/////////////////////////////// Assigned Projects Serializer  //////////////////////////////////////
+
+class AssignedProjectsSerializer(serializers.Serializer):
+    consultations = serializers.ListField()
+    ongoing = serializers.ListField()
+    joined_projects = serializers.ListField()

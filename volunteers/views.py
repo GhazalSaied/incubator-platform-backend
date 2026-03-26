@@ -4,7 +4,13 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 
-from .models import VolunteerProfile, VolunteerAvailability ,ConsultationRequest, VolunteerJoinRequest
+from .models import (
+    VolunteerProfile,
+    VolunteerAvailability,
+    ConsultationRequest, 
+    VolunteerJoinRequest,
+      
+      )
 from .serializers import (
     VolunteerProfileSerializer,
     VolunteerAvailabilitySerializer,
@@ -14,6 +20,7 @@ from .serializers import (
     CreateConsultationRequestSerializer,
 )
 from core.permissions import IsVolunteer
+from ideas.models import TeamMember
 
 
 #/////////////////////////// VOLUNTEER APPLY ///////////////////////
@@ -216,6 +223,9 @@ class MyConsultationRequestsAPIView(APIView):
 
 #///////////////////////// [ACCEPT/REJECT] Consultation ///////////////////////////////////
 
+from messaging.models import Conversation
+from django.shortcuts import get_object_or_404
+
 class ConsultationRequestDecisionAPIView(APIView):
     permission_classes = [IsAuthenticated, IsVolunteer]
 
@@ -223,33 +233,48 @@ class ConsultationRequestDecisionAPIView(APIView):
         action = request.data.get("action")
 
         if action not in ["accept", "reject"]:
-            return Response({"detail": "إجراء غير صالح"}, status=400)
-
-        try:
-            consultation = ConsultationRequest.objects.get(
-                id=request_id,
-                volunteer=request.user.volunteer_profile
+            return Response(
+                {"detail": "إجراء غير صالح"},
+                status=status.HTTP_400_BAD_REQUEST
             )
-        except ConsultationRequest.DoesNotExist:
-            return Response({"detail": "غير موجود"}, status=404)
+
+        consultation = get_object_or_404(
+            ConsultationRequest,
+            id=request_id,
+            volunteer=request.user.volunteer_profile
+        )
 
         if action == "accept":
             consultation.status = ConsultationRequest.ACCEPTED
 
-            
-            if consultation.request_type == ConsultationRequest.JOIN_REQUEST:
-                print("User joined project team")  # مؤقت
+            #  إنشاء محادثة
+            conversation = Conversation.objects.create()
+            conversation.participants.add(
+                request.user,
+                consultation.requester
+            )
 
-            elif consultation.request_type == ConsultationRequest.CONSULTATION:
-                print("Consultation accepted")  # مؤقت
+            #  إذا JOIN → نضيفه للفريق
+            if consultation.request_type == ConsultationRequest.JOIN:
+                TeamMember.objects.create(
+                    idea=consultation.idea,
+                    user=request.user
+                )
+
+            consultation.save()
+
+            return Response({
+                "detail": "تم قبول الطلب",
+                "conversation_id": conversation.id
+            })
 
         else:
             consultation.status = ConsultationRequest.REJECTED
+            consultation.save()
 
-        consultation.save()
-
-        return Response(ConsultationRequestSerializer(consultation).data)
-
+            return Response({
+                "detail": "تم رفض الطلب"
+            })
 #/////////////////////////////// VOLUNTEER DASHBOARD VIEW //////////////////////////////////////////////
 
 class VolunteerDashboardAPIView(APIView):
@@ -383,3 +408,48 @@ class ConsultationRequestDetailAPIView(APIView):
         }
 
         return Response(data)
+
+#//////////////////////////////////// Assigned Projects APIView  ////////////////////////////////////////
+
+class AssignedProjectsAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsVolunteer]
+
+    def get(self, request):
+        profile = request.user.volunteer_profile
+
+        # 🔹 الاستشارات المقبولة
+        consultations = ConsultationRequest.objects.filter(
+            volunteer=profile,
+            status=ConsultationRequest.ACCEPTED,
+            request_type=ConsultationRequest.CONSULTATION
+        )
+
+        consultations_data = [
+            {
+                "idea_id": c.idea.id,
+                "idea_title": c.idea.title,
+                "description": c.description,
+            }
+            for c in consultations
+        ]
+
+        # 🔹 المتابعة (حالياً نفس الاستشارات)
+        ongoing_data = consultations_data
+
+        # 🔹 المشاريع المنضم لها
+        joined = TeamMember.objects.filter(user=request.user)
+
+        joined_data = [
+            {
+                "idea_id": j.idea.id,
+                "idea_title": j.idea.title,
+                "description": j.idea.description,
+            }
+            for j in joined
+        ]
+
+        return Response({
+            "consultations": consultations_data,
+            "ongoing": ongoing_data,
+            "joined_projects": joined_data
+        })
