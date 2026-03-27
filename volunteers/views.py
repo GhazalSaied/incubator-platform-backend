@@ -4,6 +4,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 
+from messaging.models import Conversation
+from django.shortcuts import get_object_or_404
+
+from notifications.models import Notification
+from messaging.models import Conversation
+
 from .models import (
     VolunteerProfile,
     VolunteerAvailability,
@@ -223,9 +229,6 @@ class MyConsultationRequestsAPIView(APIView):
 
 #///////////////////////// [ACCEPT/REJECT] Consultation ///////////////////////////////////
 
-from messaging.models import Conversation
-from django.shortcuts import get_object_or_404
-
 class ConsultationRequestDecisionAPIView(APIView):
     permission_classes = [IsAuthenticated, IsVolunteer]
 
@@ -233,10 +236,7 @@ class ConsultationRequestDecisionAPIView(APIView):
         action = request.data.get("action")
 
         if action not in ["accept", "reject"]:
-            return Response(
-                {"detail": "إجراء غير صالح"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "إجراء غير صالح"}, status=400)
 
         consultation = get_object_or_404(
             ConsultationRequest,
@@ -254,27 +254,39 @@ class ConsultationRequestDecisionAPIView(APIView):
                 consultation.requester
             )
 
-            #  إذا JOIN → نضيفه للفريق
+            #  اشعار
+            Notification.objects.create(
+                user=consultation.requester,
+                title="تم قبول طلبك",
+                message="تم قبول طلبك من قبل المتطوع",
+                type="SUCCESS",
+                related_object_id=consultation.id,
+                related_object_type="consultation",
+                action_url=f"/chat/{conversation.id}"
+            )
+
+            #  JOIN → إضافة للفريق
             if consultation.request_type == ConsultationRequest.JOIN:
                 TeamMember.objects.create(
                     idea=consultation.idea,
                     user=request.user
                 )
 
-            consultation.save()
-
-            return Response({
-                "detail": "تم قبول الطلب",
-                "conversation_id": conversation.id
-            })
-
         else:
             consultation.status = ConsultationRequest.REJECTED
-            consultation.save()
 
-            return Response({
-                "detail": "تم رفض الطلب"
-            })
+            Notification.objects.create(
+                user=consultation.requester,
+                title="تم رفض طلبك",
+                message="تم رفض طلبك من قبل المتطوع",
+                type="WARNING",
+                related_object_id=consultation.id,
+                related_object_type="consultation"
+            )
+
+        consultation.save()
+
+        return Response(ConsultationRequestSerializer(consultation).data)
 #/////////////////////////////// VOLUNTEER DASHBOARD VIEW //////////////////////////////////////////////
 
 class VolunteerDashboardAPIView(APIView):
