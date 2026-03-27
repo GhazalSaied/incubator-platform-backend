@@ -5,6 +5,7 @@ from rest_framework import status
 
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
+from notifications.models import Notification
 
 #///////////////////////// Display all conservations /////////////////////////////
 
@@ -72,11 +73,23 @@ class SendMessageAPIView(APIView):
             content=content
         )
 
+        #  إرسال إشعارات لباقي المشاركين
+        for user in conversation.participants.all():
+            if user != request.user:
+                Notification.objects.create(
+                    user=user,
+                    title="رسالة جديدة",
+                    message=f"لديك رسالة جديدة من {request.user.full_name}",
+                    type="INFO",
+                    related_object_id=conversation.id,
+                    related_object_type="conversation",
+                    action_url=f"/chat/{conversation.id}"
+                )
+
         return Response(
             MessageSerializer(message).data,
             status=status.HTTP_201_CREATED
         )
-    
 #///////////////////////// Mark As Read View /////////////////////////////
 
 class MarkAsReadAPIView(APIView):
