@@ -86,8 +86,8 @@ class SendMessageAPIView(APIView):
                 Notification.objects.create(
                     user=user,
                     title="رسالة جديدة",
-                    message=f"لديك رسالة جديدة من {request.user.full_name}",
                     type="INFO",
+                    message=f"لديك رسالة جديدة من {getattr(request.user, 'full_name', request.user.email)}",
                     related_object_id=conversation.id,
                     related_object_type="conversation",
                     action_url=f"/chat/{conversation.id}"
@@ -143,6 +143,10 @@ class ConversationListAPIView(ListAPIView):
         ).annotate(
             last_message_time=Max("messages__created_at")
         ).order_by("-last_message_time")
+
+    def get_serializer_context(self):
+        return {"request": self.request}
+
 
 #///////////////////////////////// CONVERSATION DETAIL VIEW //////////////////////////////////
 
