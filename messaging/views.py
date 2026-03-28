@@ -8,6 +8,7 @@ from django.db.models import Max
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer, ConversationListSerializer
 from notifications.models import Notification
+from .pagination import MessagePagination
 
 
 
@@ -21,7 +22,7 @@ class MyConversationsAPIView(APIView):
     def get(self, request):
         conversations = Conversation.objects.filter(
             participants=request.user
-        ).distinct().order_by("-created_at")
+        ).distinct().order_by("-last_message_time")
 
         serializer = ConversationSerializer(conversations, many=True)
         return Response(serializer.data)
@@ -43,7 +44,7 @@ class ConversationDetailAPIView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        messages = conversation.messages.order_by("created_at")
+        messages = conversation.messages.order_by("-last_message_time")
 
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
@@ -65,7 +66,7 @@ class SendMessageAPIView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        content = request.data.get("content")
+        content = request.data.get("content", "").strip()
 
         if not content:
             return Response(
@@ -142,3 +143,27 @@ class ConversationListAPIView(ListAPIView):
         ).annotate(
             last_message_time=Max("messages__created_at")
         ).order_by("-last_message_time")
+
+#///////////////////////////////// CONVERSATION DETAIL VIEW //////////////////////////////////
+
+
+class ConversationDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, conversation_id):
+        try:
+            conversation = Conversation.objects.get(
+                id=conversation_id,
+                participants=request.user
+            )
+        except Conversation.DoesNotExist:
+            return Response({"detail": "غير مسموح"}, status=404)
+
+        messages = conversation.messages.order_by("-created_at")
+
+        paginator = MessagePagination()
+        paginated = paginator.paginate_queryset(messages, request)
+
+        serializer = MessageSerializer(paginated, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
