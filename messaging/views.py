@@ -2,10 +2,16 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.generics import ListAPIView
+from django.db.models import Max
 
 from .models import Conversation, Message
-from .serializers import ConversationSerializer, MessageSerializer
+from .serializers import ConversationSerializer, MessageSerializer, ConversationListSerializer
 from notifications.models import Notification
+
+
+
+
 
 #///////////////////////// Display all conservations /////////////////////////////
 
@@ -123,3 +129,16 @@ class UnreadMessagesCountAPIView(APIView):
         ).exclude(sender=request.user).count()
 
         return Response({"unread_messages": count})
+    
+#///////////////////////////////////// CONVERSATION LIST VIEW //////////////////////
+
+class ConversationListAPIView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ConversationListSerializer
+
+    def get_queryset(self):
+        return Conversation.objects.filter(
+            participants=self.request.user
+        ).annotate(
+            last_message_time=Max("messages__created_at")
+        ).order_by("-last_message_time")
