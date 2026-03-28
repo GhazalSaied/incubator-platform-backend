@@ -17,6 +17,17 @@ class Notification(models.Model):
         (WARNING, "Warning"),
     ]
 
+    
+    OPEN_CHAT = "OPEN_CHAT"
+    VIEW_REQUEST = "VIEW_REQUEST"
+    VIEW_IDEA = "VIEW_IDEA"
+
+    ACTION_CHOICES = [
+        (OPEN_CHAT, "Open Chat"),
+        (VIEW_REQUEST, "View Request"),
+        (VIEW_IDEA, "View Idea"),
+    ]
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -32,15 +43,21 @@ class Notification(models.Model):
         default=INFO
     )
 
+    
+    action_type = models.CharField(
+        max_length=50,
+        choices=ACTION_CHOICES,
+        null=True,
+        blank=True
+    )
+
     is_read = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
-    
     related_object_id = models.PositiveIntegerField(null=True, blank=True)
     related_object_type = models.CharField(max_length=50, null=True, blank=True)
 
-   
     action_url = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
