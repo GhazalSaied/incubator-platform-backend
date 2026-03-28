@@ -15,7 +15,7 @@ from ideas.services.idea_validation import IdeaFormValidator
 from ideas.services.season_phase_service import SeasonPhaseService
 from ideas.phases  import SeasonPhase
 
-#///////////////////////////GET CUURENT IDEA FORM SERIALIZER /////////////////////////////////
+#///////////////////////////GET CUURENT IDEA FORM /////////////////////////////////
 
 class CurrentIdeaFormAPIView(APIView):
     permission_classes = [IsAuthenticated]

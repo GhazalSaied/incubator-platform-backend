@@ -90,6 +90,7 @@ class SendMessageAPIView(APIView):
             MessageSerializer(message).data,
             status=status.HTTP_201_CREATED
         )
+    
 #///////////////////////// Mark As Read View /////////////////////////////
 
 class MarkAsReadAPIView(APIView):
@@ -102,14 +103,23 @@ class MarkAsReadAPIView(APIView):
                 participants=request.user
             )
         except Conversation.DoesNotExist:
-            return Response(
-                {"detail": "غير مسموح"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"detail": "غير مسموح"}, status=404)
 
-        conversation.messages.filter(is_read=False).exclude(
-            sender=request.user
-        ).update(is_read=True)
+        conversation.messages.filter(
+            is_read=False
+        ).exclude(sender=request.user).update(is_read=True)
 
-        return Response({"detail": "تم التحديث"})
+        return Response({"detail": "تم القراءة"})
     
+#/////////////////////////////// UNREAD MESSAGES COUNT ///////////////////////////
+
+class UnreadMessagesCountAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        count = Message.objects.filter(
+            conversation__participants=request.user,
+            is_read=False
+        ).exclude(sender=request.user).count()
+
+        return Response({"unread_messages": count})

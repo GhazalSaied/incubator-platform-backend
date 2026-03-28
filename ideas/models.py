@@ -146,7 +146,7 @@ class FormQuestionChoice(models.Model):
     def __str__(self):
         return self.label
 
-#////////////////////////////////// TIME MEMBER /////////////////////////
+#////////////////////////////////// TEAM MEMBER /////////////////////////
 
 class TeamMember(models.Model):
     idea = models.ForeignKey(

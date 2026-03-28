@@ -4,6 +4,7 @@ from .views import (
     ConversationDetailAPIView,
     SendMessageAPIView,
     MarkAsReadAPIView,
+    UnreadMessagesCountAPIView,
 )
 
 urlpatterns = [
@@ -11,4 +12,5 @@ urlpatterns = [
     path("<int:conversation_id>/", ConversationDetailAPIView.as_view()),
     path("<int:conversation_id>/send/", SendMessageAPIView.as_view()),
     path("<int:conversation_id>/read/", MarkAsReadAPIView.as_view()),
+    path("unread-count/", UnreadMessagesCountAPIView.as_view()),
 ]
