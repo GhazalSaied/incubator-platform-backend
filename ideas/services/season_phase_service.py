@@ -1,6 +1,6 @@
 from django.utils import timezone
-from ideas.models import Season
-from ideas.phases import SeasonPhase
+from django.db import models
+
 
 
 class SeasonPhaseService:

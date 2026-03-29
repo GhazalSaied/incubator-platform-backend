@@ -21,8 +21,8 @@ class SeasonPhase(models.Model):
     ]
 
     season = models.ForeignKey(
-        Season,
-        on_delete=models.CASCADE,
+        "ideas.Season",
+        on_delete= models.CASCADE,
         related_name="phases"
     )
 
