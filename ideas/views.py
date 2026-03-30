@@ -213,3 +213,73 @@ class MyIdeasAPIView(APIView):
 
         serializer = MyIdeaListSerializer(ideas, many=True)
         return Response(serializer.data)
+
+#////////////////////////////////// IDEA DASHBOARD VIEW  //////////////////////////
+
+class IdeaDashboardAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            idea = Idea.objects.get(owner=request.user)
+        except Idea.DoesNotExist:
+            return Response({"detail": "لا يوجد فكرة"})
+
+        phase = SeasonPhaseService.get_current_phase()
+
+        progress = ["SUBMISSION", "BOOTCAMP", "EVALUATION", "INCUBATION", "EXHIBITION"]
+
+        #  BOOTCAMP
+        if phase and phase.phase == "BOOTCAMP":
+            return Response({
+                "phase": "BOOTCAMP",
+                "progress": progress,
+                "data": {
+                    "attendance_required": 75,
+                    "next_session": {
+                        "title": "جلسة React",
+                        "date": "2026-03-28",
+                        "time": "10:00"
+                    },
+                    "can_request_absence": True
+                }
+            })
+
+        #  EVALUATION
+        if phase and phase.phase == "EVALUATION":
+            return Response({
+                "phase": "EVALUATION",
+                "progress": progress,
+                "data": {
+                    "status": "بانتظار التقييم",
+                    "next_meeting": "2026-04-01",
+                    "can_request_consultation": True
+                }
+            })
+
+        #  INCUBATION
+        if idea.status == IdeaStatus.INCUBATED:
+            team = idea.team_members.all()
+
+            return Response({
+                "phase": "INCUBATION",
+                "progress": progress,
+                "data": {
+                    "team": [
+                        {
+                            "email": m.user.email,
+                            "role": m.role
+                        }
+                        for m in team
+                    ]
+                }
+            })
+
+        #  SUBMISSION
+        return Response({
+            "phase": "SUBMISSION",
+            "progress": progress,
+            "data": {
+                "message": "تم إرسال فكرتك، بانتظار بدء المعسكر"
+            }
+        })

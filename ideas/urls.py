@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import ( CurrentIdeaFormAPIView , IdeaCreateAPIView , 
                     IdeaUpdateAPIView , WithdrawIdeaView,
-                    CurrentSeasonPhaseAPIView,MyIdeasAPIView
+                    CurrentSeasonPhaseAPIView,MyIdeasAPIView,
+                    IdeaDashboardAPIView,
                     )
 
 urlpatterns=[
@@ -11,6 +12,7 @@ urlpatterns=[
     path("<int:idea_id>/withdraw/", WithdrawIdeaView.as_view()),
     path("current-phase/",CurrentSeasonPhaseAPIView.as_view()),
     path("my/", MyIdeasAPIView.as_view()),
+    path("dashboard/", IdeaDashboardAPIView.as_view()),
     
     
     

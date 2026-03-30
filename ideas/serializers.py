@@ -78,3 +78,12 @@ class MyIdeaListSerializer(serializers.ModelSerializer):
             "status",
             "created_at",
         ]
+
+#/////////////////////////// IDEA DASHBOARD SERIALIZER /////////////////////////
+
+class IdeaDashboardSerializer(serializers.Serializer):
+    phase = serializers.CharField()
+    progress = serializers.ListField()
+    data = serializers.DictField()
+    
+
