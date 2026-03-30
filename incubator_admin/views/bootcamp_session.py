@@ -1,27 +1,20 @@
-from rest_framework import generics
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
 from bootcamp.models import BootcampSession
 from incubator_admin.serializers.bootcamp_session import BootcampSessionSerializer
-from core.permissions import IsAdminOrSecretary
 
 
-class BootcampSessionListCreateView(generics.ListCreateAPIView):
-    serializer_class = BootcampSessionSerializer
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+class BootcampSessionCreateView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        phase_id = self.request.query_params.get("phase")
+    def post(self, request):
+        serializer = BootcampSessionSerializer(data=request.data)
 
-        queryset = BootcampSession.objects.all()
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        if phase_id:
-            queryset = queryset.filter(phase_id=phase_id)
-
-        return queryset.order_by("start_time")
-
-
-class BootcampSessionDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = BootcampSessionSerializer
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
-    queryset = BootcampSession.objects.all()
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
