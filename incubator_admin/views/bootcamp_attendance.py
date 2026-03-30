@@ -3,9 +3,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from ideas.models import Idea
 from bootcamp.models import BootcampAttendance
-
+from core.permissions import IsAdminOrSecretary
 class SessionAttendanceListView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsAdminOrSecretary]
 
     def get(self, request, session_id):
         attendance = BootcampAttendance.objects.filter(session_id=session_id)
@@ -23,7 +23,7 @@ class SessionAttendanceListView(APIView):
     
     
 class IdeaAttendanceStatsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsAdminOrSecretary]
 
     def get(self, request, idea_id):
         total = BootcampAttendance.objects.filter(idea_id=idea_id).count()
@@ -43,7 +43,7 @@ class IdeaAttendanceStatsView(APIView):
         
         
 class BootcampParticipantsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsAdminOrSecretary]
 
     def get(self, request):
         ideas = Idea.objects.all()

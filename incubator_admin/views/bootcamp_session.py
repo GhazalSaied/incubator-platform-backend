@@ -7,10 +7,10 @@ from bootcamp.models import BootcampSession
 from incubator_admin.serializers.bootcamp_session import BootcampSessionSerializer,BootcampAttendanceSerializer
 from rest_framework.generics import ListAPIView
 from ideas.models import Idea
-
+from core.permissions import IsAdminOrSecretary
 
 class BootcampSessionCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsAdminOrSecretary]
 
     def post(self, request):
         serializer = BootcampSessionSerializer(data=request.data)
@@ -37,7 +37,7 @@ class BootcampSessionCreateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class AdminBootcampSessionListView(ListAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsAdminOrSecretary]
     serializer_class = BootcampSessionSerializer
 
     def get_queryset(self):

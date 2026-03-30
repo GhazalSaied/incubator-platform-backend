@@ -116,7 +116,7 @@ class BootcampDecision(BaseModel):
     )
     
     
-    notes = models.TextField(null=True, blank=True)
+    decision_note = models.TextField(null=True, blank=True)
     
     def __str__(self):
         return f"{self.idea} - {self.decision}"

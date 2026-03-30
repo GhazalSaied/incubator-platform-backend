@@ -2,16 +2,21 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-
+from core.permissions import IsAdminOrSecretary
 from ideas.models import Idea
 
 
 class BootcampDecisionView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsAdminOrSecretary]
 
     def post(self, request):
-        idea_id = request.data.get('idea_id')
-        decision = request.data.get('decision')  # approve / reject
+        idea_id = request.data.get("idea_id")
+        decision = request.data.get("decision")
+        message = request.data.get("message")
+
+        idea = Idea.objects.get(id=idea_id)
+        idea.bootcamp_status = decision
+        idea.decision_note = message
 
         try:
             idea = Idea.objects.get(id=idea_id)
@@ -26,12 +31,11 @@ class BootcampDecisionView(APIView):
             )
 
         # ✅ قبول → تروح عالتقييم
-        if decision == 'approve':
+        if decision == 'accepted':
             idea.bootcamp_status = 'accepted'
-            idea.status = 'evaluation'   # تنتقل للمرحلة التالية
+            idea.status = 'evaluation'
 
-        # ❌ رفض → تنتهي هون
-        elif decision == 'reject':
+        elif decision == 'rejected':
             idea.bootcamp_status = 'rejected'
             idea.status = 'rejected'
 
