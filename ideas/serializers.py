@@ -86,4 +86,16 @@ class IdeaDashboardSerializer(serializers.Serializer):
     progress = serializers.ListField()
     data = serializers.DictField()
     
+#//////////////////////////// EXHIBITION  /////////////////////////////
 
+class ExhibitionSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Idea
+        fields = [
+            "title",
+            "exhibition_image",
+            "project_goal",
+            "project_services",
+            "contact_email"
+        ]
