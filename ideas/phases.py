@@ -1,6 +1,6 @@
 from django.db import models
 from .models import Season  
-
+from django.utils import timezone
 
 #///////////////////////////// SEASON PHASE //////////////////////////////////
 
@@ -35,6 +35,10 @@ class SeasonPhase(models.Model):
     end_date = models.DateTimeField()
 
     order = models.PositiveIntegerField()
+    
+
+    
+    
 
     class Meta:
         unique_together = ("season", "phase")
@@ -43,3 +47,11 @@ class SeasonPhase(models.Model):
     def __str__(self):
         return f"{self.season.name} - {self.phase}"
 
+def get_current_phase(season):
+        now = timezone.now()
+    
+        return SeasonPhase.objects.filter(
+            season=season,
+            start_date__lte=now,
+            end_date__gte=now
+        ).first()
