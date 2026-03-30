@@ -79,4 +79,4 @@ class NotificationBadgeAPIView(APIView):
             "count": unread_count
         })
 
-#////////////////////////////// 
+

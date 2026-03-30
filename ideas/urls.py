@@ -3,6 +3,9 @@ from .views import ( CurrentIdeaFormAPIView , IdeaCreateAPIView ,
                     IdeaUpdateAPIView , WithdrawIdeaView,
                     CurrentSeasonPhaseAPIView,MyIdeasAPIView,
                     IdeaDashboardAPIView,
+                    IncubationPhaseAPIView,
+                    ExhibitionPhaseAPIView,
+                    UpdateExhibitionAPIView,
                     )
 
 urlpatterns=[
@@ -13,6 +16,10 @@ urlpatterns=[
     path("current-phase/",CurrentSeasonPhaseAPIView.as_view()),
     path("my/", MyIdeasAPIView.as_view()),
     path("dashboard/", IdeaDashboardAPIView.as_view()),
+    path("incubation/", IncubationPhaseAPIView.as_view()),
+    path("exhibition/", ExhibitionPhaseAPIView.as_view()),
+    path("exhibition/update/", UpdateExhibitionAPIView.as_view()),
+
     
     
     

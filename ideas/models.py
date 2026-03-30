@@ -51,6 +51,7 @@ class Idea(models.Model):
         default=IdeaStatus.DRAFT
     )
 
+
     #  Dynamic form answers
 
     answers = models.JSONField(default=dict)
@@ -86,6 +87,19 @@ class Idea(models.Model):
 
     def __str__(self):
         return self.title
+    
+
+    #  EXHIBITION FIELDS
+
+    exhibition_image = models.ImageField(upload_to="exhibition/", null=True, blank=True)
+
+    project_goal = models.TextField(null=True, blank=True)
+    project_services = models.TextField(null=True, blank=True)
+
+    owner_email = models.EmailField(null=True, blank=True)
+    team_emails = models.TextField(null=True, blank=True)
+
+    exhibition_date = models.DateTimeField(null=True, blank=True)
 
 
 # ////////////////////// FORM /////////////////////////

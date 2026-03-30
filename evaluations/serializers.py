@@ -1,6 +1,13 @@
 from rest_framework import serializers
-from .models import Evaluation
+from .models import (
+    Evaluation, 
+    IncubationReview,
 
+)
+
+
+
+#////////////////////////  EVALUATION /////////////////////
 
 class EvaluationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,3 +22,15 @@ class EvaluationSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["is_submitted", "created_at", "updated_at"]
+
+#//////////////////////////// INCUBATION REVIEW //////////////////
+
+class IncubationReviewSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = IncubationReview
+        fields = [
+            "meeting_date",
+            "progress_score",
+            "notes"
+        ]
