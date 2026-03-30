@@ -4,7 +4,7 @@ from incubator_admin.views.idea_form import IdeaFormCreateView
 from incubator_admin.views.form_question import FormQuestionListCreateView,FormQuestionDetailView
 from incubator_admin.views.form_choice import (FormQuestionChoiceListCreateView,FormQuestionChoiceDetailView)
 from incubator_admin.views.ideas import IdeaListAPIView,IdeaDetailAPIView
-from incubator_admin.views.bootcamp_session import (BootcampSessionListCreateView, BootcampSessionDetailView)
+from incubator_admin.views.bootcamp_session import  BootcampSessionCreateView
 urlpatterns = [
     path('seasons/', SeasonCreateView.as_view()),
     path('seasons/<int:pk>/publish/', SeasonPublishView.as_view()),
@@ -19,7 +19,7 @@ urlpatterns = [
     path("seasons/<int:season_id>/",SeasonDetailAPIView.as_view(),name="admin-season-detail"),
     path("ideas/", IdeaListAPIView.as_view()),
     path("ideas/<int:idea_id>/", IdeaDetailAPIView.as_view()),
-    path("bootcamp/sessions/",BootcampSessionListCreateView.as_view()),
-    path("bootcamp/sessions/<int:pk>/", BootcampSessionDetailView.as_view()),
+    path("bootcamp/sessions/", BootcampSessionCreateView.as_view())
+    
 
 ]
