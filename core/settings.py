@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'volunteers',   
     'admin_users',
     'incubator_admin',
+    'bootcamp',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

@@ -14,6 +14,7 @@ urlpatterns = [
     path('admin-panel/', include('incubator_admin.urls')),
     path("api/messages/", include("messaging.urls")),
     path("api/notifications/", include("notifications.urls")),
+    path('api/bootcamp/',include('bootcamp.urls')),
 
 
    

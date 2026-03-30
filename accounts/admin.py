@@ -1,9 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserCreationForm, ReadOnlyPasswordHashField
-from django import forms  # ← أضيفي هالسطر هون
-
-from .models import User
+from django import forms  
+from .models import User,UserRole,Role
 
 class UserChangeForm(forms.ModelForm):
     password = ReadOnlyPasswordHashField(
@@ -38,3 +37,5 @@ class UserAdmin(BaseUserAdmin):
     ordering = ('email',)
 
 admin.site.register(User, UserAdmin)
+admin.site.register(UserRole)
+admin.site.register(Role)
