@@ -35,7 +35,7 @@ class BootcampSession(BaseModel):
         
         
     def clean(self):
-        # ✅ تحقق من الوقت
+        #  تحقق من الوقت
         if self.start_time >= self.end_time:
             raise ValidationError("وقت البداية يجب أن يكون قبل وقت النهاية")
 
@@ -46,7 +46,7 @@ class BootcampSession(BaseModel):
     def __str__(self):
         return self.title
     
-    
+ 
     
 class BootcampAttendance(BaseModel):
     session = models.ForeignKey(BootcampSession, on_delete=models.CASCADE, related_name='attendance')
@@ -69,6 +69,7 @@ class BootcampAttendance(BaseModel):
         return f"{self.idea} - {self.session} - {self.status}"
     
     
+
 class BootcampAbsenceRequest(BaseModel):
     idea = models.ForeignKey(Idea, on_delete=models.CASCADE,related_name='absence_requests')
 
@@ -95,8 +96,9 @@ class BootcampAbsenceRequest(BaseModel):
     def __str__(self):
         return f"{self.idea} - {self.session} - {self.status}"
     
+    
 class BootcampDecision(BaseModel):
-    DICISION_CHOICES = [
+    DECISION_CHOICES = [
         ('accepted', 'Accepted'),
         ('rejected', 'Rejected'),
     ]
@@ -106,11 +108,11 @@ class BootcampDecision(BaseModel):
         related_name='bootcamp_decision'
     )
     
-    attendence_rate = models.FloatField()
+    attendance_rate = models.FloatField()
     
     decision = models.CharField(
         max_length=10,
-        choices=DICISION_CHOICES
+        choices=DECISION_CHOICES
     )
     
     

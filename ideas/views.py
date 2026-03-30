@@ -8,12 +8,14 @@ from .serializers import (
     IdeaFormSerializer,
     IdeaCreateUpdateSerializer,
     IdeaDetailSerializer,
-    MyIdeaListSerializer
+    MyIdeaListSerializer,
 )
 from notifications.models import Notification
 from ideas.services.idea_validation import IdeaFormValidator
 from ideas.services.season_phase_service import SeasonPhaseService
 from ideas.phases  import SeasonPhase
+from bootcamp.serializers import BootcampSessionSerializer
+from bootcamp.models import BootcampSession
 
 #///////////////////////////GET CUURENT IDEA FORM /////////////////////////////////
 
@@ -231,16 +233,17 @@ class IdeaDashboardAPIView(APIView):
 
         #  BOOTCAMP
         if phase and phase.phase == "BOOTCAMP":
+
+            next_session = BootcampSession.objects.filter(
+                start_time__gte=now()
+            ).order_by("start_time").first()
+
             return Response({
                 "phase": "BOOTCAMP",
                 "progress": progress,
                 "data": {
                     "attendance_required": 75,
-                    "next_session": {
-                        "title": "جلسة React",
-                        "date": "2026-03-28",
-                        "time": "10:00"
-                    },
+                    "next_session": BootcampSessionSerializer(next_session).data if next_session else None,
                     "can_request_absence": True
                 }
             })
