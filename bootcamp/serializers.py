@@ -1,11 +1,10 @@
 from rest_framework import serializers
-from .models import BootcampSession
+from bootcamp.models import BootcampSession
 
-
-#/////////////////////////// BOOTCAMP SESSION ////////////////////////
 
 class BootcampSessionSerializer(serializers.ModelSerializer):
-    trainer_name = serializers.CharField(source="trainer.full_name", read_only=True)
+    trainer_name = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     class Meta:
         model = BootcampSession
@@ -14,6 +13,15 @@ class BootcampSessionSerializer(serializers.ModelSerializer):
             "title",
             "trainer_name",
             "location",
+            "tasks",
+            "date",
             "start_time",
             "end_time",
+            "status"
         ]
+
+    def get_trainer_name(self, obj):
+        return obj.trainer.username if obj.trainer else None
+
+    def get_status(self, obj):
+        return "active" if obj.is_active else "inactive"

@@ -43,15 +43,17 @@ class IdeaAttendanceStatsView(APIView):
         
         
 class BootcampParticipantsView(APIView):
-    permission_classes = [IsAuthenticated,IsAdminOrSecretary]
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
     def get(self, request):
-        ideas = Idea.objects.all()
+        # ✅ فقط المقبولين بالمعسكر
+        ideas = Idea.objects.filter(bootcamp_status='accepted')
 
         result = []
 
         for idea in ideas:
             total = BootcampAttendance.objects.filter(idea=idea).count()
+
             absent = BootcampAttendance.objects.filter(
                 idea=idea,
                 status='absent'

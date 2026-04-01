@@ -24,10 +24,11 @@ class BootcampSession(BaseModel):
         related_name="session_as_trainer"
     )
 
-    location = models.CharField(max_length=255)
-
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+    location = models.CharField(max_length=255,null=True)
+    tasks = models.TextField(null=True)
+    date = models.DateField(null=True)
+    start_time = models.DateTimeField(null=True, blank=True)
+    end_time = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     
     class Meta:
@@ -35,10 +36,10 @@ class BootcampSession(BaseModel):
         
         
     def clean(self):
-        #  تحقق من الوقت
-        if self.start_time >= self.end_time:
-            raise ValidationError("وقت البداية يجب أن يكون قبل وقت النهاية")
-
+        if self.start_time and self.end_time:
+            if self.start_time >= self.end_time:
+                raise ValidationError("وقت البداية لازم يكون قبل النهاية")
+        
     def save(self, *args, **kwargs):
         self.clean()  # تشغيل التحقق دائماً
         super().save(*args, **kwargs)

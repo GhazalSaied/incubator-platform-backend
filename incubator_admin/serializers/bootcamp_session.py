@@ -3,16 +3,28 @@ from bootcamp.models import BootcampSession,BootcampAttendance
 
 
 class BootcampSessionSerializer(serializers.ModelSerializer):
+    trainer_name = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     class Meta:
         model = BootcampSession
-        fields = '__all__'
+        fields = [
+            "id",
+            "title",
+            "trainer_name",
+            "location",
+            "tasks",
+            "date",
+            "start_time",
+            "end_time",
+            "status"
+        ]
 
-    def validate(self, data):
-        if data['start_time'] >= data['end_time']:
-            raise serializers.ValidationError("End time must be after start time")
-        return data
-    
+    def get_trainer_name(self, obj):
+        return obj.trainer.full_name if obj.trainer else None
+
+    def get_status(self, obj):
+        return "active" if obj.is_active else "inactive"
     
     
     

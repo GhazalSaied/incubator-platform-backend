@@ -4,10 +4,10 @@ from incubator_admin.views.idea_form import IdeaFormCreateView
 from incubator_admin.views.form_question import FormQuestionListCreateView,FormQuestionDetailView
 from incubator_admin.views.form_choice import (FormQuestionChoiceListCreateView,FormQuestionChoiceDetailView)
 from incubator_admin.views.ideas import IdeaListAPIView,IdeaDetailAPIView
-from incubator_admin.views.bootcamp_session import  BootcampSessionCreateView,AdminBootcampSessionListView
+from incubator_admin.views.bootcamp_session import  BootcampSessionCreateView,BootcampSessionListView
 from incubator_admin.views.bootcamp_attendance import IdeaAttendanceStatsView,SessionAttendanceListView,BootcampParticipantsView
-from incubator_admin.views.bootcamp_decision import BootcampDecisionView
-
+from incubator_admin.views.bootcamp_decision import BootcampDecisionView,BootcampIdeasListView
+from incubator_admin.views.bootcamp_absence import AbsenceRequestsListView,AbsenceDecisionView
 
 
 
@@ -26,10 +26,13 @@ urlpatterns = [
     path("ideas/", IdeaListAPIView.as_view()),
     path("ideas/<int:idea_id>/", IdeaDetailAPIView.as_view()),
     path("bootcamp/sessions/", BootcampSessionCreateView.as_view()),
-    path('bootcamp/sessions/', AdminBootcampSessionListView.as_view()),
+    path('bootcamp/sessions/list/', BootcampSessionListView.as_view()),
     path('bootcamp/sessions/<int:session_id>/attendance/',SessionAttendanceListView.as_view()),
     path('bootcamp/ideas/<int:idea_id>/absence-percentage/',IdeaAttendanceStatsView.as_view()), 
     path('bootcamp/decision/', BootcampDecisionView.as_view()),
     path('bootcamp/participants/', BootcampParticipantsView.as_view()),
+    path('bootcamp/ideasList/', BootcampIdeasListView.as_view()),
+    path('bootcamp/absence/', AbsenceRequestsListView.as_view()),
+    path('bootcamp/absence/decision/', AbsenceDecisionView.as_view()),
 
 ]

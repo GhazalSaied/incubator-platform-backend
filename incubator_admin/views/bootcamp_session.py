@@ -13,8 +13,15 @@ class BootcampSessionCreateView(APIView):
     permission_classes = [IsAuthenticated,IsAdminOrSecretary]
 
     def post(self, request):
-        serializer = BootcampSessionSerializer(data=request.data)
-
+        session = BootcampSession.objects.create(
+            title=request.data.get("title"),
+            trainer_id=request.data.get("trainer"),
+            date=request.data.get("date"),
+            start_time=request.data.get("start_time"),
+            end_time=request.data.get("end_time"),
+            tasks=request.data.get("tasks"),
+            location=request.data.get("location"),
+        )
         if serializer.is_valid():
             
             # 🔥 ناخد الموسم من البيانات قبل الحفظ
@@ -36,36 +43,21 @@ class BootcampSessionCreateView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class AdminBootcampSessionListView(ListAPIView):
-    permission_classes = [IsAuthenticated,IsAdminOrSecretary]
-    serializer_class = BootcampSessionSerializer
 
-    def get_queryset(self):
-        queryset = BootcampSession.objects.select_related(
-            'phase',
-            'phase__season',
-            'trainer'
-        )
-        
-       
-        # 🔹 فلترة حسب الموسم
-        season_id = self.request.query_params.get('season_id')
-        if season_id:
-            queryset = queryset.filter(phase__season_id=season_id)
 
-        
+class BootcampSessionListView(APIView):
+    permission_classes = [IsAuthenticated]
 
-        # 🔹 بحث بالعنوان (لواجهة الادمن)
-        search = self.request.query_params.get('search')
-        if search:
-            queryset = queryset.filter(
-                Q(title__icontains=search) |
-                Q(location__icontains=search)
-            )
+    def get(self, request):
+        phase_id = request.query_params.get("phase_id")
 
-        # 🔹 ترتيب
-        return queryset.order_by('start_time')
-    
+        sessions = BootcampSession.objects.all()
+
+        if phase_id:
+            sessions = sessions.filter(phase_id=phase_id)
+
+        serializer = BootcampSessionSerializer(sessions, many=True)
+        return Response(serializer.data)
     
     
 
