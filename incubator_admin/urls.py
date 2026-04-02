@@ -34,5 +34,6 @@ urlpatterns = [
     path('bootcamp/ideasList/', BootcampIdeasListView.as_view()),
     path('bootcamp/absence/', AbsenceRequestsListView.as_view()),
     path('bootcamp/absence/decision/', AbsenceDecisionView.as_view()),
+    
 
 ]

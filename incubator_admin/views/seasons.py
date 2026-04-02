@@ -3,10 +3,13 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import ListAPIView
-from ideas.models import Season
+from ideas.models import Season,Idea,IdeaStatus
 from core.permissions import IsDirector
 from incubator_admin.serializers.seasons import SeasonCreateSerializer,SeasonPublishSerializer,SeasonSerializer
 from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.exceptions import PermissionDenied
+from ideas.services.season_phase_service import SeasonPhaseService
+from ideas.phases import SeasonPhase
 
 class SeasonCreateView(APIView):
     permission_classes = [
@@ -60,25 +63,24 @@ class CloseSeasonAPIView(APIView):
         try:
             season = Season.objects.get(id=season_id)
         except Season.DoesNotExist:
-            return Response(
-                {"detail": "الموسم غير موجود"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"detail": "Season not found"}, status=404)
 
         if not season.is_open:
-            return Response(
-                {"detail": "الموسم مغلق بالفعل"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "الموسم مغلق بالفعل"}, status=400)
 
+        # 🔒 إغلاق الموسم
         season.is_open = False
         season.save()
 
-        return Response(
-            {"detail": "تم إغلاق الموسم بنجاح"},
-            status=status.HTTP_200_OK
-        )
+        # 🔥 نقل الأفكار إلى UNDER_REVIEW (مو bootcamp!)
+        Idea.objects.filter(
+            season=season,
+            status=IdeaStatus.SUBMITTED
+        ).update(status=IdeaStatus.UNDER_REVIEW)
 
+        return Response({
+            "detail": "تم إغلاق الموسم وبدء مرحلة المعسكر"
+        })
 
 
 
@@ -98,13 +100,23 @@ class SeasonListAPIView(ListAPIView):
     
     
     
+
+
 class SeasonDetailAPIView(RetrieveUpdateAPIView):
     serializer_class = SeasonSerializer
-    permission_classes = [IsAuthenticated, IsDirector ]
+    permission_classes = [IsAuthenticated, IsDirector]
     lookup_url_kwarg = "season_id"
 
     def get_queryset(self):
         return Season.objects.all()
+
+    def update(self, request, *args, **kwargs):
+
+        # 🔥 تحقق من المرحلة
+        if not SeasonPhaseService.is_phase(SeasonPhase.SUBMISSION):
+            raise PermissionDenied("يمكن تعديل الموسم فقط خلال مرحلة التقديم")
+
+        return super().update(request, *args, **kwargs)
     
 
    

@@ -3,11 +3,11 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from core.permissions import IsAdminOrSecretary
-from ideas.models import Idea
+from ideas.models import Idea,IdeaStatus
 from bootcamp.models import BootcampDecision,BootcampAttendance
 from notifications.models import Notification
-
-
+from ideas.phases import SeasonPhase
+from ideas.services.season_phase_service import SeasonPhaseService
 
 #\\\\\\\\قائمة المشاركين بالمعسكر\\\\\\\\\\
 
@@ -15,6 +15,8 @@ class BootcampIdeasListView(APIView):
     permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
     def get(self, request):
+        if not SeasonPhaseService.is_phase(SeasonPhase.BOOTCAMP):
+            return Response({"detail": "هذه الصفحة متاحة فقط خلال مرحلة المعسكر"},status=403)
         search = request.query_params.get("search", "")
 
         # فقط الأفكار داخل المعسكر
@@ -67,16 +69,25 @@ class BootcampDecisionView(APIView):
         except Idea.DoesNotExist:
             return Response({"detail": "الفكرة غير موجودة"}, status=404)
 
+        # 🔥 تحقق من المرحلة
+        if not SeasonPhaseService.is_phase(SeasonPhase.BOOTCAMP):
+            return Response({"detail": "ليس وقت اتخاذ القرار"}, status=400)
+
+        # 🔥 تحقق من الحالة الأساسية
+        if idea.status != IdeaStatus.UNDER_REVIEW:
+            return Response({"detail": "الفكرة ليست ضمن المعسكر"}, status=400)
+
+        # 🔥 تحقق من القرار السابق
         if idea.bootcamp_status != 'pending':
             return Response({"detail": "تم اتخاذ قرار مسبقاً"}, status=400)
 
+        # 🔥 القرار
         if decision == 'approve':
             idea.bootcamp_status = 'accepted'
-            idea.status = 'evaluation'
 
         elif decision == 'reject':
             idea.bootcamp_status = 'rejected'
-            idea.status = 'rejected'
+            idea.status = IdeaStatus.REJECTED
 
         else:
             return Response({"detail": "قرار غير صالح"}, status=400)
@@ -84,7 +95,7 @@ class BootcampDecisionView(APIView):
         idea.decision_note = message
         idea.save()
 
-        # 🔔 إرسال إشعار
+        # 🔔 إشعار
         Notification.objects.create(
             user=idea.owner,
             title="قرار المعسكر",

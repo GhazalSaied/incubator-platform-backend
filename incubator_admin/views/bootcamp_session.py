@@ -22,10 +22,10 @@ class BootcampSessionCreateView(APIView):
             tasks=request.data.get("tasks"),
             location=request.data.get("location"),
         )
-        if serializer.is_valid():
+        if BootcampSessionSerializer.is_valid():
             
             # 🔥 ناخد الموسم من البيانات قبل الحفظ
-            season = serializer.validated_data.get('season')
+            season = BootcampSessionSerializer.validated_data.get('season')
 
             # 🔥 تحقق من المرحلة
             phase = get_current_phase(season)
@@ -37,11 +37,11 @@ class BootcampSessionCreateView(APIView):
                 )
 
             # ✅ إذا تمام → نحفظ
-            session = serializer.save()
+            session = BootcampSessionSerializer.save()
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(BootcampSessionSerializer.data, status=status.HTTP_201_CREATED)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(BootcampSessionSerializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
