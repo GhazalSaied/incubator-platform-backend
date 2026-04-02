@@ -146,3 +146,21 @@ class IdeaEvaluator(BaseModel):
 
     class Meta:
         unique_together = ("idea", "evaluator")
+        
+        
+#\\\\\\\طلب انضمام للتقييم \\\\
+class IdeaEvaluatorRequest(models.Model):
+    idea = models.ForeignKey(Idea, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("pending", "Pending"),
+            ("accepted", "Accepted"),
+            ("rejected", "Rejected"),
+        ],
+        default="pending"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
