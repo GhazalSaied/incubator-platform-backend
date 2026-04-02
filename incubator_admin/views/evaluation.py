@@ -7,7 +7,7 @@ from ideas.models import Idea
 from incubator_admin.serializers.evaluation import IdeaEvaluationListSerializer
 from core.permissions import IsAdminOrSecretary
 from accounts.models import User
-from evaluations.models import IdeaEvaluator
+from evaluations.models import IdeaEvaluator,IdeaEvaluatorRequest
 from notifications.models import Notification
 from django.db import models
 #\\\\\\عرض الافكار لتعيين مقيمين \\\\\
@@ -70,5 +70,58 @@ class VolunteersListView(APIView):
     
     
 #\\\\\تعيين مقيمين للفكرة\\\\\
+class AssignEvaluatorsView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
+    def post(self, request, idea_id):
+
+        evaluator_ids = request.data.get("evaluators", [])
+
+        try:
+            idea = Idea.objects.get(id=idea_id)
+        except Idea.DoesNotExist:
+            return Response({"error": "Idea not found"}, status=404)
+
+        created_requests = []
+
+        for user_id in evaluator_ids:
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                continue
+
+            # 🔥 تحقق أنه متطوع approved
+            is_volunteer = User.objects.filter(
+                id=user.id,
+                userrole__role__code="VOLUNTEER",
+                userrole__is_active=True,
+            ).filter(
+                models.Q(userrole__expires_at__isnull=True) |
+                models.Q(userrole__expires_at__gt=timezone.now())
+            ).filter(
+                volunteer_profile__status="APPROVED"
+            ).exists()
+
+            if not is_volunteer:
+                continue
+
+            request_obj, created = IdeaEvaluatorRequest.objects.get_or_create(
+                idea=idea,
+                user=user
+            )
+
+            if created:
+                created_requests.append(user.id)
+
+                # 🔔 إشعار
+                Notification.objects.create(
+                    user=user,
+                    title="طلب تقييم",
+                    message=f"تم ترشيحك لتقييم فكرة: {idea.title}"
+                )
+
+        return Response({
+            "message": "Requests sent",
+            "users": created_requests
+        }, status=status.HTTP_200_OK)
 
