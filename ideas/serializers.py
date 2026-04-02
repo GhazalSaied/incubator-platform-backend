@@ -36,6 +36,8 @@ class IdeaDetailSerializer(serializers.ModelSerializer):
             'description',
             'status',
             'answers',
+            'sector',
+            'target_audience',
             'created_at'
         ]
 

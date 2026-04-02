@@ -55,6 +55,14 @@ class Idea(models.Model):
     #  Dynamic form answers
 
     answers = models.JSONField(default=dict)
+    sector = models.CharField(max_length=255,
+    null=True,
+    blank=True
+)
+    target_audience = models.CharField(max_length=255,
+    null=True,
+    blank=True
+)
     bootcamp_status = models.CharField(
     max_length=20,
     choices=[
