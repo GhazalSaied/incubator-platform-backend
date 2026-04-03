@@ -27,7 +27,7 @@ from .serializers import (
 )
 from core.permissions import IsVolunteer
 from ideas.models import TeamMember
-
+from notifications.services.notification_service import NotificationService
 
 #/////////////////////////// VOLUNTEER APPLY ///////////////////////
 
@@ -255,7 +255,7 @@ class ConsultationRequestDecisionAPIView(APIView):
             )
 
             #  اشعار
-            Notification.objects.create(
+            NotificationService.send(
                 user=consultation.requester,
                 title="تم قبول طلبك",
                 message="تم قبول طلبك من قبل المتطوع",
@@ -275,7 +275,7 @@ class ConsultationRequestDecisionAPIView(APIView):
         else:
             consultation.status = ConsultationRequest.REJECTED
 
-            Notification.objects.create(
+            NotificationService.send(
                 user=consultation.requester,
                 title="تم رفض طلبك",
                 message="تم رفض طلبك من قبل المتطوع",

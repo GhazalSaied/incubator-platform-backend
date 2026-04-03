@@ -154,3 +154,4 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
+USE_ASYNC_TASKS = False

@@ -1,5 +1,8 @@
 from rest_framework import serializers
-from .models import Idea, FormQuestion, IdeaForm, Season
+from .models import (Idea, FormQuestion, 
+                     IdeaForm, Season,
+                     TeamRequest
+)
 
 #///////////////////////////IDAE FORM SERIALIZER /////////////////////////////////
 
@@ -99,3 +102,10 @@ class ExhibitionSerializer(serializers.ModelSerializer):
             "project_services",
             "contact_email"
         ]
+
+#/////////////////////////// TEAM REQUEST SERIALIZER /////////////////////
+
+class TeamRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeamRequest
+        fields = "__all__"

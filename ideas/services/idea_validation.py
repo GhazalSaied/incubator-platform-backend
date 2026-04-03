@@ -1,4 +1,5 @@
 from ideas.models import IdeaForm, FormQuestion
+from core.exceptions import BusinessLogicException
 
 
 class IdeaFormValidator:
@@ -38,4 +39,5 @@ class IdeaFormValidator:
                 self.errors[key] = "قيمة غير صالحة"
 
         if self.errors:
-            raise ValueError(self.errors)
+            
+            raise BusinessLogicException(self.errors)

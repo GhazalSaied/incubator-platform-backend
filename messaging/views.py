@@ -9,6 +9,7 @@ from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer, ConversationListSerializer
 from notifications.models import Notification
 from .pagination import MessagePagination
+from notifications.services.notification_service import NotificationService
 
 
 
@@ -83,7 +84,7 @@ class SendMessageAPIView(APIView):
         #  إرسال إشعارات لباقي المشاركين
         for user in conversation.participants.all():
             if user != request.user:
-                Notification.objects.create(
+                NotificationService.send(
                     user=user,
                     title="رسالة جديدة",
                     type="INFO",

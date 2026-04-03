@@ -11,6 +11,7 @@ from .serializers import (
     IdeaCreateUpdateSerializer,
     IdeaDetailSerializer,
     MyIdeaListSerializer,
+    TeamRequestSerializer,
 )
 from notifications.models import Notification
 from ideas.services.idea_validation import IdeaFormValidator
@@ -20,6 +21,9 @@ from bootcamp.serializers import BootcampSessionSerializer
 from bootcamp.models import BootcampSession
 from evaluations.models import IncubationReview
 from evaluations.serializers import IncubationReviewSerializer
+from volunteers.models import VolunteerProfile , ConsultationRequest
+from notifications.services.notification_service import NotificationService
+from ideas.services.idea_service import IdeaService
 
 
 #///////////////////////////GET CUURENT IDEA FORM /////////////////////////////////
@@ -44,49 +48,20 @@ class IdeaCreateAPIView(APIView):
     permission_classes = [CanSubmitIdea]
 
     def post(self, request):
-        #  تحقق من وجود موسم مفتوح
-        season = Season.objects.filter(is_open=True).first()
-        if not season or not hasattr(season, "form"):
-            return Response(
-                {"detail": "التقديم مغلق حالياً"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        #  Validate basic fields (title, description, answers)
 
         serializer = IdeaCreateUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        answers = serializer.validated_data.get("answers", {})
-
-        #  Dynamic Form Validation
-
         try:
-            validator = IdeaFormValidator(season.form, answers)
-            validator.validate()
+            idea = IdeaService.submit_idea(
+                user=request.user,
+                data=serializer.validated_data
+            )
         except ValueError as e:
             return Response(
-                {"errors": e.args[0]},
+                {"detail": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        #  Create Idea
-
-        idea = serializer.save(
-            owner=request.user,
-            season=season,
-            status=IdeaStatus.SUBMITTED
-        )
-
-        #  Notification
-
-        Notification.objects.create(
-            user=request.user,
-            title="تم استلام فكرتك",
-            message="تم إرسال فكرتك بنجاح وهي قيد المراجعة",
-            related_object_id=idea.id,
-            related_object_type="IDEA"
-        )
 
         return Response(
             IdeaDetailSerializer(idea).data,
@@ -101,37 +76,28 @@ class IdeaUpdateAPIView(APIView):
 
     def put(self, request, idea_id):
 
-        #  جلب الفكرة والتأكد من الملكية
         try:
             idea = Idea.objects.get(id=idea_id, owner=request.user)
         except Idea.DoesNotExist:
             return Response(
-                {"detail": "الفكرة غير موجودة أو لا تملك صلاحية تعديلها"},
+                {"detail": "الفكرة غير موجودة"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        #  التحقق من مرحلة الموسم
-        if not SeasonPhaseService.is_phase(SeasonPhase.SUBMISSION):
-            return Response(
-                {"detail": "لا يمكن تعديل الفكرة خارج مرحلة التقديم"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        #  التحقق من حالة الفكرة
-        if not idea.can_be_edited():
-            return Response(
-                {"detail": "لا يمكن تعديل الفكرة في حالتها الحالية"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        #  التعديل
         serializer = IdeaCreateUpdateSerializer(
-            idea,
             data=request.data,
             partial=True
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+
+        try:
+            idea = IdeaService.update_idea(
+                user=request.user,
+                idea=idea,
+                data=serializer.validated_data
+            )
+        except PermissionError as e:
+            return Response({"detail": str(e)}, status=403)
 
         return Response(
             IdeaDetailSerializer(idea).data,
@@ -145,35 +111,24 @@ class WithdrawIdeaView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, idea_id):
-        #  جلب الفكرة والتأكد من الملكية
+
         try:
             idea = Idea.objects.get(id=idea_id, owner=request.user)
         except Idea.DoesNotExist:
             return Response(
-                {"detail": "الفكرة غير موجودة أو لا تملك صلاحية الوصول إليها"},
+                {"detail": "الفكرة غير موجودة"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        #  التحقق من مرحلة الموسم
-        if not SeasonPhaseService.is_phase(SeasonPhase.SUBMISSION):
-            return Response(
-                {"detail": "لا يمكن سحب الفكرة خارج مرحلة التقديم"},
-                status=status.HTTP_403_FORBIDDEN
+        try:
+            IdeaService.withdraw_idea(
+                user=request.user,
+                idea=idea
             )
-
-        #  التحقق من حالة الفكرة
-        if idea.status not in [
-            IdeaStatus.DRAFT,
-            IdeaStatus.SUBMITTED
-        ]:
-            return Response(
-                {"detail": "لا يمكن سحب هذه الفكرة في حالتها الحالية"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        #  سحب الفكرة
-        idea.status = IdeaStatus.WITHDRAWN
-        idea.save()
+        except PermissionError as e:
+            return Response({"detail": str(e)}, status=403)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
 
         return Response(
             {"detail": "تم سحب الفكرة بنجاح"},
@@ -401,3 +356,81 @@ class UpdateExhibitionAPIView(APIView):
         idea.save()
 
         return Response({"detail": "تم تحديث بطاقة المشروع"})
+
+
+#//////////////////////////// CREATE TEAM REQUEST VIEW ////////////////////////
+
+class CreateTeamRequestAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        idea = Idea.objects.get(owner=request.user)
+
+        serializer = TeamRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        serializer.save(idea=idea)
+
+        return Response({
+            "detail": "طلبك قيد المراجعة"
+        })
+
+#/////////////////////////// SUGGESTED VOLUNTREES ///////////////////////////
+
+class SuggestedVolunteersAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        volunteers = VolunteerProfile.objects.filter(
+            status="APPROVED"
+        )
+
+        data = [
+            {
+                "name": v.user.full_name,
+                "email": v.user.email,
+                "role": v.volunteer_type
+            }
+            for v in volunteers
+        ]
+
+        return Response(data)
+
+#///////////////////////////////// IDEA TEAM //////////////////////////
+
+class IdeaTeamAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        idea = Idea.objects.get(owner=request.user)
+
+        current_team = [
+            {
+                "email": m.user.email,
+                "role": m.role
+            }
+            for m in idea.team_members.all()
+        ]
+
+        return Response({
+            "current_team": current_team
+        })
+
+
+#/////////////////////////// CONSULTANTS LIST ////////////////////////
+
+class ConsultantsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        volunteers = VolunteerProfile.objects.filter(status="APPROVED")
+
+        return Response([
+            {
+                "name": getattr(v.user, "full_name", v.user.email),
+                "email": v.user.email,
+                "specialization": v.volunteer_type,
+                "availability": v.availability_type
+            }
+            for v in volunteers
+        ])

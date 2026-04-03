@@ -6,12 +6,26 @@ User = settings.AUTH_USER_MODEL
 # //////////////////// IDEA STATUS //////////////////////
 
 class IdeaStatus(models.TextChoices):
-    DRAFT = 'DRAFT', 'Draft'
-    SUBMITTED = 'SUBMITTED', 'Submitted'
-    UNDER_REVIEW = 'UNDER_REVIEW', 'Under Review'
-    INCUBATED = 'INCUBATED', 'Incubated'
-    REJECTED = 'REJECTED', 'Rejected'
-    WITHDRAWN = 'WITHDRAWN', 'Withdrawn'
+    DRAFT = "draft", "Draft"
+    SUBMITTED = "submitted", "Submitted"
+
+    PRE_ACCEPTED = "pre_accepted", "Pre Accepted (Bootcamp)"
+
+    BOOTCAMP = "bootcamp", "In Bootcamp"
+    BOOTCAMP_FAILED = "bootcamp_failed", "Bootcamp Failed"
+
+    EVALUATION = "evaluation", "In Evaluation"
+    EVALUATED = "evaluated", "Evaluated"
+
+    ACCEPTED = "accepted", "Accepted"
+    REJECTED = "rejected", "Rejected"
+
+    INCUBATION = "incubation", "In Incubation"
+
+    EXHIBITION = "exhibition", "In Exhibition"
+
+    GRADUATED_POSITIVE = "graduated_positive", "Graduated (Positive)"
+    GRADUATED_NEGATIVE = "graduated_negative", "Graduated (Negative)"
 
 
 # ////////////////////// SEASONS /////////////////////////
@@ -46,7 +60,7 @@ class Idea(models.Model):
     description = models.TextField()
 
     status = models.CharField(
-        max_length=20,
+        max_length=50,
         choices=IdeaStatus.choices,
         default=IdeaStatus.DRAFT
     )
@@ -55,25 +69,7 @@ class Idea(models.Model):
     #  Dynamic form answers
 
     answers = models.JSONField(default=dict)
-    bootcamp_status = models.CharField(
-    max_length=20,
-    choices=[
-        ('pending', 'Pending'),
-        ('accepted', 'Accepted'),
-        ('rejected', 'Rejected'),
-    ],
-    default='pending'
-)
 
-    evaluation_status = models.CharField(
-    max_length=20,
-    choices=[
-        ('pending', 'Pending'),
-        ('accepted', 'Accepted'),
-        ('rejected', 'Rejected'),
-    ],
-    default='pending'
-)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -100,6 +96,7 @@ class Idea(models.Model):
     team_emails = models.TextField(null=True, blank=True)
 
     exhibition_date = models.DateTimeField(null=True, blank=True)
+
 
 
 # ////////////////////// FORM /////////////////////////
@@ -201,7 +198,48 @@ class TeamMember(models.Model):
     
     
     
-    
-from . import phases
+#///////////////////////////////// TEAM REQUEST ///////////////////////////////
 
-    
+class TeamRequest(models.Model):
+
+    idea = models.ForeignKey(
+        Idea,
+        on_delete=models.CASCADE,
+        related_name="team_requests"
+    )
+
+    title = models.CharField(max_length=255)
+
+    skill_required = models.CharField(max_length=255)
+
+    members_needed = models.PositiveIntegerField()
+
+    description = models.TextField()
+
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("PENDING", "Pending"),
+            ("APPROVED", "Approved"),
+        ],
+        default="PENDING"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+#////////////////////////  IDEA AUDIT LOG  ////////////////////////
+
+class IdeaAuditLog(models.Model):
+
+    idea = models.ForeignKey("Idea", on_delete=models.CASCADE, related_name="logs")
+
+    from_status = models.CharField(max_length=50)
+    to_status = models.CharField(max_length=50)
+
+    performed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
