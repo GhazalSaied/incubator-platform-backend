@@ -147,3 +147,9 @@ class EvaluatorDetailSerializer(serializers.Serializer):
     name = serializers.CharField(source="evaluator.full_name")
     specialty = serializers.CharField(source="evaluator.volunteer_profile.primary_skills")
     notes = serializers.CharField(allow_blank=True)
+    
+    
+
+
+class DecisionSerializer(serializers.Serializer):
+    message = serializers.CharField(required=True)

@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
-from ideas.models import Idea
-from incubator_admin.serializers.evaluation import IdeaEvaluationListSerializer,ScheduleEvaluationSerializer,CreateTemplateCriterionSerializer,EvaluationTemplatePreviewSerializer,IdeaEvaluationResultSerializer,EvaluatorDetailSerializer
+from ideas.models import Idea,IdeaStatus
+from incubator_admin.serializers.evaluation import IdeaEvaluationListSerializer,ScheduleEvaluationSerializer,CreateTemplateCriterionSerializer,EvaluationTemplatePreviewSerializer,IdeaEvaluationResultSerializer,EvaluatorDetailSerializer,DecisionSerializer
 from core.permissions import IsAdminOrSecretary
 from accounts.models import User
 from evaluations.models import IdeaEvaluator,IdeaEvaluatorRequest,EvaluationSession,EvaluationTemplate,EvaluationTemplateCriterion,EvaluationCriterion
@@ -445,4 +445,98 @@ class IdeaEvaluationDetailsView(APIView):
             "idea_name": idea.title,
             "evaluation_date": latest_date,
             "evaluators": serializer.data
+        })
+        
+        
+        
+#\\\\\اختبار اكتمال التقييم\\\
+def is_evaluation_completed(idea):
+    evaluations = idea.evaluations.all()
+
+    if not evaluations.exists():
+        return False
+
+    return not evaluations.filter(is_submitted=False).exists()
+
+#\\\\\القبول للاحتضان\\\\
+
+class AcceptIdeaView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+    def post(self, request, idea_id):
+
+        idea = get_object_or_404(Idea, id=idea_id)
+
+        # ❌ إذا في قرار سابق
+        if idea.evaluation_status != "pending":
+            return Response(
+                {"error": "تم اتخاذ قرار مسبقاً"},
+                status=400
+            )
+
+        # ❌ إذا التقييم مو مكتمل
+        if not is_evaluation_completed(idea):
+            return Response(
+                {"error": "التقييم لم يكتمل بعد"},
+                status=400
+            )
+
+        serializer = DecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # ✅ تحديث الحالة
+        idea.evaluation_status = "accepted"
+        idea.status = IdeaStatus.INCUBATED
+        idea.save()
+
+        # 📩 إشعار
+        idea.owner.notifications.create(
+            title="🎉 تم قبول فكرتك",
+            message=serializer.validated_data["message"]
+        )
+
+        return Response({
+            "message": "تم قبول الفكرة بنجاح"
+        })
+
+
+#\\\\\\رفض الاحتضان \\\
+class RejectIdeaView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+    def post(self, request, idea_id):
+
+        idea = get_object_or_404(Idea, id=idea_id)
+
+        # ❌ 1. منع القرار المكرر
+        if idea.evaluation_status != "pending":
+            return Response(
+                {"error": "تم اتخاذ قرار مسبقاً لهذه الفكرة"},
+                status=400
+            )
+
+        # ❌ 2. منع الرفض قبل اكتمال التقييم
+        if not is_evaluation_completed(idea):
+            return Response(
+                {"error": "لا يمكن رفض الفكرة قبل اكتمال التقييم"},
+                status=400
+            )
+
+        # ❌ 3. تحقق من الرسالة
+        serializer = DecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # 🔴 4. تحديث الحالة
+        idea.evaluation_status = "rejected"
+        idea.status = IdeaStatus.REJECTED
+        idea.save()
+
+        # 📩 5. إرسال إشعار
+        idea.owner.notifications.create(
+            title="تم رفض فكرتك",
+            message=serializer.validated_data["message"]  # 👈 حسب التعديل يلي عملتيه
+        )
+
+        return Response({
+            "message": "تم رفض الفكرة بنجاح"
         })
