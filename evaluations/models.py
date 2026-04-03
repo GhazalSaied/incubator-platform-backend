@@ -53,7 +53,7 @@ class Evaluation(BaseModel):
         null=True,
         blank=True
     )
-
+    notes = models.TextField(blank=True)
     is_submitted = models.BooleanField(default=False)
     submitted_at = models.DateTimeField(null=True, blank=True)
 
@@ -87,6 +87,7 @@ class EvaluationScore(BaseModel):
         null=True,
         blank=True
     )
+    
 
     class Meta:
         unique_together = ("evaluation", "criterion")
@@ -226,3 +227,8 @@ class EvaluationTemplateCriterion(models.Model):
 
     def __str__(self):
         return f"{self.template} - {self.criterion}"
+    
+    
+    
+    
+    

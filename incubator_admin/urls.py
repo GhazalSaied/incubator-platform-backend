@@ -8,7 +8,7 @@ from incubator_admin.views.bootcamp_session import  BootcampSessionCreateView,Bo
 from incubator_admin.views.bootcamp_attendance import IdeaAttendanceStatsView,SessionAttendanceListView,BootcampParticipantsView
 from incubator_admin.views.bootcamp_decision import BootcampDecisionView,BootcampIdeasListView
 from incubator_admin.views.bootcamp_absence import AbsenceRequestsListView,AbsenceDecisionView
-from incubator_admin.views.evaluation import IdeasForEvaluationView,VolunteersListView,AssignEvaluatorsView,EvaluatorsForIdeaView,IdeasForSchedulingView,ScheduleEvaluationView,CreateCriterionAndAttachToTemplateView,RemoveCriterionFromTemplateView,EvaluationTemplatePreviewView,PublishEvaluationTemplateView
+from incubator_admin.views.evaluation import IdeasForEvaluationView,VolunteersListView,AssignEvaluatorsView,EvaluatorsForIdeaView,IdeasForSchedulingView,ScheduleEvaluationView,CreateCriterionAndAttachToTemplateView,RemoveCriterionFromTemplateView,EvaluationTemplatePreviewView,PublishEvaluationTemplateView,EvaluationResultsListView,IdeaEvaluationDetailsView
 
 
 urlpatterns = [
@@ -44,5 +44,7 @@ urlpatterns = [
     path("evaluation/templates/<int:template_id>/remove-criterion/<int:criterion_id>/",RemoveCriterionFromTemplateView.as_view()),
     path("evaluation/templates/<int:template_id>/preview/",EvaluationTemplatePreviewView.as_view()),
     path("evaluation/templates/<int:template_id>/publish/",PublishEvaluationTemplateView.as_view()),
+    path("evaluation/results/", EvaluationResultsListView.as_view()),
+    path("evaluation/ideas/<int:idea_id>/details/",IdeaEvaluationDetailsView.as_view()),
 
 ]

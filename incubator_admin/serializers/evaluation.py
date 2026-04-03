@@ -94,3 +94,56 @@ class EvaluationTemplatePreviewSerializer(serializers.Serializer):
     description = serializers.CharField(source="criterion.description")
     max_score = serializers.IntegerField(source="criterion.max_score")
     order = serializers.IntegerField()
+    
+    
+
+
+class IdeaEvaluationResultSerializer(serializers.Serializer):
+    idea_id = serializers.IntegerField(source="id")
+    idea_name = serializers.CharField(source="title")
+    owner_email = serializers.CharField(source="owner.email")
+    sector = serializers.CharField()
+    evaluation_status = serializers.SerializerMethodField()
+    final_score = serializers.SerializerMethodField()
+
+    def get_evaluation_status(self, obj):
+
+        evaluations = obj.evaluations.all()
+
+        if not evaluations.exists():
+            return "لم يبدأ"
+
+        if evaluations.filter(is_submitted=False).exists():
+            return "يتم التقييم"
+
+        return "تم التقييم"
+
+    def get_final_score(self, obj):
+
+        evaluations = obj.evaluations.filter(is_submitted=True)
+
+        if not evaluations.exists():
+            return None
+
+        total = 0
+        count = 0
+
+        for evaluation in evaluations:
+            scores = evaluation.scores.all()
+            score_sum = sum([s.score or 0 for s in scores])
+
+            total += score_sum
+            count += 1
+
+        if count == 0:
+            return None
+
+        return round(total / count, 2)
+    
+    
+
+
+class EvaluatorDetailSerializer(serializers.Serializer):
+    name = serializers.CharField(source="evaluator.full_name")
+    specialty = serializers.CharField(source="evaluator.volunteer_profile.primary_skills")
+    notes = serializers.CharField(allow_blank=True)

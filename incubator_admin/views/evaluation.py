@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from ideas.models import Idea
-from incubator_admin.serializers.evaluation import IdeaEvaluationListSerializer,ScheduleEvaluationSerializer,CreateTemplateCriterionSerializer,EvaluationTemplatePreviewSerializer
+from incubator_admin.serializers.evaluation import IdeaEvaluationListSerializer,ScheduleEvaluationSerializer,CreateTemplateCriterionSerializer,EvaluationTemplatePreviewSerializer,IdeaEvaluationResultSerializer,EvaluatorDetailSerializer
 from core.permissions import IsAdminOrSecretary
 from accounts.models import User
 from evaluations.models import IdeaEvaluator,IdeaEvaluatorRequest,EvaluationSession,EvaluationTemplate,EvaluationTemplateCriterion,EvaluationCriterion
@@ -378,4 +378,71 @@ class PublishEvaluationTemplateView(APIView):
 
         return Response({
             "message": "تم نشر النموذج بنجاح"
+        })
+        
+        
+#\\\\عرض المشاريع ونتائج التقييم لاتخاذ القرار\\
+class EvaluationResultsListView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+    def get(self, request):
+
+        ideas = Idea.objects.all()
+
+        # 🔍 فلترة حسب القطاع
+        sector = request.query_params.get("sector")
+        if sector:
+            ideas = ideas.filter(sector=sector)
+
+        # 🔍 فلترة حسب الحالة
+        status_filter = request.query_params.get("status")
+
+        if status_filter:
+            filtered = []
+
+            for idea in ideas:
+                evaluations = idea.evaluations.all()
+
+                if status_filter == "completed":
+                    if evaluations.exists() and not evaluations.filter(is_submitted=False).exists():
+                        filtered.append(idea)
+
+                elif status_filter == "in_progress":
+                    if evaluations.filter(is_submitted=False).exists():
+                        filtered.append(idea)
+
+            ideas = filtered
+
+        serializer = IdeaEvaluationResultSerializer(ideas, many=True)
+
+        return Response(serializer.data)
+    
+    
+    
+#\\\\\\عرض التفاصيل بجدول النتائج \\\\
+class IdeaEvaluationDetailsView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+    def get(self, request, idea_id):
+
+        idea = get_object_or_404(Idea, id=idea_id)
+
+        evaluations = idea.evaluations.filter(is_submitted=True)
+
+        if not evaluations.exists():
+            return Response(
+                {"error": "لا يوجد تقييمات بعد"},
+                status=404
+            )
+
+        serializer = EvaluatorDetailSerializer(evaluations, many=True)
+
+        # 🟢 تاريخ آخر تقييم
+        latest_date = evaluations.order_by("-submitted_at").first().submitted_at
+
+        return Response({
+            "idea_id": idea.id,
+            "idea_name": idea.title,
+            "evaluation_date": latest_date,
+            "evaluators": serializer.data
         })
