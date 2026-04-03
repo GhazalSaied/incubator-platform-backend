@@ -69,3 +69,28 @@ class ScheduleEvaluationSerializer(serializers.Serializer):
 
         data["scheduled_at"] = scheduled_at
         return data
+    
+    
+    
+    
+
+
+
+
+class CreateTemplateCriterionSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    description = serializers.CharField(required=False, allow_blank=True)
+    max_score = serializers.IntegerField(default=5)
+    order = serializers.IntegerField(required=False)
+    
+    
+    
+    
+
+
+class EvaluationTemplatePreviewSerializer(serializers.Serializer):
+    id = serializers.IntegerField(source="criterion.id")
+    title = serializers.CharField(source="criterion.title")
+    description = serializers.CharField(source="criterion.description")
+    max_score = serializers.IntegerField(source="criterion.max_score")
+    order = serializers.IntegerField()

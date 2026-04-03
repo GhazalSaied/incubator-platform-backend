@@ -4,15 +4,15 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from ideas.models import Idea
-from incubator_admin.serializers.evaluation import IdeaEvaluationListSerializer,ScheduleEvaluationSerializer
+from incubator_admin.serializers.evaluation import IdeaEvaluationListSerializer,ScheduleEvaluationSerializer,CreateTemplateCriterionSerializer,EvaluationTemplatePreviewSerializer
 from core.permissions import IsAdminOrSecretary
 from accounts.models import User
-from evaluations.models import IdeaEvaluator,IdeaEvaluatorRequest,EvaluationSession
+from evaluations.models import IdeaEvaluator,IdeaEvaluatorRequest,EvaluationSession,EvaluationTemplate,EvaluationTemplateCriterion,EvaluationCriterion
 from notifications.models import Notification
 from django.db import models
 from rest_framework import status
 from django.db.models import Count, Q
-
+from django.shortcuts import get_object_or_404
 
 
 #\\\\\\عرض الافكار لتعيين مقيمين \\\\\
@@ -252,3 +252,97 @@ class ScheduleEvaluationView(APIView):
             "session_id": session.id,
             "scheduled_at": scheduled_at
         }, status=status.HTTP_201_CREATED)
+        
+        
+        
+#\\\\اضافة معيار لنموذج التقييم \\\\
+
+class CreateCriterionAndAttachToTemplateView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+    def post(self, request, template_id):
+
+        template = get_object_or_404(EvaluationTemplate, id=template_id)
+
+        # 🔒 LOCK
+        if template.is_published:
+            return Response(
+                {"error": "لا يمكن التعديل بعد نشر النموذج"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = CreateTemplateCriterionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # 🟢 إنشاء معيار جديد
+        criterion = EvaluationCriterion.objects.create(
+            title=serializer.validated_data["title"],
+            description=serializer.validated_data.get("description", ""),
+            max_score=serializer.validated_data.get("max_score", 5),
+        )
+
+        # 🟢 ربطه بالنموذج
+        EvaluationTemplateCriterion.objects.create(
+            template=template,
+            criterion=criterion,
+            order=serializer.validated_data.get("order", 0)
+        )
+
+        return Response({
+            "message": "تم إنشاء المعيار وربطه بالنموذج"
+        }, status=status.HTTP_201_CREATED)
+        
+        
+        
+#\\\\حذف معيار من نموذج التقييم\\\
+class RemoveCriterionFromTemplateView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+    def delete(self, request, template_id, criterion_id):
+
+        template = get_object_or_404(EvaluationTemplate, id=template_id)
+
+        # 🔒 LOCK
+        if template.is_published:
+            return Response(
+                {"error": "لا يمكن التعديل بعد نشر النموذج"},
+                status=400
+            )
+
+        obj = EvaluationTemplateCriterion.objects.filter(
+            template=template,
+            criterion_id=criterion_id
+        ).first()
+
+        if not obj:
+            return Response(
+                {"error": "المعيار غير موجود في هذا النموذج"},
+                status=404
+            )
+
+        obj.delete()
+
+        return Response({
+            "message": "تم حذف المعيار من النموذج فقط"
+        })
+        
+        
+        
+#\\\\\معاينة النموذج \\\\
+class EvaluationTemplatePreviewView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+    def get(self, request, template_id):
+
+        template = get_object_or_404(EvaluationTemplate, id=template_id)
+
+        criteria = template.criteria.all()  # مرتب تلقائي بسبب ordering
+
+        serializer = EvaluationTemplatePreviewSerializer(criteria, many=True)
+
+        return Response({
+            "template_id": template.id,
+            "title": template.title,
+            "is_published": template.is_published,
+            "criteria": serializer.data
+        })

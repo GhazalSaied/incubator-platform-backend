@@ -188,3 +188,41 @@ class EvaluationSession(models.Model):
 
     def __str__(self):
         return f"{self.idea.title} - {self.scheduled_at}"
+    
+    
+    
+#\\\\نموذج التقييم\\\
+class EvaluationTemplate(models.Model):
+    title = models.CharField(max_length=255)
+
+    is_published = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+    
+    
+    
+    
+#\\\\ربط النموذج مع المعايير \\\\
+class EvaluationTemplateCriterion(models.Model):
+    template = models.ForeignKey(
+        EvaluationTemplate,
+        on_delete=models.CASCADE,
+        related_name="criteria"
+    )
+
+    criterion = models.ForeignKey(
+        EvaluationCriterion,
+        on_delete=models.CASCADE
+    )
+
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ("template", "criterion")
+        ordering = ["order"]
+
+    def __str__(self):
+        return f"{self.template} - {self.criterion}"
