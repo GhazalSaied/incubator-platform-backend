@@ -10,6 +10,8 @@ from accounts.models import User
 from evaluations.models import IdeaEvaluator,IdeaEvaluatorRequest
 from notifications.models import Notification
 from django.db import models
+from rest_framework import status
+from django.db.models import Count, Q
 
 
 
@@ -153,3 +155,39 @@ class EvaluatorsForIdeaView(APIView):
         ]
 
         return Response(data)
+    
+    
+#\\\\عرض الافكار لتحديد موعد اللجنة \\\
+class IdeasForSchedulingView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+    def get(self, request):
+
+        queryset = Idea.objects.filter(
+            bootcamp_status="accepted"
+        ).annotate(
+            accepted_evaluators_count=Count(
+                "assigned_evaluators",
+                filter=Q(assigned_evaluators__status="accepted")
+            )
+        ).filter(
+            accepted_evaluators_count__gt=0
+        )
+
+        # 🔍 فلترة حسب القطاع
+        sector = request.query_params.get("sector")
+        if sector:
+            queryset = queryset.filter(sector=sector)
+
+        # 🔍 فلترة اختيارية حسب عدد المقيمين
+        min_evaluators = request.query_params.get("min_evaluators")
+        if min_evaluators:
+            queryset = queryset.filter(
+                accepted_evaluators_count__gte=min_evaluators
+            )
+
+        queryset = queryset.order_by("-created_at")
+
+        serializer = IdeaEvaluationListSerializer(queryset, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
