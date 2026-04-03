@@ -346,3 +346,36 @@ class EvaluationTemplatePreviewView(APIView):
             "is_published": template.is_published,
             "criteria": serializer.data
         })
+        
+#\\\\نشر نموذج التقييم\\\
+class PublishEvaluationTemplateView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+    def post(self, request, template_id):
+
+        template = get_object_or_404(EvaluationTemplate, id=template_id)
+
+        # ❌ إذا منشور مسبقاً
+        if template.is_published:
+            return Response(
+                {"error": "النموذج منشور مسبقاً"},
+                status=400
+            )
+
+        # ❌ لازم يكون فيه معايير
+        if template.criteria.count() == 0:
+            return Response(
+                {"error": "لا يمكن نشر نموذج بدون معايير"},
+                status=400
+            )
+
+        # 🔥 مهم جداً: إلغاء نشر أي نموذج سابق
+        EvaluationTemplate.objects.filter(is_published=True).update(is_published=False)
+
+        # ✅ نشر الحالي
+        template.is_published = True
+        template.save()
+
+        return Response({
+            "message": "تم نشر النموذج بنجاح"
+        })
