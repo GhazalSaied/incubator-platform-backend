@@ -4,10 +4,10 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from ideas.models import Idea
-from incubator_admin.serializers.evaluation import IdeaEvaluationListSerializer
+from incubator_admin.serializers.evaluation import IdeaEvaluationListSerializer,ScheduleEvaluationSerializer
 from core.permissions import IsAdminOrSecretary
 from accounts.models import User
-from evaluations.models import IdeaEvaluator,IdeaEvaluatorRequest
+from evaluations.models import IdeaEvaluator,IdeaEvaluatorRequest,EvaluationSession
 from notifications.models import Notification
 from django.db import models
 from rest_framework import status
@@ -191,3 +191,64 @@ class IdeasForSchedulingView(APIView):
         serializer = IdeaEvaluationListSerializer(queryset, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+    
+    
+#\\\\تحديد  موعد اللجنة\\\\
+class ScheduleEvaluationView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+    def post(self, request, idea_id):
+
+        # ✅ جلب الفكرة
+        try:
+            idea = Idea.objects.get(id=idea_id)
+        except Idea.DoesNotExist:
+            return Response({"error": "الفكرة غير موجودة"}, status=404)
+
+        # ✅ Serializer مع context
+        serializer = ScheduleEvaluationSerializer(
+            data=request.data,
+            context={"idea": idea}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        scheduled_at = serializer.validated_data["scheduled_at"]
+
+        # ✅ إنشاء الجلسة
+        session = EvaluationSession.objects.create(
+            idea=idea,
+            scheduled_at=scheduled_at,
+            created_by=request.user
+        )
+
+        # 🟢 جلب المقيمين المقبولين
+        evaluators = idea.assigned_evaluators.filter(status="accepted")
+
+        evaluator_users = [item.evaluator for item in evaluators]
+
+        # 🟢 إشعار صاحب الفكرة
+        Notification.objects.create(
+            user=idea.owner,
+            title="تم تحديد موعد التقييم",
+            message=f"تم تحديد موعد تقييم فكرتك ({idea.title}) بتاريخ {scheduled_at}"
+        )
+
+        # 🟢 إشعارات المقيمين
+        notifications = [
+            Notification(
+                user=user,
+                title="موعد تقييم جديد",
+                message=f"لديك جلسة تقييم لفكرة ({idea.title}) بتاريخ {scheduled_at}"
+            )
+            for user in evaluator_users
+        ]
+
+        Notification.objects.bulk_create(notifications)
+
+        return Response({
+            "message": "تم تحديد الموعد بنجاح",
+            "session_id": session.id,
+            "scheduled_at": scheduled_at
+        }, status=status.HTTP_201_CREATED)

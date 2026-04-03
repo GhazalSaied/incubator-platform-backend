@@ -164,3 +164,27 @@ class IdeaEvaluatorRequest(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
+    
+#\\\\\جلسة التقييم \\\\
+class EvaluationSession(models.Model):
+    idea = models.ForeignKey(
+        "ideas.Idea",
+        on_delete=models.CASCADE,
+        related_name="evaluation_sessions"
+    )
+
+    scheduled_at = models.DateTimeField()
+
+    created_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-scheduled_at"]
+
+    def __str__(self):
+        return f"{self.idea.title} - {self.scheduled_at}"
