@@ -10,6 +10,9 @@ from accounts.models import User
 from evaluations.models import IdeaEvaluator,IdeaEvaluatorRequest
 from notifications.models import Notification
 from django.db import models
+
+
+
 #\\\\\\عرض الافكار لتعيين مقيمين \\\\\
 class IdeasForEvaluationView(APIView):
     permission_classes = [IsAuthenticated, IsAdminOrSecretary]
@@ -125,3 +128,28 @@ class AssignEvaluatorsView(APIView):
             "users": created_requests
         }, status=status.HTTP_200_OK)
 
+
+
+#\\\\\\\المقيمين للفكرة\\\
+class EvaluatorsForIdeaView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+    def get(self, request, idea_id):
+
+        try:
+            idea = Idea.objects.get(id=idea_id)
+        except Idea.DoesNotExist:
+            return Response({"error": "Idea not found"}, status=404)
+
+        evaluators = idea.assigned_evaluators.filter(status="accepted")
+
+        data = [
+            {
+                "id": item.evaluator.id,
+                "name": item.evaluator.full_name,
+                "skills": getattr(item.evaluator.volunteer_profile, "primary_skills", "")
+            }
+            for item in evaluators
+        ]
+
+        return Response(data)

@@ -8,7 +8,7 @@ from incubator_admin.views.bootcamp_session import  BootcampSessionCreateView,Bo
 from incubator_admin.views.bootcamp_attendance import IdeaAttendanceStatsView,SessionAttendanceListView,BootcampParticipantsView
 from incubator_admin.views.bootcamp_decision import BootcampDecisionView,BootcampIdeasListView
 from incubator_admin.views.bootcamp_absence import AbsenceRequestsListView,AbsenceDecisionView
-from incubator_admin.views.evaluation import IdeasForEvaluationView,VolunteersListView,AssignEvaluatorsView
+from incubator_admin.views.evaluation import IdeasForEvaluationView,VolunteersListView,AssignEvaluatorsView,EvaluatorsForIdeaView
 
 
 urlpatterns = [
@@ -37,5 +37,6 @@ urlpatterns = [
     path("evaluation/ideas/", IdeasForEvaluationView.as_view()),
     path("ideas/<int:idea_id>/assign/", AssignEvaluatorsView.as_view()),
     path("volunteers/", VolunteersListView.as_view()),
+    path("evaluation/ideas/<int:idea_id>/evaluators/",EvaluatorsForIdeaView.as_view()),
 
 ]
