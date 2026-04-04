@@ -11,12 +11,14 @@ class MyNotificationsAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        notifications = Notification.objects.filter(
-            user=request.user
-        ).order_by("-created_at")
 
-        serializer = NotificationSerializer(notifications, many=True)
-        return Response(serializer.data)
+        from notifications.services.notification_service import NotificationService
+
+        notifications = NotificationService.get_user_notifications(request.user)
+
+        return Response(
+            NotificationSerializer(notifications, many=True).data
+        )
     
 #///////////////////////////////// MARK AS READ /////////////////////////////
 
@@ -24,16 +26,13 @@ class MarkNotificationAsReadAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, notification_id):
+
+        from notifications.services.notification_service import NotificationService
+
         try:
-            notification = Notification.objects.get(
-                id=notification_id,
-                user=request.user
-            )
+            NotificationService.mark_as_read(request.user, notification_id)
         except Notification.DoesNotExist:
             return Response({"detail": "Not found"}, status=404)
-
-        notification.is_read = True
-        notification.save()
 
         return Response({"detail": "Marked as read"})
     
@@ -42,41 +41,27 @@ class MarkNotificationAsReadAPIView(APIView):
 class MarkAllNotificationsReadAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
-        Notification.objects.filter(
-            user=request.user,
-            is_read=False
-        ).update(is_read=True)
+    def post(self, request,notification_id ):
+
+        from notifications.services.notification_service import NotificationService
+
+        NotificationService.mark_all_as_read(request.user, notification_id)
 
         return Response({"detail": "All marked as read"})
 
-#////////////////////////////// UNREAD NOTIFICATION COUNT /////////////////////
 
-class UnreadNotificationsCountAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        count = Notification.objects.filter(
-            user=request.user,
-            is_read=False
-        ).count()
-
-        return Response({"unread_notifications": count})
     
-#///////////////////////////////// NOTIFIACTION BADGE /////////////////////
+#///////////////////////////////// NOTIFIACTION BADGE (UNREAD NOTIFICATION )/////////////////////
 
 class NotificationBadgeAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        unread_count = Notification.objects.filter(
-            user=request.user,
-            is_read=False
-        ).count()
 
-        return Response({
-            "has_unread": unread_count > 0,
-            "count": unread_count
-        })
+        from notifications.services.notification_service import NotificationService
+
+        data = NotificationService.get_unread_data(request.user)
+
+        return Response(data)
 
 

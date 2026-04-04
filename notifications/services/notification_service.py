@@ -6,6 +6,8 @@ User = get_user_model()
 
 class NotificationService:
 
+    # /////////////////////////// SEND NOTIFICATION //////////////////
+
     @staticmethod
     def send(
         user,
@@ -40,7 +42,7 @@ class NotificationService:
             related_object_type=related_object_type,
         )
 
-        # 🔥 Future Hook (لا تحذف!)
+        #  Future Hook (لا تحذف!)
         NotificationService._dispatch(notification)
 
         return notification
@@ -64,7 +66,64 @@ class NotificationService:
     # --------------------------------------
 
     @staticmethod
-    def mark_as_read(notification: Notification):
+    def get_user_notifications(user):
+        """
+        جميع إشعارات المستخدم
+        """
+        return Notification.objects.filter(user=user).order_by("-created_at")
+
+    # --------------------------------------
+
+    @staticmethod
+    def mark_as_read(user, notification_id):
+        """
+        تعليم إشعار واحد كمقروء
+        """
+        notification = Notification.objects.get(
+            id=notification_id,
+            user=user
+        )
+
+        NotificationService._mark_single_as_read(notification)
+
+        return notification
+
+    # --------------------------------------
+
+    @staticmethod
+    def mark_all_as_read(user):
+        """
+        تعليم كل الإشعارات كمقروءة
+        """
+        Notification.objects.filter(
+            user=user,
+            is_read=False
+        ).update(is_read=True)
+
+    # --------------------------------------
+
+    @staticmethod
+    def get_unread_data(user):
+        """
+        عدد الإشعارات غير المقروءة + هل يوجد
+        """
+        unread_count = Notification.objects.filter(
+            user=user,
+            is_read=False
+        ).count()
+
+        return {
+            "count": unread_count,
+            "has_unread": unread_count > 0
+        }
+
+    # --------------------------------------
+
+    @staticmethod
+    def _mark_single_as_read(notification: Notification):
+        """
+        internal helper (لا تستخدم خارج السيرفيس)
+        """
         notification.is_read = True
         notification.save(update_fields=["is_read"])
 

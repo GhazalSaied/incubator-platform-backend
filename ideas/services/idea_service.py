@@ -99,3 +99,141 @@ class IdeaService:
         )
 
         return idea
+
+#//////////////////////// GET USER IDEA //////////////////
+
+    @staticmethod
+    def get_user_idea(user):
+        from ideas.models import Idea
+
+        try:
+            return Idea.objects.get(owner=user)
+        except Idea.DoesNotExist:
+            raise ValueError("لا يوجد فكرة")
+
+#///////////////////// INCUBATION DATA ////////////////////
+
+    @staticmethod
+    def get_incubation_data(user):
+
+        idea = IdeaService.get_user_idea(user)
+
+        if idea.status != IdeaStatus.INCUBATED:
+            raise ValueError("لم يتم الاحتضان بعد")
+
+        reviews = idea.reviews.order_by("-meeting_date")
+
+        from evaluations.serializers import IncubationReviewSerializer
+
+        return {
+            "phase": "INCUBATION",
+            "warning": "عدم تحقيق تقدم قد يؤدي لإنهاء الاحتضان",
+            "next_review": IncubationReviewSerializer(reviews.first()).data if reviews else None,
+            "reviews": IncubationReviewSerializer(reviews, many=True).data,
+            "can_request_consultation": True
+        }
+
+
+#///////////////////// EXHIBITION  DATA ////////////////////
+
+    @staticmethod
+    def get_exhibition_data(user):
+
+        idea = IdeaService.get_user_idea(user)
+
+        return {
+            "phase": "EXHIBITION",
+            "message": "يرجى تجهيز بطاقة المشروع للمعرض",
+            "exhibition_date": idea.exhibition_date,
+            "data": {
+                "title": idea.title,
+                "image": idea.exhibition_image,
+                "project_goal": idea.project_goal,
+                "project_services": idea.project_services,
+                "owner_email": idea.owner.email,
+                "team": [
+                    {
+                        "email": m.user.email,
+                        "role": m.role
+                    }
+                    for m in idea.team_members.all()
+                ]
+            }
+        }
+
+#///////////////////// UPDATE EXHIBITION ////////////////////
+
+@staticmethod
+def update_exhibition(user, data, files):
+
+    idea = IdeaService.get_user_idea(user)
+
+    from ideas.serializers import ExhibitionSerializer
+
+    serializer = ExhibitionSerializer(
+        idea,
+        data=data,
+        partial=True
+    )
+    serializer.is_valid(raise_exception=True)
+
+    idea = serializer.save()
+
+    # image handling
+    if "exhibition_image" in files:
+        idea.exhibition_image = files["exhibition_image"]
+        idea.save()
+
+    return idea
+
+#////////////////////// CREATE TEAM REQUEST /////////////////////
+
+    @staticmethod
+    def create_team_request(user, data):
+
+        idea = IdeaService.get_user_idea(user)
+
+        from ideas.serializers import TeamRequestSerializer
+
+        serializer = TeamRequestSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+
+        return serializer.save(idea=idea)
+    
+
+#////////////////////////// SUGGESTED VOLUNTEERS ////////////////////////
+
+@staticmethod
+def get_suggested_volunteers():
+
+    from volunteers.models import VolunteerProfile
+
+    volunteers = VolunteerProfile.objects.filter(status="APPROVED")
+
+    return [
+        {
+            "name": v.user.full_name,
+            "email": v.user.email,
+            "role": v.volunteer_type
+        }
+        for v in volunteers
+    ]
+
+#//////////////////////// GET CONSULTANTS //////////////////
+
+@staticmethod
+def get_consultants():
+
+    from volunteers.models import VolunteerProfile
+
+    volunteers = VolunteerProfile.objects.filter(status="APPROVED")
+
+    return [
+        {
+            "name": getattr(v.user, "full_name", v.user.email),
+            "email": v.user.email,
+            "specialization": v.volunteer_type,
+            "availability": v.availability_type
+        }
+        for v in volunteers
+    ]

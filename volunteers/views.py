@@ -29,6 +29,8 @@ from core.permissions import IsVolunteer
 from ideas.models import TeamMember
 from notifications.services.notification_service import NotificationService
 
+
+
 #/////////////////////////// VOLUNTEER APPLY ///////////////////////
 
 class VolunteerApplyAPIView(APIView):
@@ -60,7 +62,7 @@ class VolunteerProfileAPIView(APIView):
     def get(self, request):
         return Response(
             VolunteerProfileSerializer(
-                request.user.VolunteerProfile
+                request.user.Volunteer_Profile
             ).data
         )
 
@@ -97,7 +99,7 @@ class VolunteerAvailabilityAPIView(APIView):
 
         for item in serializer.validated_data:
             VolunteerAvailability.objects.create(
-                volunteer=request.user.volunteer_profile
+                volunteer=request.user.volunteer_profile,
                 **item
             )
 
@@ -233,146 +235,77 @@ class ConsultationRequestDecisionAPIView(APIView):
     permission_classes = [IsAuthenticated, IsVolunteer]
 
     def post(self, request, request_id):
+
         action = request.data.get("action")
 
         if action not in ["accept", "reject"]:
             return Response({"detail": "إجراء غير صالح"}, status=400)
 
-        consultation = get_object_or_404(
-            ConsultationRequest,
-            id=request_id,
-            volunteer=request.user.volunteer_profile
-        )
+        from volunteers.services.volunteer_service import VolunteerService
 
-        if action == "accept":
-            consultation.status = ConsultationRequest.ACCEPTED
-
-            #  إنشاء محادثة
-            conversation = Conversation.objects.create()
-            conversation.participants.add(
-                request.user,
-                consultation.requester
+        try:
+            consultation = VolunteerService.handle_consultation_decision(
+                user=request.user,
+                request_id=request_id,
+                action=action
             )
-
-            #  اشعار
-            NotificationService.send(
-                user=consultation.requester,
-                title="تم قبول طلبك",
-                message="تم قبول طلبك من قبل المتطوع",
-                type="SUCCESS",
-                related_object_id=consultation.id,
-                related_object_type="consultation",
-                action_url=f"/chat/{conversation.id}"
-            )
-
-            #  JOIN → إضافة للفريق
-            if consultation.request_type == ConsultationRequest.JOIN:
-                TeamMember.objects.create(
-                    idea=consultation.idea,
-                    user=request.user
-                )
-
-        else:
-            consultation.status = ConsultationRequest.REJECTED
-
-            NotificationService.send(
-                user=consultation.requester,
-                title="تم رفض طلبك",
-                message="تم رفض طلبك من قبل المتطوع",
-                type="WARNING",
-                related_object_id=consultation.id,
-                related_object_type="consultation"
-            )
-
-        consultation.save()
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
 
         return Response(ConsultationRequestSerializer(consultation).data)
+    
+
 #/////////////////////////////// VOLUNTEER DASHBOARD VIEW //////////////////////////////////////////////
 
 class VolunteerDashboardAPIView(APIView):
     permission_classes = [IsAuthenticated, IsVolunteer]
 
     def get(self, request):
-        profile = request.user.volunteer_profile
 
-        availability = VolunteerAvailability.objects.filter(
-            volunteer=profile
-        ).order_by("day")
+        from volunteers.services.volunteer_service import VolunteerService
 
-        consultations = ConsultationRequest.objects.filter(
-            volunteer=profile
-        )
+        try:
+            data = VolunteerService.get_dashboard(request.user)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
 
-        data = {
-            "profile": VolunteerProfileSerializer(profile).data,
+        return Response({
+            "profile": VolunteerProfileSerializer(data["profile"]).data,
             "availability": VolunteerAvailabilitySerializer(
-                availability,
-                many=True
+                data["availability"], many=True
             ).data,
-            "consultations": {
-                "pending": consultations.filter(
-                    status=ConsultationRequest.PENDING
-                ).count(),
-                "accepted": consultations.filter(
-                    status=ConsultationRequest.ACCEPTED
-                ).count(),
-                "rejected": consultations.filter(
-                    status=ConsultationRequest.REJECTED
-                ).count(),
-            }
-        }
-
-        return Response(data)
+            "consultations": data["consultations"]
+        })
 
 
-#//////////////////////////////////  VOLUNTEER ALL REQUESTS  /////////////////////////////////////////
+#//////////////////////////////////  VOLUNTEER REQUESTS  /////////////////////////////////////////
 
-class VolunteerAllRequestsAPIView(APIView):
+class VolunteerRequestsAPIView(APIView):
     permission_classes = [IsAuthenticated, IsVolunteer]
 
     def get(self, request):
         profile = request.user.volunteer_profile
 
-        consultations = ConsultationRequest.objects.filter(
-            volunteer=profile
-        )
+        request_type = request.query_params.get("type")
 
-        joins = VolunteerJoinRequest.objects.filter(
-            volunteer=profile
-        )
+        consultations = profile.consultation_requests.all()
+        joins = profile.join_requests.all()
+
+        if request_type == "consultation":
+            return Response({
+                "consultations": ConsultationRequestSerializer(consultations, many=True).data
+            })
+
+        elif request_type == "join":
+            return Response({
+                "join_requests": VolunteerJoinRequestSerializer(joins, many=True).data
+            })
 
         return Response({
             "consultations": ConsultationRequestSerializer(consultations, many=True).data,
             "join_requests": VolunteerJoinRequestSerializer(joins, many=True).data,
         })
     
-#//////////////////////////////////// ONLY CONSULTATION REQUESTS /////////////////////////////////////////////
-
-class VolunteerConsultationRequestsAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsVolunteer]
-
-    def get(self, request):
-        profile = request.user.volunteer_profile
-
-        requests = profile.consultation_requests.all().order_by("-created_at")
-
-        return Response(
-            ConsultationRequestSerializer(requests, many=True).data
-        )
-    
-#/////////////////////////////////// ONLY JOIN REQUESTS  ///////////////////////////////////////////
-
-class VolunteerJoinRequestsAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsVolunteer]
-
-    def get(self, request):
-        profile = request.user.volunteer_profile
-
-        requests = profile.join_requests.all().order_by("-created_at")
-
-        return Response(
-            VolunteerJoinRequestSerializer(requests, many=True).data
-        )
     
 #//////////////////////////// CREATE CONSULTATION REQUEST /////////////////////////////////////////
 
