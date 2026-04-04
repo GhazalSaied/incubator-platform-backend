@@ -62,3 +62,16 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.title}"
+
+#/////////////////////// NOTIFICATION TEMPLATE /////////////////////////
+
+class NotificationTemplate(models.Model):
+    code = models.CharField(max_length=100, unique=True)
+
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.code

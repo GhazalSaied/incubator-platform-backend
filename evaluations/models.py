@@ -87,7 +87,6 @@ class EvaluationScore(BaseModel):
         null=True,
         blank=True
     )
-    
 
     class Meta:
         unique_together = ("evaluation", "criterion")
@@ -120,115 +119,87 @@ class IncubationReview(BaseModel):
     def __str__(self):
         return f"{self.idea} - {self.meeting_date}"
 
-#\\\\\\ IDEA EVALUATTOR\\\\\\
 
-class IdeaEvaluator(BaseModel):
-    idea = models.ForeignKey(
-        Idea,
-        on_delete=models.CASCADE,
-        related_name="assigned_evaluators"
+#///////////////////////// EVALUATION INVITATION /////////////////////////
+
+class EvaluationInvitation(BaseModel):
+    """
+    دعوة لمتطوع ليصبح مقيم ضمن لجنة تقييم
+    """
+
+    STATUS_CHOICES = (
+        ("PENDING", "Pending"),
+        ("ACCEPTED", "Accepted"),
+        ("REJECTED", "Rejected"),
     )
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="evaluation_invitations"
+    )
+
+    season = models.ForeignKey(
+        Season,
+        on_delete=models.CASCADE,
+        related_name="evaluation_invitations"
+    )
+
+    expertise_field = models.CharField(max_length=255)
+
+    meeting_date = models.DateTimeField()
+
+    expected_duration = models.CharField(max_length=255)
+
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default="PENDING"
+    )
+
+    responded_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user} - {self.season}"
+    
+
+#//////////////////////////// EVALUATION ASSIGNMENT ///////////////////////
+
+class EvaluationAssignment(BaseModel):
+    """
+    ربط المقيم مع فكرة لتقييمها
+    """
 
     evaluator = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="assigned_ideas"
+        related_name="assigned_evaluations"
     )
 
-    status = models.CharField(
-        max_length=20,
-        choices=[
-            ("pending", "Pending"),
-            ("accepted", "Accepted"),
-            ("rejected", "Rejected"),
-        ],
-        default="pending"
-    )
-
-    class Meta:
-        unique_together = ("idea", "evaluator")
-        
-        
-#\\\\\\\طلب انضمام للتقييم \\\\
-class IdeaEvaluatorRequest(models.Model):
-    idea = models.ForeignKey(Idea, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-
-    status = models.CharField(
-        max_length=20,
-        choices=[
-            ("pending", "Pending"),
-            ("accepted", "Accepted"),
-            ("rejected", "Rejected"),
-        ],
-        default="pending"
-    )
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-#\\\\\جلسة التقييم \\\\
-class EvaluationSession(models.Model):
     idea = models.ForeignKey(
-        "ideas.Idea",
+        Idea,
         on_delete=models.CASCADE,
-        related_name="evaluation_sessions"
+        related_name="evaluation_assignments"
     )
 
-    scheduled_at = models.DateTimeField()
-
-    created_by = models.ForeignKey(
-        "accounts.User",
-        on_delete=models.SET_NULL,
-        null=True
+    season = models.ForeignKey(
+        Season,
+        on_delete=models.CASCADE,
+        related_name="evaluation_assignments"
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    invitation = models.ForeignKey(
+        EvaluationInvitation,
+        on_delete=models.CASCADE,
+        related_name="assignments"
+    )
+
+    meeting_date = models.DateTimeField()
+
+    is_completed = models.BooleanField(default=False)
 
     class Meta:
-        ordering = ["-scheduled_at"]
+        unique_together = ("evaluator", "idea")
 
     def __str__(self):
-        return f"{self.idea.title} - {self.scheduled_at}"
-    
-    
-    
-#\\\\نموذج التقييم\\\
-class EvaluationTemplate(models.Model):
-    title = models.CharField(max_length=255)
-
-    is_published = models.BooleanField(default=False)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.title
-    
-    
-    
-    
-#\\\\ربط النموذج مع المعايير \\\\
-class EvaluationTemplateCriterion(models.Model):
-    template = models.ForeignKey(
-        EvaluationTemplate,
-        on_delete=models.CASCADE,
-        related_name="criteria"
-    )
-
-    criterion = models.ForeignKey(
-        EvaluationCriterion,
-        on_delete=models.CASCADE
-    )
-
-    order = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        unique_together = ("template", "criterion")
-        ordering = ["order"]
-
-    def __str__(self):
-        return f"{self.template} - {self.criterion}"
-    
-    
-    
-    
-    
+        return f"{self.evaluator} - {self.idea}"

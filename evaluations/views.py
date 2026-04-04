@@ -1,82 +1,160 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404
 
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
 
-from .models import Evaluation
+from django.utils import timezone
+from django.core.exceptions import ValidationError
+
+from .models import EvaluationInvitation, EvaluationCriterion
 from .serializers import EvaluationSerializer
 from ideas.models import Idea
+from .services.evaluation_service import EvaluationService
 
 
-
-#////////////////////////////////  CRAETE OR EDIT EVALUATION ////////////////////////
-
+# ////////////////////////////////// CREATE OR UPDATE EVALUATION //////////////////////////////////
 
 class EvaluationCreateUpdateAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, idea_id):
-        idea = Idea.objects.get(id=idea_id)
+        idea = get_object_or_404(Idea, id=idea_id)
 
-        evaluation, created = Evaluation.objects.get_or_create(
-            evaluator=request.user,
-            idea=idea,
-            defaults={
-                "score": request.data.get("score", 0),
-                "notes": request.data.get("notes", "")
-            }
-        )
-
-        if not created and evaluation.is_submitted:
-            return Response(
-                {"detail": "لا يمكن تعديل تقييم تم إرساله"},
-                status=status.HTTP_400_BAD_REQUEST
+        try:
+            evaluation = EvaluationService.create_or_update_evaluation(
+                user=request.user,
+                idea=idea,
+                data=request.data
             )
+        except ValidationError as e:
+            return Response({"detail": str(e)}, status=400)
 
-        serializer = EvaluationSerializer(
-            evaluation,
-            data=request.data,
-            partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
+        serializer = EvaluationSerializer(evaluation)
         return Response(serializer.data)
-    
-#////////////////////// EVALUATION SUBMIT ////////////////////////////////////
 
+
+# ////////////////////////////////// SUBMIT EVALUATION //////////////////////////////////
 
 class EvaluationSubmitAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, idea_id):
-        evaluation = Evaluation.objects.get(
-            evaluator=request.user,
-            idea_id=idea_id
+        idea = get_object_or_404(Idea, id=idea_id)
+
+        try:
+            EvaluationService.submit_evaluation(
+                user=request.user,
+                idea=idea
+            )
+        except ValidationError as e:
+            return Response({"detail": str(e)}, status=400)
+
+        return Response({"detail": "تم إرسال التقييم بنجاح"})
+
+
+# ////////////////////////////////// RESPOND TO INVITATION //////////////////////////////////
+
+class RespondToInvitationAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, invitation_id):
+        invitation = get_object_or_404(
+            EvaluationInvitation,
+            id=invitation_id,
+            user=request.user
         )
 
-        evaluation.is_submitted = True
-        evaluation.save()
+        action = request.data.get("action")
 
-        return Response(
-            {"detail": "تم إرسال التقييم بنجاح"},
-            status=status.HTTP_200_OK
+        if invitation.status != "PENDING":
+            return Response({"detail": "تم الرد مسبقاً"}, status=400)
+
+        invitation.status = "ACCEPTED" if action == "accept" else "REJECTED"
+        invitation.responded_at = timezone.now()
+        invitation.save()
+
+        return Response({"detail": "تم تحديث الحالة"})
+
+
+# ////////////////////////////////// MY ASSIGNMENTS //////////////////////////////////
+
+class MyAssignmentsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        data = EvaluationService.get_user_assignments_data(request.user)
+        return Response(data)
+
+
+# ////////////////////////////////// ASSIGNMENT DETAIL //////////////////////////////////
+
+class AssignmentDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, assignment_id):
+        assignment = EvaluationService.get_assignment_detail(
+            request.user,
+            assignment_id
         )
 
+        idea = assignment.idea
 
-#/////////////////////////// PREVIOUS EVALUATIONS //////////////////////////////
+        data = {
+            "title": idea.title,
+            "description": idea.description,
+            "sector": idea.category,
+            "meeting_date": assignment.meeting_date,
+        }
+
+        return Response(data)
 
 
-class MyEvaluationsAPIView(APIView):
+# ////////////////////////////////// DASHBOARD //////////////////////////////////
+
+class EvaluationDashboardAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        data = EvaluationService.get_dashboard(request.user)
+        return Response(data)
+
+
+# ////////////////////////////////// CRITERIA //////////////////////////////////
+
+class EvaluationCriteriaAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        criteria = EvaluationCriterion.objects.filter(
+            is_active=True
+        ).order_by("order")
+
+        data = [
+            {
+                "id": c.id,
+                "title": c.title,
+                "description": c.description,
+                "max_score": c.max_score
+            }
+            for c in criteria
+        ]
+
+        return Response(data)
+
+
+# ////////////////////////////////// MY EVALUATION DETAIL //////////////////////////////////
+
+class MyEvaluationDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, idea_id):
-        evaluations = Evaluation.objects.filter(
-            evaluator=request.user,
-            idea_id=idea_id
-        ).order_by("-created_at")
+        evaluation = EvaluationService.get_user_evaluation_detail(
+            request.user,
+            idea_id
+        )
 
-        serializer = EvaluationSerializer(evaluations, many=True)
-        return Response(serializer.data)
+        if not evaluation:
+            return Response({"detail": "لا يوجد تقييم"}, status=404)
+
+        return Response(evaluation)

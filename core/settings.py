@@ -37,13 +37,11 @@ INSTALLED_APPS = [
     'messaging',
     'notifications',   
     'ideas',
-    'admin_dashboard',
     'evaluations',  
     'profiles',  
     'volunteers',   
-    'admin_users',
-    'incubator_admin',
     'bootcamp',
+    'admin_panel',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -154,3 +152,4 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
+USE_ASYNC_TASKS = False

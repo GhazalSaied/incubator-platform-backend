@@ -1,5 +1,8 @@
 from rest_framework import serializers
-from .models import Idea, FormQuestion, IdeaForm, Season
+from .models import (Idea, FormQuestion, 
+                     IdeaForm, Season,
+                     TeamRequest
+)
 
 #///////////////////////////IDAE FORM SERIALIZER /////////////////////////////////
 
@@ -101,3 +104,53 @@ class ExhibitionSerializer(serializers.ModelSerializer):
             "project_services",
             "contact_email"
         ]
+
+#/////////////////////////// TEAM REQUEST SERIALIZER /////////////////////
+
+class TeamRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeamRequest
+        fields = "__all__"
+        
+        
+        
+#\\\\\\\\SeasonSerializer\\\\\
+class SeasonSerializer(serializers.ModelSerializer):
+    ideas_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Season
+        fields = "__all__"
+
+    def get_ideas_count(self, obj):
+        return obj.idea_set.count()
+    
+    
+#\\\\\SeasonCreateSerializer\\\\\
+class SeasonCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Season
+        fields = [
+            "name",
+            "start_date",
+            "end_date",
+            "is_open",
+        ]
+
+    def validate(self, data):
+        if data["start_date"] >= data["end_date"]:
+            raise serializers.ValidationError(
+                "تاريخ البداية يجب أن يكون قبل النهاية"
+            )
+        return data
+    
+#\\\\\\SeasonPublishSerializer\\\\
+class SeasonPublishSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Season
+        fields = ["is_published"]
+
+    def update(self, instance, validated_data):
+        instance.is_published = True
+        instance.save()
+        return instance

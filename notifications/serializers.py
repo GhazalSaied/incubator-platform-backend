@@ -24,4 +24,4 @@ class NotificationSerializer(serializers.ModelSerializer):
         ]
 
     def get_time_since(self, obj):
-        return timesince(obj.created_at, now()) + " ago"
+       return timesince(obj.created_at, now())
