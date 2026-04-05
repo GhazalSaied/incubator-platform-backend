@@ -1,4 +1,5 @@
 from notifications.models import NotificationTemplate
+from django.core.exceptions import ObjectDoesNotExist
 
 
 class TemplateService:
@@ -6,7 +7,10 @@ class TemplateService:
     @staticmethod
     def render(code: str, context: dict):
 
-        template = NotificationTemplate.objects.get(code=code)
+        try:
+            template = NotificationTemplate.objects.get(code=code, is_active=True)
+        except ObjectDoesNotExist:
+            return "Notification", "No message"
 
         message = template.message
         title = template.title

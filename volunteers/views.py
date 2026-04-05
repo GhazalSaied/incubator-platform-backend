@@ -61,7 +61,7 @@ class VolunteerProfileAPIView(APIView):
     def get(self, request):
         return Response(
             VolunteerProfileSerializer(
-                request.user.Volunteer_Profile
+                request.user.volunteer_profile
             ).data
         )
 
@@ -331,9 +331,10 @@ class ConsultationRequestDetailAPIView(APIView):
 
     def get(self, request, request_id):
         try:
-            consultation = ConsultationRequest.objects.get(
+            consultation = get_object_or_404(
+                ConsultationRequest,
                 id=request_id,
-                volunteer=request.user.volunteer_profile
+                 volunteer=request.user.volunteer_profile
             )
         except ConsultationRequest.DoesNotExist:
             return Response(
@@ -343,7 +344,7 @@ class ConsultationRequestDetailAPIView(APIView):
 
         data = {
             "id": consultation.id,
-            "idea_title": consultation.idea.title,
+            "idea_title": consultation.idea.title if consultation.idea else None,
             "idea_description": consultation.idea.description,
             "request_type": consultation.request_type,
             "description": consultation.description,
@@ -361,7 +362,7 @@ class AssignedProjectsAPIView(APIView):
     def get(self, request):
         profile = request.user.volunteer_profile
 
-        # 🔹 الاستشارات المقبولة
+        #  الاستشارات المقبولة
         consultations = ConsultationRequest.objects.filter(
             volunteer=profile,
             status=ConsultationRequest.ACCEPTED,
@@ -377,10 +378,10 @@ class AssignedProjectsAPIView(APIView):
             for c in consultations
         ]
 
-        # 🔹 المتابعة (حالياً نفس الاستشارات)
+        #  المتابعة (حالياً نفس الاستشارات)
         ongoing_data = consultations_data
 
-        # 🔹 المشاريع المنضم لها
+        #  المشاريع المنضم لها
         joined = TeamMember.objects.filter(user=request.user)
 
         joined_data = [

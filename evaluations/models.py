@@ -58,7 +58,7 @@ class Evaluation(BaseModel):
     submitted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        unique_together = ("evaluator", "idea")
+        unique_together = ("evaluator", "idea", "season")
 
     def __str__(self):
         return f"Evaluation #{self.id}"
@@ -199,7 +199,7 @@ class EvaluationAssignment(BaseModel):
     is_completed = models.BooleanField(default=False)
 
     class Meta:
-        unique_together = ("evaluator", "idea")
+        unique_together = ("evaluator", "idea", "season")
 
     def __str__(self):
         return f"{self.evaluator} - {self.idea}"

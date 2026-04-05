@@ -56,21 +56,20 @@ class VolunteerService:
         if action == "accept":
             consultation.status = ConsultationRequest.ACCEPTED
 
-            conversation = Conversation.objects.create()
+            conversation, _ = Conversation.objects.get_or_create()
             conversation.participants.add(user, consultation.requester)
 
             NotificationService.send(
                 user=consultation.requester,
                 title="تم قبول طلبك",
                 message="تم قبول طلبك من قبل المتطوع",
-                type="SUCCESS",
-                related_object_id=consultation.id,
-                related_object_type="consultation",
+                notification_type="SUCCESS",
+                related_object=consultation,
                 action_url=f"/chat/{conversation.id}"
             )
 
             if consultation.request_type == ConsultationRequest.JOIN:
-                TeamMember.objects.create(
+                TeamMember.objects.get_or_create(
                     idea=consultation.idea,
                     user=user
                 )
@@ -82,9 +81,8 @@ class VolunteerService:
                 user=consultation.requester,
                 title="تم رفض طلبك",
                 message="تم رفض طلبك من قبل المتطوع",
-                type="WARNING",
-                related_object_id=consultation.id,
-                related_object_type="consultation"
+                notification_type="WARNING",
+                related_object=consultation
             )
 
         consultation.save()
