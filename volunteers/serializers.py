@@ -43,7 +43,7 @@ class VolunteerAvailabilityCreateUpdateSerializer(serializers.ModelSerializer):
             )
         return data
     
-#///////////////////////////////// ConsultationRequestSerializer ///////////////////////////////////////
+#/////////////////////////////////CREATE CONSULTATION REQUEST ///////////////////////////////////////
 
 class CreateConsultationRequestSerializer(serializers.ModelSerializer):
     class Meta:
@@ -55,10 +55,33 @@ class CreateConsultationRequestSerializer(serializers.ModelSerializer):
             "description",
         ]
 
+    
     def validate(self, data):
         if data["request_type"] == "JOIN" and not data.get("idea"):
-            raise serializers.ValidationError("لازم تحددي فكرة")
+            raise serializers.ValidationError("يجب تحديد فكرة")
+        
+        if data["volunteer"].user == self.context["request"].user:
+            raise serializers.ValidationError("لا يمكنك إرسال طلب لنفسك")
+        
         return data
+
+
+#///////////////////////////////// CONSULTATION REQUEST ///////////////////////////////////////
+
+class ConsultationRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConsultationRequest
+        fields = [
+            "id",
+            "volunteer",
+            "idea",
+            "request_type",
+            "description",
+            "status",
+            "created_at",
+        ]
+        read_only_fields = ["status", "created_at"]
+
 
 
 #////////////////////////////////// VolunteerJoinRequestSerializer ///////////////////////////////////////////////////////
@@ -88,17 +111,7 @@ class VolunteerDashboardSerializer(serializers.Serializer):
     availability = VolunteerAvailabilitySerializer(many=True)
     consultations = serializers.DictField()
 
-#//////////////////////////// CREATE CONSULTATION REQUEST ///////////////////////////////////////
 
-class CreateConsultationRequestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ConsultationRequest
-        fields = [
-            "volunteer",
-            "idea",
-            "request_type",
-            "description",
-        ]
 
 #/////////////////////////////// Assigned Projects Serializer  //////////////////////////////////////
 

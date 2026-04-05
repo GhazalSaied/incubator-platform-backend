@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from notifications.models import Notification
+from django.shortcuts import get_object_or_404
 
 User = get_user_model()
 
@@ -56,10 +57,13 @@ class NotificationService:
         """
         notifications = []
 
-        for user in users:
-            notifications.append(
-                NotificationService.send(user=user, **kwargs)
+        Notification.objects.bulk_create([
+            Notification(
+                user=user,
+                **kwargs
             )
+            for user in users
+        ])
 
         return notifications
 
@@ -70,7 +74,9 @@ class NotificationService:
         """
         جميع إشعارات المستخدم
         """
-        return Notification.objects.filter(user=user).order_by("-created_at")
+        return Notification.objects.filter(user=user).only(
+            "id", "title", "message", "type", "is_read", "created_at"
+        ).order_by("-created_at")
 
     # --------------------------------------
 
@@ -79,7 +85,9 @@ class NotificationService:
         """
         تعليم إشعار واحد كمقروء
         """
-        notification = Notification.objects.get(
+
+        notification = get_object_or_404(
+            Notification,
             id=notification_id,
             user=user
         )

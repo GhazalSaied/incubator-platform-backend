@@ -17,7 +17,7 @@ class EvaluationService:
         assignment = EvaluationAssignment.objects.filter(
             evaluator=user,
             idea=idea
-        ).first()
+        ).exists()
 
         if not assignment:
             raise ValidationError("غير مصرح لك بتقييم هذه الفكرة")
@@ -37,9 +37,11 @@ class EvaluationService:
         scores_data = data.get("scores", [])
 
         for score_data in scores_data:
+            if score_data["score"] > score_data["criterion"].max_score:
+                raise ValidationError("Score exceeds max value")
             EvaluationScore.objects.update_or_create(
                 evaluation=evaluation,
-                criterion=score_data["criterion"],
+                criterion_id=score_data["criterion"],
                 defaults={"score": score_data["score"]}
             )
 
@@ -59,6 +61,9 @@ class EvaluationService:
 
         if evaluation.is_submitted:
             raise ValidationError("تم إرسال التقييم مسبقاً")
+        
+        if evaluation.scores.count() == 0:
+            raise ValidationError("لا يمكن إرسال تقييم فارغ")
 
         evaluation.is_submitted = True
         evaluation.submitted_at = timezone.now()
@@ -119,7 +124,7 @@ class EvaluationService:
             evaluation = Evaluation.objects.filter(
                 evaluator=user,
                 idea=a.idea
-            ).first()
+            ).exists()
 
             data.append({
                 "assignment_id": a.id,
@@ -139,7 +144,7 @@ class EvaluationService:
         evaluation = Evaluation.objects.filter(
             evaluator=user,
             idea_id=idea_id
-        ).prefetch_related("scores__criterion").first()
+        ).prefetch_related("scores__criterion").exists()
 
         if not evaluation:
             return None

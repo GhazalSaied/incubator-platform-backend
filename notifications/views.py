@@ -41,11 +41,11 @@ class MarkNotificationAsReadAPIView(APIView):
 class MarkAllNotificationsReadAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request,notification_id ):
+    def post(self, request ):
 
         from notifications.services.notification_service import NotificationService
 
-        NotificationService.mark_all_as_read(request.user, notification_id)
+        NotificationService.mark_all_as_read(request.user)
 
         return Response({"detail": "All marked as read"})
 

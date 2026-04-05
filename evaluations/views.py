@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from rest_framework import status
 
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -67,8 +68,11 @@ class RespondToInvitationAPIView(APIView):
 
         action = request.data.get("action")
 
+        if action not in ["accept", "reject"]:
+            return Response({"detail": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
+
         if invitation.status != "PENDING":
-            return Response({"detail": "تم الرد مسبقاً"}, status=400)
+            return Response({"detail": "تم الرد مسبقاً"}, status=status.HTTP_400_BAD_REQUEST)
 
         invitation.status = "ACCEPTED" if action == "accept" else "REJECTED"
         invitation.responded_at = timezone.now()
