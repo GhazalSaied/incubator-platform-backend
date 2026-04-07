@@ -1,5 +1,6 @@
 from bootcamp.models import BootcampAttendance
-from ideas.models import Idea
+from ideas.models import Idea, IdeaStatus
+
 #\\\\\\\\حساب الغياب\\\\\\\\
 def calculate_absence(idea):
     total = BootcampAttendance.objects.filter(idea=idea).count()
@@ -30,20 +31,35 @@ def get_idea_stats(idea_id):
     
 #\\\\\\\\participants\\\\\
 def get_bootcamp_participants():
-    ideas = Idea.objects.filter(bootcamp_status="accepted").select_related("owner")
-
+    ideas = Idea.objects.filter(
+        status__in=[
+            IdeaStatus.PRE_ACCEPTED,
+            IdeaStatus.BOOTCAMP_FAILED
+        ]
+    ).select_related("owner")
+    
     result = []
+    
 
     for idea in ideas:
         total, absent, percentage = calculate_absence(idea)
         commitment = 100 - percentage
+        if idea.status == IdeaStatus.PRE_ACCEPTED:
+            bootcamp_status = "مقبول"
+        elif idea.status == IdeaStatus.BOOTCAMP_FAILED:
+            bootcamp_status = "مرفوض"
+        else:
+            bootcamp_status = "غير معروف"
+        
+            
 
         result.append({
             "idea_id": idea.id,
             "idea_title": idea.title,
             "owner": idea.owner.full_name,
             "commitment_percentage": round(commitment, 2),
-            "bootcamp_status": idea.bootcamp_status
+            "bootcamp_status": bootcamp_status
+            
         })
 
     return result

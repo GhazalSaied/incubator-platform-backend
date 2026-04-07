@@ -2,70 +2,79 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.generics import ListCreateAPIView
-from ideas.serializers import IdeaFormSerializer, FormQuestionSerializer,FormQuestionChoiceSerializer
+from ideas.serializers import IdeaFormSerializer, CreateQuestionSerializer,SeasonFormDesignSerializer,CreateChoiceSerializer,FormQuestion
 from core.permissions import IsAdminOrSecretary
 from rest_framework.generics import RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
-from admin_panel.ideas.forms.services import create_form, get_form_questions,create_form_question,get_question_queryset,get_question_choices,create_question_choice, get_choice_queryset
 from rest_framework import generics
-#\\\\creat form\\\
-class IdeaFormCreateView(APIView):
-    permission_classes = [IsAdminOrSecretary]
+from django.shortcuts import get_object_or_404
+from admin_panel.seasons.services import SeasonAdminService
+from ideas.models import FormQuestionChoice, Season,IdeaForm
+from admin_panel.ideas.forms.services import FormBuilderService
 
-    def post(self, request):
+
+#\\\\creat form\\\
+class CreateFormAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+    def post(self, request, season_id):
+
         serializer = IdeaFormSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        form = create_form(serializer)
+        season = get_object_or_404(Season, id=season_id)
 
-        return Response(form.data if hasattr(form, "data") else serializer.data, status=status.HTTP_201_CREATED)
+        SeasonAdminService.create_form(
+            season,
+            serializer.validated_data
+        )
+
+        return Response({"message": "تم إنشاء النموذج"})
     
-    
-    
-#\\\\\\FormQuestionListCreate\\\\\
-
-class FormQuestionListCreateView(ListCreateAPIView):
-    serializer_class = FormQuestionSerializer
-    permission_classes = [IsAdminOrSecretary]
-
-    def get_queryset(self):
-        return get_form_questions(self.kwargs["form_id"])
-
-    def perform_create(self, serializer):
-        create_form_question(serializer, self.kwargs["form_id"])
-        
-        
-
-#\\\\\\FormQuestionDetail\\\\
-
-class FormQuestionDetailView(RetrieveUpdateDestroyAPIView):
-    serializer_class = FormQuestionSerializer
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
-    lookup_url_kwarg = "question_id"
-
-    def get_queryset(self):
-        return get_question_queryset(self.kwargs["form_id"])
-    
-    
-#\\\\\\FormQuestionChoiceListCreate\\\\
-
-class FormQuestionChoiceListCreateView(generics.ListCreateAPIView):
-    serializer_class = FormQuestionChoiceSerializer
+   #\\\\\\\\\\\\\\\\\انشاء سؤال تعديل حذف\\\\\\\\\\\\\\\\\
+class FormBuilderAPIView(APIView):
     permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
-    def get_queryset(self):
-        return get_question_choices(self.kwargs["question_id"])
+    def put(self, request, season_id):
 
-    def perform_create(self, serializer):
-        create_question_choice(serializer, self.kwargs["question_id"])
+        season = get_object_or_404(Season, id=season_id)
+
+        form = season.form
+
+        questions_data = request.data.get("questions", [])
+
+        FormBuilderService.save_form_builder(form, questions_data)
+
+        return Response({
+            "message": "تم حفظ النموذج بنجاح"
+        })
         
         
-#\\\\\\\\\FormQuestionChoiceDetail\\\\\
+#\\\\\\\\\\\\\\\\\معاينة النموذج\\\\\\\\\\\\\\\\\\\\\\\\
+class FormPreviewAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
-class FormQuestionChoiceDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = FormQuestionChoiceSerializer
-    permission_classes = [IsAdminOrSecretary]
-    lookup_url_kwarg = "choice_id"
+    def get(self, request, season_id):
 
-    def get_queryset(self):
-        return get_choice_queryset(self.kwargs["question_id"])
+        season = get_object_or_404(Season, id=season_id)
+
+        form = season.form
+
+        data = FormBuilderService.get_form_preview(form)
+
+        return Response({
+            "questions": data
+        })
+    
+#\\\\\\\\\\\\\\\\\عرض النموذج المصمم للموسم مع مراعاة المرحل \\\\\\\\\\\\\\\\\\\\\\
+class SeasonFormDesignAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+    def get(self, request, pk):
+        season = get_object_or_404(Season, pk=pk)
+
+        data = SeasonAdminService.get_form_design_data(season)
+
+        serializer = SeasonFormDesignSerializer(instance=data)
+
+        return Response(serializer.data)

@@ -6,87 +6,89 @@ from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
 from django.shortcuts import get_object_or_404
 
 from ideas.models import Season
-from core.permissions import IsDirector
+from core.permissions import IsDirector,IsAdminOrSecretary
 
-from ideas.serializers.seasons import (
-    SeasonCreateSerializer,
-    SeasonSerializer
+from ideas.serializers import (
+    SeasonCreateSerializer,SeasonListSerializer,SeasonDetailsSerializer
 )
 
-from admin_panel.seasons.services import (
-    create_season,
-    publish_season,
-    close_season
-)
+from admin_panel.seasons.services import SeasonAdminService
+
+
 
 from rest_framework.exceptions import PermissionDenied
 from ideas.services.season_phase_service import SeasonPhaseService
 from ideas.phases import SeasonPhase
 
 
-#\\\\\Create Season\\\
-class SeasonCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
+
+#\\\\\\\\\\\\\\انشاء موسم\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class CreateSeasonAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
     def post(self, request):
+
         serializer = SeasonCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        season = create_season(serializer.validated_data)
-
-        return Response(
-            SeasonSerializer(season).data,
-            status=status.HTTP_201_CREATED
+        season = SeasonAdminService.create_season(
+            serializer.validated_data
         )
-        
-#\\\\\\Publish Season\\\\
-class SeasonPublishView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
-
-    def post(self, request, pk):
-        publish_season(pk)
-
-        return Response(
-            {"message": "تم نشر الموسم بنجاح"},
-            status=status.HTTP_200_OK
-        )
-        
-        
-#\\\\\\\Close Season\\\\
-class CloseSeasonAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
-
-    def post(self, request, season_id):
-        try:
-            close_season(season_id)
-        except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
 
         return Response({
-            "detail": "تم إغلاق الموسم وبدء مرحلة المعسكر"
+            "id": season.id
+        })
+#\\\\\\Publish Season\\\\
+
+class PublishSeasonAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    def post(self, request, pk):
+        season = get_object_or_404(Season, pk=pk)
+
+        SeasonAdminService.publish_season(season)
+
+        return Response({
+            "message": "تم نشر الموسم وفتح باب التقديم"
         })
         
         
-#\\\\\List\\\\
-class SeasonListAPIView(ListAPIView):
-    serializer_class = SeasonSerializer
-    permission_classes = [IsAuthenticated, IsDirector]
+#\\\\\\\Close Season\\\\
+class CloseSubmissionAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
-    def get_queryset(self):
-        return Season.objects.all().order_by("-id")
+    def post(self, request, season_id):
+
+        season = get_object_or_404(Season, id=season_id)
+
+        SeasonAdminService.close_submissions(season)
+
+        return Response({
+            "message": "تم إغلاق التقديم والانتقال إلى مرحلة المعسكر"
+        })
+        
+#\\\\\List\\\\
+class SeasonListAPIView(APIView):
+    
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+    def get(self, request):
+        year = request.query_params.get("year")
+
+        data = SeasonAdminService.list_seasons(year)
+
+        serializer = SeasonListSerializer(data, many=True)
+
+        return Response(serializer.data)
     
 #\\\\\Detail + Update\\\\
-class SeasonDetailAPIView(RetrieveUpdateAPIView):
-    serializer_class = SeasonSerializer
-    permission_classes = [IsAuthenticated, IsDirector]
-    lookup_url_kwarg = "season_id"
+class SeasonDetailsAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
-    def get_queryset(self):
-        return Season.objects.all()
+    def get(self, request, pk):
+        season = get_object_or_404(Season, pk=pk)
 
-    def update(self, request, *args, **kwargs):
+        data = SeasonAdminService.get_season_details(season)
 
-        if not SeasonPhaseService.is_phase(SeasonPhase.SUBMISSION):
-            raise PermissionDenied("يمكن تعديل الموسم فقط خلال مرحلة التقديم")
+        serializer = SeasonDetailsSerializer(data)
 
-        return super().update(request, *args, **kwargs)
+        return Response(serializer.data)

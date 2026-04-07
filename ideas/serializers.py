@@ -3,7 +3,7 @@ from .models import (Idea, FormQuestion,
                      IdeaForm, Season,
                      TeamRequest
 )
-
+from ideas.services.season_phase_service import SeasonPhaseService
 #///////////////////////////IDAE FORM SERIALIZER /////////////////////////////////
 
 
@@ -39,8 +39,6 @@ class IdeaDetailSerializer(serializers.ModelSerializer):
             'description',
             'status',
             'answers',
-            'sector',
-            'target_audience',
             'created_at'
         ]
 
@@ -113,36 +111,28 @@ class TeamRequestSerializer(serializers.ModelSerializer):
         fields = "__all__"
         
         
+ #\\\\\\\\\\\\\\\\\\SeasonStatusSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class SeasonStatusSerializer(serializers.Serializer):
+    is_open = serializers.BooleanField()
+    label = serializers.CharField()
+    phase = serializers.CharField(allow_null=True)       
+        
         
 #\\\\\\\\SeasonSerializer\\\\\
-class SeasonSerializer(serializers.ModelSerializer):
-    ideas_count = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Season
-        fields = "__all__"
-
-    def get_ideas_count(self, obj):
-        return obj.idea_set.count()
-    
+class SeasonListSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    start_date = serializers.DateField()
+    end_date = serializers.DateField()
+    ideas_count = serializers.IntegerField()
+    status = SeasonStatusSerializer()
     
 #\\\\\SeasonCreateSerializer\\\\\
-class SeasonCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Season
-        fields = [
-            "name",
-            "start_date",
-            "end_date",
-            "is_open",
-        ]
-
-    def validate(self, data):
-        if data["start_date"] >= data["end_date"]:
-            raise serializers.ValidationError(
-                "تاريخ البداية يجب أن يكون قبل النهاية"
-            )
-        return data
+class SeasonCreateSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    description = serializers.CharField(required=False)
+    start_date = serializers.DateField()
+    end_date = serializers.DateField()
     
 #\\\\\\SeasonPublishSerializer\\\\
 class SeasonPublishSerializer(serializers.ModelSerializer):
@@ -154,3 +144,109 @@ class SeasonPublishSerializer(serializers.ModelSerializer):
         instance.is_published = True
         instance.save()
         return instance
+    
+    
+    
+#\\\\\\\\\\\\\\\IdeaListSerialize\\\\\\\\\\\
+class IdeaListSerializer(serializers.ModelSerializer):
+    owner_name = serializers.CharField(source="owner.full_name", read_only=True)
+
+    class Meta:
+        model = Idea
+        fields = [
+            "id",
+            "title",
+            "status",
+            "owner_name",
+            "created_at",
+        ]
+        
+        
+#\\\\\\\\\\\\\\\\\\\\\SeasonDetailsSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class SeasonDetailsSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    description = serializers.CharField()
+    start_date = serializers.DateField()
+    end_date = serializers.DateField()
+    ideas_count = serializers.IntegerField()
+    phase = serializers.CharField()
+    can_edit = serializers.BooleanField()
+    remaining_days = serializers.IntegerField(allow_null=True)
+    evaluation_ideas_count = serializers.IntegerField(allow_null=True)
+    
+class ChoiceSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    value = serializers.CharField()
+    label = serializers.CharField()
+    order = serializers.IntegerField()
+
+
+class QuestionSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    key = serializers.CharField()
+    label = serializers.CharField()
+    type = serializers.CharField()
+    required = serializers.BooleanField()
+    order = serializers.IntegerField()
+    choices = ChoiceSerializer(many=True)
+
+
+class FormSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    questions = QuestionSerializer(many=True)
+
+class SeasonInfoSerializer(serializers.Serializer):
+    season_name = serializers.CharField()
+    phase = serializers.CharField()
+    ideas_count = serializers.IntegerField()
+
+    remaining_days = serializers.IntegerField(required=False)
+    evaluation_ideas_count = serializers.IntegerField(required=False)
+
+    show_remaining_days = serializers.BooleanField()
+    show_evaluation_count = serializers.BooleanField()
+class SeasonFormDesignSerializer(serializers.Serializer):
+    season_info = SeasonInfoSerializer()
+    form = FormSerializer()
+    
+class IdeaRowSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    project_name = serializers.CharField()
+    submitted_by = serializers.CharField()
+    submitted_at = serializers.DateTimeField()
+
+
+class SeasonReviewSerializer(serializers.Serializer):
+    season_info = SeasonInfoSerializer()
+    ideas = IdeaRowSerializer(many=True)   
+
+
+# serializers.py
+
+from rest_framework import serializers
+
+
+class CreateQuestionSerializer(serializers.Serializer):
+    key = serializers.CharField()
+    label = serializers.CharField()
+    type = serializers.ChoiceField(choices=[
+        "text",
+        "number",
+        "select",
+        "select_multiple",
+        "boolean"
+    ])
+    required = serializers.BooleanField(default=False)
+    order = serializers.IntegerField(required=False)
+    
+    
+class CreateChoiceSerializer(serializers.Serializer):
+    value = serializers.CharField()
+    label = serializers.CharField()
+    order = serializers.IntegerField(required=False)
+    
+    
+class UpdateChoiceSerializer(serializers.Serializer):
+    value = serializers.CharField(required=False)
+    label = serializers.CharField(required=False)

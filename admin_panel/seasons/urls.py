@@ -1,16 +1,16 @@
 from django.urls import path
 from .views import (
-    SeasonCreateView,
-    SeasonPublishView,
-    CloseSeasonAPIView,
+    CloseSubmissionAPIView,
+    CreateSeasonAPIView,
+    PublishSeasonAPIView,
     SeasonListAPIView,
-    SeasonDetailAPIView,
+    SeasonDetailsAPIView
 )
 
 urlpatterns = [
     path("", SeasonListAPIView.as_view(), name="season-list"),
-    path("create/", SeasonCreateView.as_view(), name="season-create"),
-    path("<int:season_id>/", SeasonDetailAPIView.as_view(), name="season-detail"),
-    path("<int:pk>/publish/", SeasonPublishView.as_view(), name="season-publish"),
-    path("<int:season_id>/close/", CloseSeasonAPIView.as_view(), name="season-close"),
+    path("create/", CreateSeasonAPIView.as_view(), name="season-create"),
+    path("<int:pk>/", SeasonDetailsAPIView.as_view(), name="season-detail"),
+    path("<int:pk>/publish/", PublishSeasonAPIView.as_view(), name="season-publish"),
+    path("<int:season_id>/close-submissions/",CloseSubmissionAPIView.as_view())
 ]

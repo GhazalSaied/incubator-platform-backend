@@ -1,7 +1,10 @@
-from django.urls import path
-from .views import IdeaListAPIView, IdeaDetailAPIView
+from django.urls import path,include
+from .views import IdeaDetailsAPIView,SeasonReviewAPIView
 
 urlpatterns = [
-    path("", IdeaListAPIView.as_view(), name="admin-idea-list"),
-    path("<int:idea_id>/", IdeaDetailAPIView.as_view(), name="admin-idea-detail"),
+    path("forms/", include("admin_panel.ideas.forms.urls")),
+    #\\\مراجعة الطلبات
+    path("<int:pk>/review-submissions/", SeasonReviewAPIView.as_view()),
+    #\\\\عرض تفاصيل الطلب
+    path("<int:pk>/details/", IdeaDetailsAPIView.as_view(), name="idea-details"),
 ]

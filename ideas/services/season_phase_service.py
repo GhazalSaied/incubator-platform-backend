@@ -1,7 +1,7 @@
 from django.utils import timezone
 from django.db import models
 from ideas.models import Season
-
+from ideas.phases import SeasonPhase
 
 
 

@@ -11,7 +11,6 @@ class BootcampSessionSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "trainer",
-            "season",
             "date",
             "start_time",
             "end_time",
@@ -48,8 +47,7 @@ class BootcampIdeaListSerializer(serializers.Serializer):
     idea_title = serializers.CharField()
     absence_percentage = serializers.FloatField()
     commitment_status = serializers.CharField()
-    bootcamp_status = serializers.CharField()
-
+    
 #\\\\\\AbsenceRequest\\\\\\\\
 
 

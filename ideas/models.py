@@ -33,6 +33,7 @@ class IdeaStatus(models.TextChoices):
 class Season(models.Model):
     name = models.CharField(max_length=100)
     is_open = models.BooleanField(default=False)
+    description = models.TextField()
 
     start_date = models.DateField()
     end_date = models.DateField()
@@ -57,7 +58,7 @@ class Idea(models.Model):
     )
 
     title = models.CharField(max_length=255)
-    description = models.TextField()
+    description = models.TextField(null=True, blank=True)
 
     status = models.CharField(
         max_length=50,

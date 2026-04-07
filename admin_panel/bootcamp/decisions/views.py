@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from core.permissions import IsAdminOrSecretary
+from core.permissions import IsAdminOrSecretary, IsDirector
 
 from bootcamp.serializers import (
     BootcampIdeaListSerializer,
@@ -16,8 +16,8 @@ from admin_panel.bootcamp.decisions.services import (
 
 #\\\\\\\\\BootcampIdeasList\\\\\
 class BootcampIdeasListView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
-
+    permission_classes = [IsAuthenticated, IsDirector]
+    
     def get(self, request):
         search = request.query_params.get("search")
 
@@ -28,7 +28,8 @@ class BootcampIdeasListView(APIView):
     
 #\\\\\\\BootcampDecision\\\\\\\\\
 class BootcampDecisionView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    permission_classes = [IsAuthenticated, IsDirector]
+    
 
     def post(self, request):
         serializer = BootcampDecisionSerializer(data=request.data)
@@ -42,7 +43,6 @@ class BootcampDecisionView(APIView):
 
         return Response({
             "idea_id": idea.id,
-            "bootcamp_status": idea.bootcamp_status,
             "status": idea.status
         })
         

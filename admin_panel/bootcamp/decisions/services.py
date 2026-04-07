@@ -18,11 +18,10 @@ def calculate_absence(idea):
 
 #\\\\\\\\ideas list\\\\\
 def get_bootcamp_ideas(search=None):
-    if not SeasonPhaseService.is_phase(SeasonPhase.BOOTCAMP):
-        raise ValidationError("هذه الصفحة متاحة فقط خلال مرحلة المعسكر")
-
     ideas = Idea.objects.filter(
-        bootcamp_status__in=["pending", "accepted"]
+        status__in=[
+            IdeaStatus.BOOTCAMP,
+        ]
     )
 
     if search:
@@ -38,8 +37,7 @@ def get_bootcamp_ideas(search=None):
             "idea_id": idea.id,
             "idea_title": idea.title,
             "absence_percentage": round(absence, 2),
-            "commitment_status": "ملتزم" if commitment >= 70 else "غير ملتزم",
-            "bootcamp_status": idea.bootcamp_status
+            "commitment_status": "ملتزم" if commitment >= 70 else "غير ملتزم"
         })
 
     return result
@@ -51,18 +49,18 @@ def process_bootcamp_decision(idea_id, decision, message):
     if not SeasonPhaseService.is_phase(SeasonPhase.BOOTCAMP):
         raise ValidationError("ليس وقت اتخاذ القرار")
 
-    if idea.status != IdeaStatus.UNDER_REVIEW:
+    if idea.status != IdeaStatus.BOOTCAMP:
         raise ValidationError("الفكرة ليست ضمن المعسكر")
 
-    if idea.bootcamp_status != "pending":
+    if idea.status =="PRE_ACCEPTED" or idea.status == "REJECTED":
         raise ValidationError("تم اتخاذ قرار مسبقاً")
 
     if decision == "approve":
-        idea.bootcamp_status = "accepted"
+        idea.status = "PRE_ACCEPTED"
 
     elif decision == "reject":
-        idea.bootcamp_status = "rejected"
-        idea.status = IdeaStatus.REJECTED
+        idea.status = "REJECTED"
+        
 
     else:
         raise ValidationError("قرار غير صالح")
