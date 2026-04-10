@@ -1,11 +1,13 @@
 from volunteers.models import (
     VolunteerProfile,
-    ConsultationRequest
+    ConsultationRequest,
+    Workshop,
+    WorkshopRegistration,
 )
-
+from django.utils import timezone
 from messaging.models import Conversation
 from notifications.services.notification_service import NotificationService
-from ideas.models import TeamMember
+from ideas.models import TeamMember 
 
 
 
@@ -31,6 +33,8 @@ class VolunteerService:
 
         consultations = profile.consultation_requests.all()
 
+        next_workshop = get_next_workshop(user)
+
         return {
             "profile": profile,
             "availability": availability,
@@ -38,6 +42,13 @@ class VolunteerService:
                 "pending": consultations.filter(status="PENDING").count(),
                 "accepted": consultations.filter(status="ACCEPTED").count(),
                 "rejected": consultations.filter(status="REJECTED").count(),
+            "workshop_stats": get_workshop_stats(user),
+            "next_workshop": {
+                "title": next_workshop.title,
+                "start_date": next_workshop.start_date,
+                "time_from": next_workshop.time_from
+        } if next_workshop else None,
+            
             }
         }
     
@@ -131,3 +142,25 @@ class VolunteerService:
 
         consultation.save()
         return consultation
+
+
+#////////////////// WORKSHOP STATS > عدد كل الورشات بمختلف حالاتها //////////
+
+def get_workshop_stats(user):
+    workshops = Workshop.objects.filter(created_by=user)
+
+    return {
+        "total": workshops.count(),
+        "accepted": workshops.filter(status="ACCEPTED").count(),
+        "pending": workshops.filter(status="PENDING").count(),
+        "rejected": workshops.filter(status="REJECTED").count(),
+    }
+
+#//////////////////// NEXT WORKSHOP > اقرب ورشة عمل  ///////////
+
+def get_next_workshop(user):
+    return Workshop.objects.filter(
+        created_by=user,
+        status="ACCEPTED",
+        start_date__gte=timezone.now().date()
+    ).order_by("start_date").first()

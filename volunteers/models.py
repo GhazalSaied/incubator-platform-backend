@@ -1,6 +1,11 @@
 
 from django.db import models
 from django.contrib.auth import get_user_model
+from common.models import BaseModel
+from ideas.models import Season
+from django.conf import settings
+
+User = settings.AUTH_USER_MODEL
 
 User = get_user_model()
 
@@ -157,5 +162,80 @@ class ConsultationRequest(models.Model):
     class Meta:
         ordering = ["-created_at"]
     
+
+#//////////////////////////////// WORKSHOP //////////////////////
+
+
+class Workshop(BaseModel):
+
+    STATUS_CHOICES = (
+        ("PENDING", "Pending"),
+        ("ACCEPTED", "Accepted"),
+        ("REJECTED", "Rejected"),
+    )
+
+    title = models.CharField(max_length=255)
+
+    category = models.CharField(max_length=100)  # تسويق - برمجة...
+
+    description = models.TextField()
+    objectives = models.TextField()
+
+    target_audience = models.TextField()  # لمين مناسبة
+
+    start_date = models.DateField()
+    end_date = models.DateField()
+
+    days = models.JSONField()  # ["Monday", "Wednesday"]
+
+    time_from = models.TimeField()
+    time_to = models.TimeField()
+
+    duration = models.CharField(max_length=50)  # "2 hours"
+
+    capacity = models.PositiveIntegerField()
+
+    image = models.ImageField(upload_to="workshops/", null=True, blank=True)
+
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="my_workshops"
+    )
+
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default="PENDING"
+    )
+
+    rejection_reason = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.title
+
+
+#//////////////////////// WORKSHOP REGISTRATION //////////////////
+
+class WorkshopRegistration(BaseModel):
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="workshop_registrations"
+    )
+
+    workshop = models.ForeignKey(
+        Workshop,
+        on_delete=models.CASCADE,
+        related_name="registrations"
+    )
+
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+
+    class Meta:
+        unique_together = ("user", "workshop")
+
 
 

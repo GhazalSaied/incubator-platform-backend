@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 from messaging.models import Conversation
 from django.shortcuts import get_object_or_404
@@ -14,6 +15,8 @@ from .models import (
     VolunteerProfile,
     VolunteerAvailability,
     ConsultationRequest, 
+    Workshop,
+    WorkshopRegistration,
       
       )
 from .serializers import (
@@ -449,3 +452,207 @@ class SendJoinRequestAPIView(APIView):
         return Response({
             "detail": "تم إرسال طلب الانضمام بنجاح"
         }, status=201)
+    
+
+#//////////////////////// MY WORKSHOPS > للمتطوع  ///////////////////
+
+class MyWorkshopsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        workshops = Workshop.objects.filter(
+            created_by=request.user
+        )
+
+        data = []
+
+        for w in workshops:
+            data.append({
+                "id": w.id,
+                "title": w.title,
+                "start_date": w.start_date,
+                "end_date": w.end_date,
+                "sessions": len(w.days),
+                "days": w.days,
+                "time_from": w.time_from,
+                "time_to": w.time_to,
+                "category": w.category,
+                "status": w.status,
+            })
+
+        return Response(data)
+
+
+#/////////////////////// MY WORKSHOPS DETAILS ///////////////////
+
+class MyWorkshopDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, workshop_id):
+        w = get_object_or_404(
+            Workshop,
+            id=workshop_id,
+            created_by=request.user
+        )
+
+        data = {
+            "title": w.title,
+            "description": w.description,
+            "objectives": w.objectives,
+            "target_audience": w.target_audience,
+            "start_date": w.start_date,
+            "end_date": w.end_date,
+            "days": w.days,
+            "time_from": w.time_from,
+            "time_to": w.time_to,
+            "duration": w.duration,
+            "category": w.category,
+            "status": w.status,
+        }
+
+        if w.status == "ACCEPTED":
+            data["registrations"] = [
+                {
+                    "name": r.name,
+                    "email": r.email
+                }
+                for r in w.registrations.all()
+            ]
+
+        elif w.status == "REJECTED":
+            data["rejection_reason"] = w.rejection_reason
+
+        return Response(data)
+    
+
+#//////////////////////// CREATE WORKSHOP ///////////////////
+
+class CreateWorkshopAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        Workshop.objects.create(
+            title=request.data["title"],
+            category=request.data["category"],
+            description=request.data["description"],
+            objectives=request.data["objectives"],
+            target_audience=request.data["target_audience"],
+            start_date=request.data["start_date"],
+            end_date=request.data["end_date"],
+            days=request.data["days"],
+            time_from=request.data["time_from"],
+            time_to=request.data["time_to"],
+            duration=request.data["duration"],
+            capacity=request.data["capacity"],
+            created_by=request.user
+        )
+
+        return Response({"detail": "تم إنشاء الورشة"})
+    
+
+#///////////////////// WORKSHOPS FOR PUBLIC //////////////
+
+class PublicWorkshopsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        filter_type = request.GET.get("filter")
+
+        workshops = Workshop.objects.filter(status="ACCEPTED")
+
+        today = timezone.now().date()
+
+        if filter_type == "upcoming":
+            workshops = workshops.filter(start_date__gt=today)
+
+        elif filter_type == "ongoing":
+            workshops = workshops.filter(
+                start_date__lte=today,
+                end_date__gte=today
+            )
+
+        elif filter_type == "finished":
+            workshops = workshops.filter(end_date__lt=today)
+
+        data = []
+
+        for w in workshops:
+            data.append({
+                "id": w.id,
+                "title": w.title,
+                "image": w.image.url if w.image else None,
+                "capacity": w.capacity,
+                "status": (
+                    "لم تبدأ" if w.start_date > today else
+                    "منتهية" if w.end_date < today else
+                    "بدأت"
+                )
+            })
+
+        return Response(data)
+    
+
+#/////////// WORKSHOP REGISTER > PUBLIC  اليوزرات اللي بدن يسجلوا بالورشات ////////
+
+class RegisterWorkshopAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, workshop_id):
+        workshop = get_object_or_404(
+            Workshop,
+            id=workshop_id,
+            status="ACCEPTED"
+        )
+
+        if workshop.registrations.count() >= workshop.capacity:
+            return Response({"detail": "الورشة ممتلئة"}, status=400)
+
+        WorkshopRegistration.objects.get_or_create(
+            user=request.user,
+            workshop=workshop,
+            defaults={
+                "name": request.user.get_full_name(),
+                "email": request.user.email
+            }
+        )
+
+        return Response({"detail": "تم التسجيل"})
+
+
+#/////////////////// CANCEL WORKSHOP REGISTRATION /////////////
+
+class CancelWorkshopRegistrationAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, workshop_id):
+        WorkshopRegistration.objects.filter(
+            user=request.user,
+            workshop_id=workshop_id
+        ).delete()
+
+        return Response({"detail": "تم إلغاء التسجيل"})
+
+
+#/////////// MY REGISTERED WORKSHOPS > كل ورشات العمل اللي مسجل فيها اليوز //////
+
+class MyRegisteredWorkshopsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        registrations = WorkshopRegistration.objects.filter(
+            user=request.user
+        ).select_related("workshop")
+
+        data = []
+
+        for r in registrations:
+            w = r.workshop
+
+            data.append({
+                "id": w.id,
+                "title": w.title,
+                "start_date": w.start_date,
+                "status": w.status
+            })
+
+        return Response(data)
