@@ -251,8 +251,6 @@ class CreateTeamRequestAPIView(APIView):
 
     def post(self, request):
 
-        from ideas.services.idea_service import IdeaService
-
         try:
             IdeaService.create_team_request(
                 user=request.user,
@@ -271,7 +269,7 @@ class SuggestedVolunteersAPIView(APIView):
 
     def get(self, request):
 
-        data = IdeaService.get_suggested_volunteers()
+        data = IdeaService.get_suggested_volunteers(request.user)
         return Response(data)
 
 #///////////////////////////////// IDEA TEAM //////////////////////////
@@ -289,6 +287,7 @@ class IdeaTeamAPIView(APIView):
             return Response({"detail": str(e)}, status=404)
 
         return Response({
+            "has_team": idea.team_members.exists(),
             "current_team": [
                 {
                     "email": m.user.email,
@@ -308,3 +307,17 @@ class ConsultantsAPIView(APIView):
 
         data = IdeaService.get_consultants()
         return Response(data)
+    
+
+#///////////////////////// TEAM DASHBOARD ///////////////////////
+
+class TeamDashboardAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        data = IdeaService.get_team_dashboard(request.user)
+        return Response(data)
+
+
+

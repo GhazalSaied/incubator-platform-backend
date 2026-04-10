@@ -2,6 +2,8 @@
 from django.contrib import admin
 from django.urls import path , include 
 
+from core.views import MyDashboardAPIView
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/accounts/',include('accounts.urls')),
@@ -16,6 +18,9 @@ urlpatterns = [
     path("api/notifications/", include("notifications.urls")),
     path('api/bootcamp/',include('bootcamp.urls')),
 
+
+    # volunteer + ideaOwner | team member 
+    path("me/dashboard/", MyDashboardAPIView.as_view())
 
    
 

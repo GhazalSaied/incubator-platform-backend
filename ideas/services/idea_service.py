@@ -1,9 +1,11 @@
 from django.db import transaction
-from ideas.models import Idea, IdeaStatus, Season
+from ideas.models import Idea, IdeaStatus, Season , IdeaAuditLog , TeamRequest
 from ideas.services.idea_validation import IdeaFormValidator
 from core.events import EventBus
 from ideas.services.season_phase_service import SeasonPhaseService
 from ideas.phases import SeasonPhase
+from ideas.serializers import TeamRequestSerializer
+from notifications.services.notification_service import NotificationService
 
 
 class IdeaService:
@@ -84,18 +86,18 @@ class IdeaService:
             raise PermissionError("لا يمكن سحب الفكرة خارج مرحلة التقديم")
 
         # 2 التحقق من الحالة
-        if idea.status not in ["DRAFT", "SUBMITTED"]:
+        if idea.status not in [IdeaStatus.DRAFT, IdeaStatus.SUBMITTED]:
             raise ValueError("لا يمكن سحب هذه الفكرة في حالتها الحالية")
 
         # 3 تنفيذ السحب
-        idea.status = "WITHDRAWN"
+        idea.status = IdeaStatus.WITHDRAWN
         idea.save()
 
         #  event
         EventBus.publish(
             "idea_status_changed",
             idea=idea,
-            new_status="WITHDRAWN"
+            new_status=IdeaStatus.WITHDRAWN
         )
 
         return idea
@@ -107,7 +109,7 @@ class IdeaService:
         from ideas.models import Idea
 
         try:
-            return Idea.objects.get(owner=user)
+            return Idea.objects.filter(owner=user).order_by("-created_at").first()
         except Idea.DoesNotExist:
             raise ValueError("لا يوجد فكرة")
 
@@ -118,7 +120,7 @@ class IdeaService:
 
         idea = IdeaService.get_user_idea(user)
 
-        if idea.status != IdeaStatus.INCUBATED:
+        if idea.status != IdeaStatus.INCUBATION:
             raise ValueError("لم يتم الاحتضان بعد")
 
         reviews = idea.reviews.order_by("-meeting_date")
@@ -153,8 +155,10 @@ class IdeaService:
                 "owner_email": idea.owner.email,
                 "team": [
                     {
+                        "name": m.user.full_name,
                         "email": m.user.email,
-                        "role": m.role
+                        "role": m.role,
+                        "is_owner": m.user == idea.owner
                     }
                     for m in idea.team_members.all()
                 ]
@@ -188,35 +192,75 @@ def update_exhibition(user, data, files):
 
 #////////////////////// CREATE TEAM REQUEST /////////////////////
 
-    @staticmethod
-    def create_team_request(user, data):
+@staticmethod
+def create_team_request(user, data):
 
-        idea = IdeaService.get_user_idea(user)
+    idea = IdeaService.get_user_idea(user)
 
-        from ideas.serializers import TeamRequestSerializer
+    #  أولاً تحقق قبل الإنشاء
+    if TeamRequest.objects.filter(
+        idea=idea,
+        status="PENDING"
+    ).exists():
+        raise ValueError("لديك طلب فريق قيد المراجعة")
 
-        serializer = TeamRequestSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
+    serializer = TeamRequestSerializer(data=data)
+    serializer.is_valid(raise_exception=True)
 
-        return serializer.save(idea=idea)
-    
+    team_request = serializer.save(idea=idea)
+
+    # تحديث حالة الفريق
+    idea.team_status = "team_building"
+    idea.save()
+
+    # Audit log
+    IdeaAuditLog.objects.create(
+        idea=idea,
+        from_status="NO_TEAM",
+        to_status="TEAM_REQUESTED",
+        performed_by=user
+    )
+
+    # Notification
+    NotificationService.send(
+        user=user,
+        title="تم إرسال طلب الفريق",
+        message="طلبك قيد المراجعة من الإدارة",
+        notification_type="INFO"
+    )
+
+    return team_request
+
 
 #////////////////////////// SUGGESTED VOLUNTEERS ////////////////////////
 
 @staticmethod
-def get_suggested_volunteers():
+def get_suggested_volunteers(user):
 
-    from volunteers.models import VolunteerProfile
+    from ideas.models import TeamRequest, SuggestedVolunteer
 
-    volunteers = VolunteerProfile.objects.filter(status="APPROVED")
+    idea = IdeaService.get_user_idea(user)
+
+    team_request = TeamRequest.objects.filter(
+        idea=idea,
+        status="APPROVED"
+    ).last()
+
+    if not team_request:
+        return []
+
+    suggested = SuggestedVolunteer.objects.filter(
+        team_request=team_request
+    ).select_related("volunteer__user")
 
     return [
         {
-            "name": v.user.full_name,
-            "email": v.user.email,
-            "role": v.volunteer_type
+            "id": s.volunteer.id,
+            "name": s.volunteer.user.full_name,
+            "email": s.volunteer.user.email,
+            "role": s.volunteer.primary_skills
         }
-        for v in volunteers
+        for s in suggested
     ]
 
 #//////////////////////// GET CONSULTANTS //////////////////
@@ -237,3 +281,37 @@ def get_consultants():
         }
         for v in volunteers
     ]
+
+
+#///////////////////////// TEAM DASHBOARD ///////////////////////
+
+@staticmethod
+def get_team_dashboard(user):
+
+    idea = IdeaService.get_user_idea(user)
+
+    # team
+    team = idea.team_members.select_related("user")
+
+    current_team = [
+        {
+            "id": m.user.id,
+            "name": m.user.full_name,
+            "email": m.user.email,
+            "role": m.role
+        }
+        for m in team
+    ]
+
+    # suggested
+    suggested = IdeaService.get_suggested_volunteers(user)
+
+    return {
+        "team_status": getattr(idea, "team_status", "team_building"),
+        "current_team": current_team,
+        "suggested_volunteers": suggested,
+        "user_context": {
+            "is_idea_owner": True,
+            "is_volunteer": hasattr(user, "volunteer_profile")
+        }
+    }

@@ -14,7 +14,6 @@ from .models import (
     VolunteerProfile,
     VolunteerAvailability,
     ConsultationRequest, 
-    VolunteerJoinRequest,
       
       )
 from .serializers import (
@@ -22,12 +21,14 @@ from .serializers import (
     VolunteerAvailabilitySerializer,
     VolunteerAvailabilityCreateUpdateSerializer,
     ConsultationRequestSerializer,
-    VolunteerJoinRequestSerializer,
     CreateConsultationRequestSerializer,
 )
+from volunteers.services.volunteer_service import VolunteerService
 from core.permissions import IsVolunteer
-from ideas.models import TeamMember
+from ideas.models import TeamMember 
 from notifications.services.notification_service import NotificationService
+
+
 
 
 
@@ -262,8 +263,6 @@ class VolunteerDashboardAPIView(APIView):
 
     def get(self, request):
 
-        from volunteers.services.volunteer_service import VolunteerService
-
         try:
             data = VolunteerService.get_dashboard(request.user)
         except ValueError as e:
@@ -278,33 +277,23 @@ class VolunteerDashboardAPIView(APIView):
         })
 
 
-#//////////////////////////////////  VOLUNTEER REQUESTS  /////////////////////////////////////////
+#//////////////////////////////////  VOLUNTEER REQUESTS  ///////////////////////////////////////
 
 class VolunteerRequestsAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsVolunteer]
 
     def get(self, request):
         profile = request.user.volunteer_profile
 
         request_type = request.query_params.get("type")
 
-        consultations = profile.consultation_requests.all()
-        joins = profile.join_requests.all()
+        requests = profile.consultation_requests.all()
 
-        if request_type == "consultation":
-            return Response({
-                "consultations": ConsultationRequestSerializer(consultations, many=True).data
-            })
+        if request_type:
+            requests = requests.filter(request_type=request_type)
 
-        elif request_type == "join":
-            return Response({
-                "join_requests": VolunteerJoinRequestSerializer(joins, many=True).data
-            })
-
-        return Response({
-            "consultations": ConsultationRequestSerializer(consultations, many=True).data,
-            "join_requests": VolunteerJoinRequestSerializer(joins, many=True).data,
-        })
+        return Response(
+            ConsultationRequestSerializer(requests, many=True).data
+        )
     
     
 #//////////////////////////// CREATE CONSULTATION REQUEST /////////////////////////////////////////
@@ -313,16 +302,28 @@ class CreateConsultationRequestAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = CreateConsultationRequestSerializer(data=request.data)
+        serializer = CreateConsultationRequestSerializer(
+            data=request.data,
+            context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
 
         consultation = serializer.save(
             requester=request.user
         )
 
+        # Notification للمتطوع
+        NotificationService.send(
+            user=consultation.volunteer.user,
+            title="طلب جديد",
+            message="لديك طلب جديد",
+            related_object=consultation,
+            target_role="VOLUNTEER"
+        )
+
         return Response(
             ConsultationRequestSerializer(consultation).data,
-            status=status.HTTP_201_CREATED
+            status=201
         )
 
 #//////////////////////////////////// CONSULTATION REQUEST DETAILS ///////////////////////////////////
@@ -331,26 +332,44 @@ class ConsultationRequestDetailAPIView(APIView):
     permission_classes = [IsAuthenticated, IsVolunteer]
 
     def get(self, request, request_id):
-        try:
-            consultation = get_object_or_404(
-                ConsultationRequest,
-                id=request_id,
-                 volunteer=request.user.volunteer_profile
-            )
-        except ConsultationRequest.DoesNotExist:
-            return Response(
-                {"detail": "غير موجود"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        consultation = get_object_or_404(
+            ConsultationRequest,
+            id=request_id,
+            volunteer=request.user.volunteer_profile
+        )
+
+        idea = consultation.idea
+        requester = consultation.requester
 
         data = {
-            "id": consultation.id,
-            "idea_title": consultation.idea.title if consultation.idea else None,
-            "idea_description": consultation.idea.description,
-            "request_type": consultation.request_type,
-            "description": consultation.description,
-            "status": consultation.status,
-            "requester_email": consultation.requester.email,
+            "request_info": {
+                "id": consultation.id,
+                "type": consultation.request_type,
+                "status": consultation.status,
+                "description": consultation.description,
+                "created_at": consultation.created_at,
+            },
+
+            "requester": {
+                "name": getattr(requester, "full_name", ""),
+                "email": requester.email,
+            },
+
+            "project": {
+                "title": idea.title,
+                "description": idea.description,
+
+                # هدول ممكن تطوريهم لاحقاً إذا عندك fields
+                "field": getattr(idea, "project_field", None),
+                "target_group": getattr(idea, "target_group", None),
+                "problem": getattr(idea, "problem_statement", None),
+            },
+
+            "team_request": {
+                "skill_required": consultation.team_request.skill_required if consultation.team_request else None,
+                "members_needed": consultation.team_request.members_needed if consultation.team_request else None,
+                "tasks": consultation.team_request.description if consultation.team_request else None,
+            }
         }
 
         return Response(data)
@@ -399,3 +418,34 @@ class AssignedProjectsAPIView(APIView):
             "ongoing": ongoing_data,
             "joined_projects": joined_data
         })
+    
+
+#/////////////////////// SEND JOIN REQUEST (TEAM MEMBER ) ////////////////
+
+class SendJoinRequestAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = CreateConsultationRequestSerializer(
+            data=request.data,
+            context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        consultation = serializer.save(
+            requester=request.user,
+            request_type=ConsultationRequest.JOIN
+        )
+
+        #  Notification للمتطوع
+        NotificationService.send(
+            user=consultation.volunteer.user,
+            title="طلب انضمام جديد",
+            message=f"لديك طلب انضمام من مشروع {consultation.idea.title}",
+            related_object=consultation,
+            target_role="VOLUNTEER"
+        )
+
+        return Response({
+            "detail": "تم إرسال طلب الانضمام بنجاح"
+        }, status=201)

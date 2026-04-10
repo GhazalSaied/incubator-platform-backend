@@ -6,26 +6,36 @@ User = settings.AUTH_USER_MODEL
 # //////////////////// IDEA STATUS //////////////////////
 
 class IdeaStatus(models.TextChoices):
-    DRAFT = "draft", "Draft"
-    SUBMITTED = "submitted", "Submitted"
+    DRAFT = "DRAFT", "Draft"
+    SUBMITTED = "SUBMITTED", "Submitted"
+    WITHDRAWN = "WITHDRAWN", "Withdrawn"
 
-    PRE_ACCEPTED = "pre_accepted", "Pre Accepted (Bootcamp)"
+    PRE_ACCEPTED = "PRE_ACCEPTED", "Pre Accepted (Bootcamp)"
 
-    BOOTCAMP = "bootcamp", "In Bootcamp"
-    BOOTCAMP_FAILED = "bootcamp_failed", "Bootcamp Failed"
+    BOOTCAMP = "BOOTCAMP", "In Bootcamp"
+    BOOTCAMP_FAILED = "BOOTCAMP_FAILED", "Bootcamp Failed"
 
-    EVALUATION = "evaluation", "In Evaluation"
-    EVALUATED = "evaluated", "Evaluated"
+    EVALUATION = "EVALUATION", "In Evaluation"
+    EVALUATED = "EVALUATED", "Evaluated"
 
-    ACCEPTED = "accepted", "Accepted"
-    REJECTED = "rejected", "Rejected"
+    ACCEPTED = "ACCEPTED", "Accepted"
+    REJECTED = "REJECTED", "Rejected"
 
-    INCUBATION = "incubation", "In Incubation"
+    INCUBATION = "INCUBATION", "In Incubation"
 
-    EXHIBITION = "exhibition", "In Exhibition"
+    EXHIBITION = "EXHIBITION", "In Exhibition"
 
-    GRADUATED_POSITIVE = "graduated_positive", "Graduated (Positive)"
-    GRADUATED_NEGATIVE = "graduated_negative", "Graduated (Negative)"
+    GRADUATED_POSITIVE = "GRADUATED_POSITIVE", "Graduated (Positive)"
+    GRADUATED_NEGATIVE = "GRADUATED_NEGATIVE", "Graduated (Negative)"
+
+
+# //////////////////// TEAM STATUS //////////////////////
+
+class TeamStatus(models.TextChoices):
+    NO_TEAM = "no_team", "No Team"
+    TEAM_BUILDING = "team_building", "Building Team"
+    TEAM_FULL = "team_full", "Team Complete"
+    IN_PROGRESS = "in_progress", "In Progress"
 
 
 # ////////////////////// SEASONS /////////////////////////
@@ -65,6 +75,11 @@ class Idea(models.Model):
         default=IdeaStatus.DRAFT
     )
 
+    team_status = models.CharField(
+        max_length=50,
+        choices=TeamStatus.choices,
+        default=TeamStatus.NO_TEAM
+    )
 
     #  Dynamic form answers
 
@@ -174,6 +189,7 @@ class FormQuestionChoice(models.Model):
 
     def __str__(self):
         return self.label
+    
 
 #////////////////////////////////// TEAM MEMBER /////////////////////////
 
@@ -240,6 +256,23 @@ class IdeaAuditLog(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+#/////////////////////////// SUGGESTED VOLUNTEER /////////////////////
+
+class SuggestedVolunteer(models.Model):
+    team_request = models.ForeignKey(
+        TeamRequest,
+        on_delete=models.CASCADE,
+        related_name="suggested_volunteers"
+    )
+
+    volunteer = models.ForeignKey(
+        "volunteers.VolunteerProfile",
+        on_delete=models.CASCADE
     )
 
     created_at = models.DateTimeField(auto_now_add=True)

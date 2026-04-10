@@ -64,4 +64,33 @@ class NotificationBadgeAPIView(APIView):
 
         return Response(data)
 
+#//////////////////////////// NOTIFICATION FILTERING //////////////////////
 
+class MyNotificationsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        role = request.query_params.get("role")
+
+        notifications = Notification.objects.filter(user=request.user)
+
+        if role:
+            notifications = notifications.filter(target_role=role)
+
+        notifications = notifications.order_by("-created_at")
+
+        data = [
+            {
+                "id": n.id,
+                "title": n.title,
+                "message": n.message,
+                "type": n.notification_type,
+                "role": n.target_role,
+                "created_at": n.created_at,
+                "action_url": n.action_url,
+            }
+            for n in notifications
+        ]
+
+        return Response(data)

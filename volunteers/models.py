@@ -65,8 +65,6 @@ class VolunteerProfile(models.Model):
     def __str__(self):
         return f"{self.user.email} - Volunteer"
 
-#////////////////////////// VOLUNTREE ACTIVITY /////////////////////////////////////////
-
 
 #//////////////////////////// VOLUNTEER AVAILABILITY ////////////////////////////////////////
 
@@ -127,17 +125,23 @@ class ConsultationRequest(models.Model):
     )
 
     idea = models.ForeignKey(
-    "ideas.Idea",
-    on_delete=models.CASCADE,
-    related_name="consultation_requests",
-    null=True,    # مؤقت
-    blank=True
+        "ideas.Idea",
+        on_delete=models.CASCADE,
+        related_name="consultation_requests"
+       
     )
 
     request_type = models.CharField(
         max_length=20,
         choices=TYPE_CHOICES,
         default=CONSULTATION
+    )
+
+    team_request = models.ForeignKey(
+        "ideas.TeamRequest",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
     )
 
     description = models.TextField()
@@ -154,46 +158,4 @@ class ConsultationRequest(models.Model):
         ordering = ["-created_at"]
     
 
-#//////////////////////////////// VolunteerJoinRequest /////////////////////////////////
-
-
-class VolunteerJoinRequest(models.Model):
-    PENDING = "PENDING"
-    ACCEPTED = "ACCEPTED"
-    REJECTED = "REJECTED"
-
-    STATUS_CHOICES = [
-        (PENDING, "قيد المراجعة"),
-        (ACCEPTED, "مقبول"),
-        (REJECTED, "مرفوض"),
-    ]
-
-    volunteer = models.ForeignKey(
-        "VolunteerProfile",
-        on_delete=models.CASCADE,
-        related_name="join_requests"
-    )
-
-    # صاحب الطلب (صاحب الفكرة / المشروع)
-    requester_name = models.CharField(max_length=255)
-    requester_email = models.EmailField()
-
-    project_title = models.CharField(max_length=255)
-
-    description = models.TextField()
-
-    # معلومات إضافية تظهر عند التفاصيل
-    target_audience = models.TextField(blank=True)
-    problem_statement = models.TextField(blank=True)
-
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default=PENDING
-    )
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.project_title} - {self.volunteer.user.email}"
 
