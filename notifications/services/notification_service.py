@@ -146,3 +146,27 @@ class NotificationService:
         # EmailChannel.send(notification)
         # PushChannel.send(notification)
         pass
+    @staticmethod
+    def send_from_template(
+        *,
+        user,
+        template,
+        context=None,
+        action_type=None,
+        action_url=None,
+        related_object=None,
+    ):
+        message = template.message
+
+        if context:
+            message = message.format(**context)
+
+        return NotificationService.send(
+            user=user,
+            title=template.title,
+            message=message,
+            notification_type=Notification.INFO,
+            action_type=action_type,
+            action_url=action_url or "",
+            related_object=related_object,
+        )

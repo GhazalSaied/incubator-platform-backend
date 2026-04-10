@@ -70,9 +70,11 @@ class Idea(models.Model):
     #  Dynamic form answers
 
     answers = models.JSONField(default=dict)
+    sector = models.TextField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    target_audience = models.TextField(null=True, blank=True)
 
     # editing due to state 
 

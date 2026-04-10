@@ -194,7 +194,7 @@ class EvaluationAssignment(BaseModel):
         related_name="assignments"
     )
 
-    meeting_date = models.DateTimeField()
+    meeting_date = models.DateTimeField(null=True, blank=True)
 
     is_completed = models.BooleanField(default=False)
 
