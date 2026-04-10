@@ -4,21 +4,9 @@ from rest_framework.response import Response
 
 from .models import Notification
 from .serializers import NotificationSerializer
+from ideas.models import TeamMember
 
-#////////////////////////// GET MY NOTIFICATIONS //////////////////////
 
-class MyNotificationsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-
-        from notifications.services.notification_service import NotificationService
-
-        notifications = NotificationService.get_user_notifications(request.user)
-
-        return Response(
-            NotificationSerializer(notifications, many=True).data
-        )
     
 #///////////////////////////////// MARK AS READ /////////////////////////////
 
@@ -66,16 +54,31 @@ class NotificationBadgeAPIView(APIView):
 
 #//////////////////////////// NOTIFICATION FILTERING //////////////////////
 
+
+
 class MyNotificationsAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-
         role = request.query_params.get("role")
+        user = request.user
 
-        notifications = Notification.objects.filter(user=request.user)
+        notifications = Notification.objects.filter(user=user)
 
-        if role:
+        #  Role validation
+        valid_roles = []
+
+        if user.ideas.exists():
+            valid_roles.append("IDEA_OWNER")
+
+        if hasattr(user, "volunteer_profile"):
+            valid_roles.append("VOLUNTEER")
+
+        if TeamMember.objects.filter(user=user).exists():
+            valid_roles.append("TEAM_MEMBER")
+
+        #  apply filter only if valid
+        if role and role in valid_roles:
             notifications = notifications.filter(target_role=role)
 
         notifications = notifications.order_by("-created_at")
@@ -85,10 +88,11 @@ class MyNotificationsAPIView(APIView):
                 "id": n.id,
                 "title": n.title,
                 "message": n.message,
-                "type": n.notification_type,
+                "type": n.type,
                 "role": n.target_role,
                 "created_at": n.created_at,
                 "action_url": n.action_url,
+                "is_read": n.is_read,
             }
             for n in notifications
         ]

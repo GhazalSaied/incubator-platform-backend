@@ -118,37 +118,51 @@ class EvaluationService:
 
     # ////////////////////////////////// DASHBOARD //////////////////////////////////
 
-    @staticmethod
-    def get_dashboard(user):
-        assignments = EvaluationAssignment.objects.filter(
-            evaluator=user
-        ).select_related("idea")
+@staticmethod
+def get_dashboard(user):
+    assignments = EvaluationAssignment.objects.filter(
+        evaluator=user
+    ).select_related("idea")
 
-        data = []
+    total = assignments.count()
+    completed = assignments.filter(is_completed=True).count()
 
-        for a in assignments:
-            evaluation = Evaluation.objects.filter(
-                evaluator=user,
-                idea=a.idea
-            ).first()
+    #  أقرب جلسة
+    next_assignment = assignments.filter(
+        meeting_date__gte=timezone.now()
+    ).order_by("meeting_date").first()
 
-            data.append({
-                "assignment_id": a.id,
-                "idea_id": a.idea.id,
-                "title": a.idea.title,
-                "meeting_date": a.meeting_date,
-                "is_completed": a.is_completed,
-                "is_submitted": evaluation.is_submitted if evaluation else False
-            })
+    data = []
 
-        return {
-            "stats": {
-                "total": assignments.count(),
-                "completed": assignments.filter(is_completed=True).count(),
-                "remaining": assignments.filter(is_completed=False).count()
-            },
-            "assignments": data
-        }
+    for a in assignments:
+        evaluation = Evaluation.objects.filter(
+            evaluator=user,
+            idea=a.idea
+        ).only("is_submitted").first()
+
+        data.append({
+            "assignment_id": a.id,
+            "idea_id": a.idea.id,
+            "title": a.idea.title,
+            "meeting_date": a.meeting_date,
+            "is_completed": a.is_completed,
+            "is_submitted": evaluation.is_submitted if evaluation else False
+        })
+
+    return {
+        "stats": {
+            "total": total,
+            "completed": completed,
+            "remaining": total - completed
+        },
+
+        "next_meeting": {
+            "idea_title": next_assignment.idea.title,
+            "meeting_date": next_assignment.meeting_date
+        } if next_assignment else None,
+
+        "assignments": data
+    }
 
     # ////////////////////////////////// MY EVALUATION DETAIL //////////////////////////////////
 
