@@ -5,6 +5,7 @@ from evaluations.models import (
     Evaluation,
     EvaluationScore,
     EvaluationAssignment,
+    EvaluationCriterion,
 )
 
 
@@ -17,7 +18,7 @@ class EvaluationService:
         assignment = EvaluationAssignment.objects.filter(
             evaluator=user,
             idea=idea
-        ).exists()
+        ).first()
 
         if not assignment:
             raise ValidationError("غير مصرح لك بتقييم هذه الفكرة")
@@ -25,7 +26,7 @@ class EvaluationService:
         evaluation, _ = Evaluation.objects.get_or_create(
             evaluator=user,
             idea=idea,
-            defaults={"season": assignment.season}
+            season=assignment.season
         )
 
         if evaluation.is_submitted:
@@ -35,9 +36,10 @@ class EvaluationService:
         evaluation.save()
 
         scores_data = data.get("scores", [])
-
+        criterion = EvaluationCriterion.objects.get(id=score_data["criterion"])
         for score_data in scores_data:
-            if score_data["score"] > score_data["criterion"].max_score:
+            criterion = EvaluationCriterion.objects.get(id=score_data["criterion"])
+            if score_data["score"] > criterion.max_score:
                 raise ValidationError("Score exceeds max value")
             EvaluationScore.objects.update_or_create(
                 evaluation=evaluation,
@@ -64,6 +66,10 @@ class EvaluationService:
         
         if evaluation.scores.count() == 0:
             raise ValidationError("لا يمكن إرسال تقييم فارغ")
+
+        total_criteria = EvaluationCriterion.objects.filter(is_active=True).count()
+        if evaluation.scores.count() < total_criteria:
+            raise ValidationError("يجب تقييم جميع المعايير")
 
         evaluation.is_submitted = True
         evaluation.submitted_at = timezone.now()
@@ -124,7 +130,7 @@ class EvaluationService:
             evaluation = Evaluation.objects.filter(
                 evaluator=user,
                 idea=a.idea
-            ).exists()
+            ).first()
 
             data.append({
                 "assignment_id": a.id,
@@ -135,7 +141,14 @@ class EvaluationService:
                 "is_submitted": evaluation.is_submitted if evaluation else False
             })
 
-        return data
+        return {
+            "stats": {
+                "total": assignments.count(),
+                "completed": assignments.filter(is_completed=True).count(),
+                "remaining": assignments.filter(is_completed=False).count()
+            },
+            "assignments": data
+        }
 
     # ////////////////////////////////// MY EVALUATION DETAIL //////////////////////////////////
 
@@ -144,7 +157,7 @@ class EvaluationService:
         evaluation = Evaluation.objects.filter(
             evaluator=user,
             idea_id=idea_id
-        ).prefetch_related("scores__criterion").exists()
+        ).prefetch_related("scores__criterion").first()
 
         if not evaluation:
             return None
