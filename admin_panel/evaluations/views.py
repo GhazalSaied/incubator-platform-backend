@@ -1,15 +1,16 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-
+from .services.EvaluationCriteriaService import EvaluationCriteriaService
 from admin_panel.evaluations.services.meeting_service import schedule_meeting
 from core.permissions import IsAdminOrSecretary
-
+from rest_framework import status
+from evaluations.models import EvaluationCriterion
 from ideas.models import Idea
 from django.shortcuts import get_object_or_404
 from ideas.services.season_phase_service import SeasonPhaseService
 
 from .selectors.assignment_dashboard_selectors import (get_assignment_dashboard_ideas)
-from .serializers import (AssignmentDashboardSerializer, EvaluatorInfoSerializer, MeetingDashboardSerializer,SeasonEvaluatorSerializer,AssignEvaluatorsSerializer,SetMeetingSerializer)
+from .serializers import (AssignmentDashboardSerializer, EvaluatorInfoSerializer, MeetingDashboardSerializer,SeasonEvaluatorSerializer,AssignEvaluatorsSerializer,SetMeetingSerializer,EvaluationCriteriaSerializer)
 from .selectors.volunteer_selectors import (get_available_season_evaluators)
 from ideas.services.season_phase_service import SeasonPhaseService
 from rest_framework import status
@@ -170,3 +171,76 @@ class SetMeetingAPIView(APIView):
         )
 
         return Response({"message": "Meeting scheduled"})
+
+#\\\\\\\\\\\\\\\\\\\\\\\انشاء معيار تقييم\\\\\\\\\\\\\\\\\\\\\\from rest_framework.views import APIView
+class CriteriaListCreateView(APIView):
+
+    def get(self, request):
+        criteria = EvaluationCriterion.objects.all()
+        serializer = EvaluationCriteriaSerializer(criteria, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = EvaluationCriteriaSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        criteria = EvaluationCriteriaService.create(
+            title=serializer.validated_data["title"],
+            max_score=serializer.validated_data["max_score"]
+        )
+
+        return Response(
+            EvaluationCriteriaSerializer(criteria).data,
+            status=status.HTTP_201_CREATED
+        )
+        
+        
+#\\\\\\\\\\\\\\\\\\\\\\\تعديل معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
+
+class CriteriaUpdateView(APIView):
+
+    def put(self, request, pk):
+        criteria = get_object_or_404(EvaluationCriterion, pk=pk)
+
+        serializer = EvaluationCriteriaSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        criteria = EvaluationCriteriaService.update(
+            criteria=criteria,
+            title=serializer.validated_data.get("title"),
+            max_score=serializer.validated_data.get("max_score"),
+        )
+
+        return Response(EvaluationCriteriaSerializer(criteria).data)
+
+#\\\\\\\\\\\\\\\\\\\\\\\\تفعيل/تعطيل معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
+class CriteriaToggleActiveView(APIView):
+
+    def post(self, request, pk):
+        criteria = get_object_or_404(EvaluationCriterion, pk=pk)
+
+        criteria = EvaluationCriteriaService.toggle_active(criteria=criteria)
+
+        return Response(EvaluationCriteriaSerializer(criteria).data)
+    
+#\\\\\\\\\\\\\\\\\\\\\معاينة نموذج التقييم\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class CriteriaPreviewView(APIView):
+
+    def get(self, request):
+
+        criteria = EvaluationCriteriaService.get_active_criteria()
+
+        serializer = EvaluationCriteriaSerializer(criteria, many=True)
+
+        return Response(serializer.data)
+    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\نشر معايير التقييم\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class PublishCriteriaView(APIView):
+
+    def post(self, request):
+
+        EvaluationCriteriaService.publish()
+
+        return Response({
+            "message": "تم نشر النموذج"
+        })

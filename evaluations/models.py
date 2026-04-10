@@ -203,3 +203,15 @@ class EvaluationAssignment(BaseModel):
 
     def __str__(self):
         return f"{self.evaluator} - {self.idea}"
+
+
+#\\\\\\\\\\\\\\\\\\\\\\\\\\ EVALUATION SETTINGS \\\\\\\\\\\\\\\\\\\\\\\\\\\
+class EvaluationSettings(models.Model):
+
+    is_published = models.BooleanField(default=False)
+    
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return "Evaluation Settings"

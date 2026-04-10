@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from ideas.models import Idea
-from evaluations.models import EvaluationInvitation
+from evaluations.models import EvaluationInvitation,EvaluationCriterion
 
 
 #\\\\\\\\\\\\\\\AssignmentDashboardSerializer\\\\\\\\\\\\\\\\\\\\\\\
@@ -109,3 +109,11 @@ class SetMeetingSerializer(serializers.Serializer):
     idea_id = serializers.IntegerField()
     date = serializers.DateField()
     time = serializers.TimeField()
+    
+    
+#\\\\\\\\\\\\\\EvaluationCriteriaSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class EvaluationCriteriaSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = EvaluationCriterion
+        fields = ["id", "title", "max_score", "is_active"]

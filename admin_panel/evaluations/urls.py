@@ -1,5 +1,6 @@
 from django.urls import path
-from .views import (AssignmentDashboardAPIView,AvailableEvaluatorsView,AssignEvaluatorsToIdeaView,MeetingDashboardAPIView,IdeaEvaluatorsAPIView,SetMeetingAPIView)
+from .views import (AssignmentDashboardAPIView,AvailableEvaluatorsView,AssignEvaluatorsToIdeaView,MeetingDashboardAPIView,IdeaEvaluatorsAPIView, PublishCriteriaView,SetMeetingAPIView,CriteriaListCreateView,
+                    CriteriaUpdateView,CriteriaToggleActiveView,CriteriaPreviewView,PublishCriteriaView)
 
 urlpatterns = [
     #\\\عرض المشاريع المقبولة بالمعسكر لتعيين مقيمين\\\\\\\\\\
@@ -14,5 +15,15 @@ urlpatterns = [
     path("idea-evaluators/<int:idea_id>/",IdeaEvaluatorsAPIView.as_view(),name="idea-evaluators"),
     #\\\\\\\\\\\\\\\\\\\\\\\تحديد موعد اللجنة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("set-meeting/",SetMeetingAPIView.as_view(),name="set-meeting"),
+    #\\\\\\\\\\\\\\\\\\\\\\\انشاء معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
+    path("criteria/",CriteriaListCreateView.as_view(),name="criteria-list-create"),
+    #\\\\\\\\\\\\\\\\\\\\\\\تعديل معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
+    path("criteria/<int:pk>/",CriteriaUpdateView.as_view(),name="criteria-update"),
+    #\\\\\\\\\\\\\\\\\\\\\\\تفعيل/تعطيل معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
+    path("criteria/<int:pk>/toggle-active/",CriteriaToggleActiveView.as_view(),name="criteria-toggle-active"),
+    #\\\\\\\\\\\\\\\\\\\\\\\\\\\معاينة معايير التقييم\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    path("criteria/preview/",CriteriaPreviewView.as_view(),name="criteria-preview"),
+    #\\\\\\\\\\\\\\\\\\\\\نشر نموذج التقييم\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    path("criteria/publish/",PublishCriteriaView.as_view(),name="criteria-publish"),
 ]
     
