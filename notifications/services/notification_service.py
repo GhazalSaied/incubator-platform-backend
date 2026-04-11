@@ -19,6 +19,7 @@ class NotificationService:
         action_type=None,
         action_url=None,
         related_object=None,
+        target_role=None,
     ):
         """
         Create a notification (DB حاليا)
@@ -41,6 +42,7 @@ class NotificationService:
             action_url=action_url,
             related_object_id=related_object_id,
             related_object_type=related_object_type,
+            target_role=target_role
         )
 
         #  Future Hook (لا تحذف!)

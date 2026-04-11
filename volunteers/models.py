@@ -1,6 +1,11 @@
 
 from django.db import models
 from django.contrib.auth import get_user_model
+from common.models import BaseModel
+from ideas.models import Season
+from django.conf import settings
+
+User = settings.AUTH_USER_MODEL
 
 User = get_user_model()
 
@@ -65,8 +70,6 @@ class VolunteerProfile(models.Model):
     def __str__(self):
         return f"{self.user.email} - Volunteer"
 
-#////////////////////////// VOLUNTREE ACTIVITY /////////////////////////////////////////
-
 
 #//////////////////////////// VOLUNTEER AVAILABILITY ////////////////////////////////////////
 
@@ -127,17 +130,23 @@ class ConsultationRequest(models.Model):
     )
 
     idea = models.ForeignKey(
-    "ideas.Idea",
-    on_delete=models.CASCADE,
-    related_name="consultation_requests",
-    null=True,    # مؤقت
-    blank=True
+        "ideas.Idea",
+        on_delete=models.CASCADE,
+        related_name="consultation_requests"
+       
     )
 
     request_type = models.CharField(
         max_length=20,
         choices=TYPE_CHOICES,
         default=CONSULTATION
+    )
+
+    team_request = models.ForeignKey(
+        "ideas.TeamRequest",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
     )
 
     description = models.TextField()
@@ -154,46 +163,79 @@ class ConsultationRequest(models.Model):
         ordering = ["-created_at"]
     
 
-#//////////////////////////////// VolunteerJoinRequest /////////////////////////////////
+#//////////////////////////////// WORKSHOP //////////////////////
 
 
-class VolunteerJoinRequest(models.Model):
-    PENDING = "PENDING"
-    ACCEPTED = "ACCEPTED"
-    REJECTED = "REJECTED"
+class Workshop(BaseModel):
 
-    STATUS_CHOICES = [
-        (PENDING, "قيد المراجعة"),
-        (ACCEPTED, "مقبول"),
-        (REJECTED, "مرفوض"),
-    ]
-
-    volunteer = models.ForeignKey(
-        "VolunteerProfile",
-        on_delete=models.CASCADE,
-        related_name="join_requests"
+    STATUS_CHOICES = (
+        ("PENDING", "Pending"),
+        ("ACCEPTED", "Accepted"),
+        ("REJECTED", "Rejected"),
     )
 
-    # صاحب الطلب (صاحب الفكرة / المشروع)
-    requester_name = models.CharField(max_length=255)
-    requester_email = models.EmailField()
+    title = models.CharField(max_length=255)
 
-    project_title = models.CharField(max_length=255)
+    category = models.CharField(max_length=100)  # تسويق - برمجة...
 
     description = models.TextField()
+    objectives = models.TextField()
 
-    # معلومات إضافية تظهر عند التفاصيل
-    target_audience = models.TextField(blank=True)
-    problem_statement = models.TextField(blank=True)
+    target_audience = models.TextField()  # لمين مناسبة
 
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default=PENDING
+    start_date = models.DateField()
+    end_date = models.DateField()
+
+    days = models.JSONField()  # ["Monday", "Wednesday"]
+
+    time_from = models.TimeField()
+    time_to = models.TimeField()
+
+    duration = models.CharField(max_length=50)  # "2 hours"
+
+    capacity = models.PositiveIntegerField()
+
+    image = models.ImageField(upload_to="workshops/", null=True, blank=True)
+
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="my_workshops"
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default="PENDING"
+    )
+
+    rejection_reason = models.TextField(blank=True)
 
     def __str__(self):
-        return f"{self.project_title} - {self.volunteer.user.email}"
+        return self.title
+
+
+#//////////////////////// WORKSHOP REGISTRATION //////////////////
+
+class WorkshopRegistration(BaseModel):
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="workshop_registrations"
+    )
+
+    workshop = models.ForeignKey(
+        Workshop,
+        on_delete=models.CASCADE,
+        related_name="registrations"
+    )
+
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+
+    class Meta:
+        unique_together = ("user", "workshop")
+
+
 

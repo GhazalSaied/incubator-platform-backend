@@ -7,6 +7,8 @@ from accounts.models import User
 from ideas.phases import SeasonPhase
 from ideas.models import Idea
 
+#/////////////////////////// BOOTCAMP SESSION /////////////////////////
+
 
 class BootcampSession(BaseModel):
     phase = models.ForeignKey(
@@ -47,7 +49,7 @@ class BootcampSession(BaseModel):
     def __str__(self):
         return self.title
     
- 
+#////////////////////////// BOOTCAMP ATTENDANCE ///////////////////////
     
 class BootcampAttendance(BaseModel):
     session = models.ForeignKey(BootcampSession, on_delete=models.CASCADE, related_name='attendance')
@@ -69,13 +71,13 @@ class BootcampAttendance(BaseModel):
     def __str__(self):
         return f"{self.idea} - {self.session} - {self.status}"
     
-    
+
+#///////////////////////// BOOTCAMP ABSENCE REQUEST /////////////////////
 
 class BootcampAbsenceRequest(BaseModel):
+
     idea = models.ForeignKey(Idea, on_delete=models.CASCADE,related_name='absence_requests')
-
     session = models.ForeignKey(BootcampSession, on_delete=models.CASCADE, related_name='absence_requests')
-
     reason = models.TextField()
 
     status = models.CharField(
@@ -87,7 +89,6 @@ class BootcampAbsenceRequest(BaseModel):
         default='pending',
         max_length=10
     )
-
     reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
     
@@ -97,7 +98,10 @@ class BootcampAbsenceRequest(BaseModel):
     def __str__(self):
         return f"{self.idea} - {self.session} - {self.status}"
     
-    
+
+
+#/////////////////////////////// BOOTCAMP DECISION //////////////////////
+
 class BootcampDecision(BaseModel):
     DECISION_CHOICES = [
         ('accepted', 'Accepted'),

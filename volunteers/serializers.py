@@ -1,5 +1,10 @@
 from rest_framework import serializers
-from .models import VolunteerProfile, VolunteerAvailability , ConsultationRequest,VolunteerJoinRequest
+from .models import (VolunteerProfile, 
+                     VolunteerAvailability , 
+                     ConsultationRequest,
+                     )
+from ideas.services.idea_service import IdeaService
+
 
 #///////////////////////////////// VolunteerAvailabilitySerializer  ///////////////////////////
 
@@ -46,25 +51,52 @@ class VolunteerAvailabilityCreateUpdateSerializer(serializers.ModelSerializer):
 #/////////////////////////////////CREATE CONSULTATION REQUEST ///////////////////////////////////////
 
 class CreateConsultationRequestSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = ConsultationRequest
         fields = [
             "volunteer",
-            "idea",
             "request_type",
             "description",
+            "team_request",
         ]
 
-    
     def validate(self, data):
-        if data["request_type"] == "JOIN" and not data.get("idea"):
-            raise serializers.ValidationError("يجب تحديد فكرة")
-        
-        if data["volunteer"].user == self.context["request"].user:
-            raise serializers.ValidationError("لا يمكنك إرسال طلب لنفسك")
-        
-        return data
 
+        user = self.context["request"].user
+        idea = IdeaService.get_user_idea(user)
+
+        if data["volunteer"].user == user:
+            raise serializers.ValidationError("لا يمكنك إرسال طلب لنفسك")
+
+        data["idea"] = idea
+
+        request_type = self.initial_data.get("request_type")
+        if request_type == "JOIN":
+
+            team_request = idea.team_requests.filter(
+                status="APPROVED"
+            ).order_by("-created_at").first()
+
+
+            if idea.team_status == "team_full":
+                raise serializers.ValidationError("الفريق مكتمل")
+            
+            if ConsultationRequest.objects.filter(
+                requester=user,
+                volunteer=data["volunteer"],
+                idea=idea,
+                request_type="JOIN",
+                status="PENDING"
+            ).exists():
+                raise serializers.ValidationError("لديك طلب انضمام قيد الانتظار")
+                            
+            if not team_request:
+                raise serializers.ValidationError("لا يوجد طلب فريق فعال")
+
+            data["team_request"] = team_request
+
+        return data
 
 #///////////////////////////////// CONSULTATION REQUEST ///////////////////////////////////////
 
@@ -82,26 +114,6 @@ class ConsultationRequestSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["status", "created_at"]
 
-
-
-#////////////////////////////////// VolunteerJoinRequestSerializer ///////////////////////////////////////////////////////
-
-
-class VolunteerJoinRequestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = VolunteerJoinRequest
-        fields = [
-            "id",
-            "requester_name",
-            "requester_email",
-            "project_title",
-            "description",
-            "target_audience",
-            "problem_statement",
-            "status",
-            "created_at",
-        ]
-        read_only_fields = ["status", "created_at"]
 
 
 #/////////////////////////////////// VOLUNTEER DASHBOARD  /////////////////////////////////////////////////

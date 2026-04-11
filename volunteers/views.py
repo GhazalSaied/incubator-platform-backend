@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 from messaging.models import Conversation
 from django.shortcuts import get_object_or_404
@@ -14,19 +15,27 @@ from .models import (
     VolunteerProfile,
     VolunteerAvailability,
     ConsultationRequest, 
-    VolunteerJoinRequest,
+    Workshop,
+    WorkshopRegistration,
       
       )
 from .serializers import (
     VolunteerProfileSerializer,
     VolunteerAvailabilitySerializer,
     VolunteerAvailabilityCreateUpdateSerializer,
+
     VolunteerJoinRequestSerializer,
+
+    ConsultationRequestSerializer,
+
     CreateConsultationRequestSerializer,
 )
+from volunteers.services.volunteer_service import VolunteerService
 from core.permissions import IsVolunteer
-from ideas.models import TeamMember
+from ideas.models import TeamMember 
 from notifications.services.notification_service import NotificationService
+
+
 
 
 
@@ -261,8 +270,6 @@ class VolunteerDashboardAPIView(APIView):
 
     def get(self, request):
 
-        from volunteers.services.volunteer_service import VolunteerService
-
         try:
             data = VolunteerService.get_dashboard(request.user)
         except ValueError as e:
@@ -277,33 +284,23 @@ class VolunteerDashboardAPIView(APIView):
         })
 
 
-#//////////////////////////////////  VOLUNTEER REQUESTS  /////////////////////////////////////////
+#//////////////////////////////////  VOLUNTEER REQUESTS  ///////////////////////////////////////
 
 class VolunteerRequestsAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsVolunteer]
 
     def get(self, request):
         profile = request.user.volunteer_profile
 
         request_type = request.query_params.get("type")
 
-        consultations = profile.consultation_requests.all()
-        joins = profile.join_requests.all()
+        requests = profile.consultation_requests.all()
 
-        if request_type == "consultation":
-            return Response({
-                "consultations": ConsultationRequestSerializer(consultations, many=True).data
-            })
+        if request_type:
+            requests = requests.filter(request_type=request_type)
 
-        elif request_type == "join":
-            return Response({
-                "join_requests": VolunteerJoinRequestSerializer(joins, many=True).data
-            })
-
-        return Response({
-            "consultations": ConsultationRequestSerializer(consultations, many=True).data,
-            "join_requests": VolunteerJoinRequestSerializer(joins, many=True).data,
-        })
+        return Response(
+            ConsultationRequestSerializer(requests, many=True).data
+        )
     
     
 #//////////////////////////// CREATE CONSULTATION REQUEST /////////////////////////////////////////
@@ -312,16 +309,28 @@ class CreateConsultationRequestAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = CreateConsultationRequestSerializer(data=request.data)
+        serializer = CreateConsultationRequestSerializer(
+            data=request.data,
+            context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
 
         consultation = serializer.save(
             requester=request.user
         )
 
+        # Notification للمتطوع
+        NotificationService.send(
+            user=consultation.volunteer.user,
+            title="طلب جديد",
+            message="لديك طلب جديد",
+            related_object=consultation,
+            target_role="VOLUNTEER"
+        )
+
         return Response(
             ConsultationRequestSerializer(consultation).data,
-            status=status.HTTP_201_CREATED
+            status=201
         )
 
 #//////////////////////////////////// CONSULTATION REQUEST DETAILS ///////////////////////////////////
@@ -330,26 +339,44 @@ class ConsultationRequestDetailAPIView(APIView):
     permission_classes = [IsAuthenticated, IsVolunteer]
 
     def get(self, request, request_id):
-        try:
-            consultation = get_object_or_404(
-                ConsultationRequest,
-                id=request_id,
-                 volunteer=request.user.volunteer_profile
-            )
-        except ConsultationRequest.DoesNotExist:
-            return Response(
-                {"detail": "غير موجود"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        consultation = get_object_or_404(
+            ConsultationRequest,
+            id=request_id,
+            volunteer=request.user.volunteer_profile
+        )
+
+        idea = consultation.idea
+        requester = consultation.requester
 
         data = {
-            "id": consultation.id,
-            "idea_title": consultation.idea.title if consultation.idea else None,
-            "idea_description": consultation.idea.description,
-            "request_type": consultation.request_type,
-            "description": consultation.description,
-            "status": consultation.status,
-            "requester_email": consultation.requester.email,
+            "request_info": {
+                "id": consultation.id,
+                "type": consultation.request_type,
+                "status": consultation.status,
+                "description": consultation.description,
+                "created_at": consultation.created_at,
+            },
+
+            "requester": {
+                "name": getattr(requester, "full_name", ""),
+                "email": requester.email,
+            },
+
+            "project": {
+                "title": idea.title,
+                "description": idea.description,
+
+                # هدول ممكن تطوريهم لاحقاً إذا عندك fields
+                "field": getattr(idea, "project_field", None),
+                "target_group": getattr(idea, "target_group", None),
+                "problem": getattr(idea, "problem_statement", None),
+            },
+
+            "team_request": {
+                "skill_required": consultation.team_request.skill_required if consultation.team_request else None,
+                "members_needed": consultation.team_request.members_needed if consultation.team_request else None,
+                "tasks": consultation.team_request.description if consultation.team_request else None,
+            }
         }
 
         return Response(data)
@@ -398,3 +425,238 @@ class AssignedProjectsAPIView(APIView):
             "ongoing": ongoing_data,
             "joined_projects": joined_data
         })
+    
+
+#/////////////////////// SEND JOIN REQUEST (TEAM MEMBER ) ////////////////
+
+class SendJoinRequestAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = CreateConsultationRequestSerializer(
+            data=request.data,
+            context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        consultation = serializer.save(
+            requester=request.user,
+            request_type=ConsultationRequest.JOIN
+        )
+
+        #  Notification للمتطوع
+        NotificationService.send(
+            user=consultation.volunteer.user,
+            title="طلب انضمام جديد",
+            message=f"لديك طلب انضمام من مشروع {consultation.idea.title}",
+            related_object=consultation,
+            target_role="VOLUNTEER"
+        )
+
+        return Response({
+            "detail": "تم إرسال طلب الانضمام بنجاح"
+        }, status=201)
+    
+
+#//////////////////////// MY WORKSHOPS > للمتطوع  ///////////////////
+
+class MyWorkshopsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        workshops = Workshop.objects.filter(
+            created_by=request.user
+        )
+
+        data = []
+
+        for w in workshops:
+            data.append({
+                "id": w.id,
+                "title": w.title,
+                "start_date": w.start_date,
+                "end_date": w.end_date,
+                "sessions": len(w.days),
+                "days": w.days,
+                "time_from": w.time_from,
+                "time_to": w.time_to,
+                "category": w.category,
+                "status": w.status,
+            })
+
+        return Response(data)
+
+
+#/////////////////////// MY WORKSHOPS DETAILS ///////////////////
+
+class MyWorkshopDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, workshop_id):
+        w = get_object_or_404(
+            Workshop,
+            id=workshop_id,
+            created_by=request.user
+        )
+
+        data = {
+            "title": w.title,
+            "description": w.description,
+            "objectives": w.objectives,
+            "target_audience": w.target_audience,
+            "start_date": w.start_date,
+            "end_date": w.end_date,
+            "days": w.days,
+            "time_from": w.time_from,
+            "time_to": w.time_to,
+            "duration": w.duration,
+            "category": w.category,
+            "status": w.status,
+        }
+
+        if w.status == "ACCEPTED":
+            data["registrations"] = [
+                {
+                    "name": r.name,
+                    "email": r.email
+                }
+                for r in w.registrations.all()
+            ]
+
+        elif w.status == "REJECTED":
+            data["rejection_reason"] = w.rejection_reason
+
+        return Response(data)
+    
+
+#//////////////////////// CREATE WORKSHOP ///////////////////
+
+class CreateWorkshopAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        Workshop.objects.create(
+            title=request.data["title"],
+            category=request.data["category"],
+            description=request.data["description"],
+            objectives=request.data["objectives"],
+            target_audience=request.data["target_audience"],
+            start_date=request.data["start_date"],
+            end_date=request.data["end_date"],
+            days=request.data["days"],
+            time_from=request.data["time_from"],
+            time_to=request.data["time_to"],
+            duration=request.data["duration"],
+            capacity=request.data["capacity"],
+            created_by=request.user
+        )
+
+        return Response({"detail": "تم إنشاء الورشة"})
+    
+
+#///////////////////// WORKSHOPS FOR PUBLIC //////////////
+
+class PublicWorkshopsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        filter_type = request.GET.get("filter")
+
+        workshops = Workshop.objects.filter(status="ACCEPTED")
+
+        today = timezone.now().date()
+
+        if filter_type == "upcoming":
+            workshops = workshops.filter(start_date__gt=today)
+
+        elif filter_type == "ongoing":
+            workshops = workshops.filter(
+                start_date__lte=today,
+                end_date__gte=today
+            )
+
+        elif filter_type == "finished":
+            workshops = workshops.filter(end_date__lt=today)
+
+        data = []
+
+        for w in workshops:
+            data.append({
+                "id": w.id,
+                "title": w.title,
+                "image": w.image.url if w.image else None,
+                "capacity": w.capacity,
+                "status": (
+                    "لم تبدأ" if w.start_date > today else
+                    "منتهية" if w.end_date < today else
+                    "بدأت"
+                )
+            })
+
+        return Response(data)
+    
+
+#/////////// WORKSHOP REGISTER > PUBLIC  اليوزرات اللي بدن يسجلوا بالورشات ////////
+
+class RegisterWorkshopAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, workshop_id):
+        workshop = get_object_or_404(
+            Workshop,
+            id=workshop_id,
+            status="ACCEPTED"
+        )
+
+        if workshop.registrations.count() >= workshop.capacity:
+            return Response({"detail": "الورشة ممتلئة"}, status=400)
+
+        WorkshopRegistration.objects.get_or_create(
+            user=request.user,
+            workshop=workshop,
+            defaults={
+                "name": request.user.get_full_name(),
+                "email": request.user.email
+            }
+        )
+
+        return Response({"detail": "تم التسجيل"})
+
+
+#/////////////////// CANCEL WORKSHOP REGISTRATION /////////////
+
+class CancelWorkshopRegistrationAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, workshop_id):
+        WorkshopRegistration.objects.filter(
+            user=request.user,
+            workshop_id=workshop_id
+        ).delete()
+
+        return Response({"detail": "تم إلغاء التسجيل"})
+
+
+#/////////// MY REGISTERED WORKSHOPS > كل ورشات العمل اللي مسجل فيها اليوز //////
+
+class MyRegisteredWorkshopsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        registrations = WorkshopRegistration.objects.filter(
+            user=request.user
+        ).select_related("workshop")
+
+        data = []
+
+        for r in registrations:
+            w = r.workshop
+
+            data.append({
+                "id": w.id,
+                "title": w.title,
+                "start_date": w.start_date,
+                "status": w.status
+            })
+
+        return Response(data)

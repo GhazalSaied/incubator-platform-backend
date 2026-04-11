@@ -1,6 +1,5 @@
 from django.utils.timezone import now
 from ideas.models import Idea, IdeaStatus
-from ideas.services.season_phase_service import SeasonPhaseService
 from bootcamp.models import BootcampSession
 
 
@@ -9,13 +8,20 @@ class IdeaDashboardService:
     @staticmethod
     def build(user):
 
-        try:
-            idea = Idea.objects.get(owner=user)
-        except Idea.DoesNotExist:
+        idea = Idea.objects.filter(owner=user).order_by("-created_at").first()
+
+        if not idea:
             return {"detail": "لا يوجد فكرة"}
 
-        phase_obj = SeasonPhaseService.get_current_phase()
-        phase = phase_obj.phase if phase_obj else "SUBMISSION"
+        STATUS_TO_PHASE = {
+            IdeaStatus.SUBMITTED: "SUBMISSION",
+            IdeaStatus.BOOTCAMP: "BOOTCAMP",
+            IdeaStatus.EVALUATION: "EVALUATION",
+            IdeaStatus.INCUBATION: "INCUBATION",
+            IdeaStatus.EXHIBITION: "EXHIBITION",
+        }
+
+        phase = STATUS_TO_PHASE.get(idea.status, "SUBMISSION")
 
         progress = ["SUBMISSION", "BOOTCAMP", "EVALUATION", "INCUBATION", "EXHIBITION"]
 
@@ -23,31 +29,16 @@ class IdeaDashboardService:
             "SUBMISSION": IdeaDashboardService._submission,
             "BOOTCAMP": IdeaDashboardService._bootcamp,
             "EVALUATION": IdeaDashboardService._evaluation,
+            "INCUBATION": IdeaDashboardService._incubation,
             "EXHIBITION": IdeaDashboardService._exhibition,
         }
 
-        # incubation based on status (مش phase فقط)
-        if idea.status == IdeaStatus.INCUBATED:
-            data = IdeaDashboardService._incubation(idea)
-            return {
-                "phase": "INCUBATION",
-                "progress": progress,
-                "data": data
-            }
-
         handler = handler_map.get(phase)
-
-        if not handler:
-            return {
-                "phase": phase,
-                "progress": progress,
-                "data": {}
-            }
 
         return {
             "phase": phase,
             "progress": progress,
-            "data": handler(idea)
+            "data": handler(idea) if handler else {}
         }
 
     # ---------------------

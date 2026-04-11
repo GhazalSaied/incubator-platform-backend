@@ -28,6 +28,14 @@ class Notification(models.Model):
         (VIEW_IDEA, "View Idea"),
     ]
 
+
+    TARGET_ROLE_CHOICES = [
+    ("VOLUNTEER", "Volunteer"),
+    ("IDEA_OWNER", "Idea Owner"),
+    ("TEAM_MEMBER", "Team Member"),
+    ]
+
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -51,6 +59,15 @@ class Notification(models.Model):
         blank=True
     )
 
+
+    target_role = models.CharField(
+    max_length=20,
+    choices=TARGET_ROLE_CHOICES,
+    null=True,
+    blank=True
+    )
+
+
     is_read = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -62,6 +79,7 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.title}"
+
 
 #/////////////////////// NOTIFICATION TEMPLATE /////////////////////////
 

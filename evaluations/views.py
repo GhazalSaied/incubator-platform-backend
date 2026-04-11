@@ -8,10 +8,12 @@ from rest_framework.response import Response
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 
-from .models import EvaluationInvitation, EvaluationCriterion
+from .models import EvaluationInvitation, EvaluationCriterion ,  EvaluationAssignment
 from .serializers import EvaluationSerializer
 from ideas.models import Idea
 from .services.evaluation_service import EvaluationService
+
+
 
 
 # ////////////////////////////////// CREATE OR UPDATE EVALUATION //////////////////////////////////
@@ -74,9 +76,27 @@ class RespondToInvitationAPIView(APIView):
         if invitation.status != "PENDING":
             return Response({"detail": "تم الرد مسبقاً"}, status=status.HTTP_400_BAD_REQUEST)
 
-        invitation.status = "ACCEPTED" if action == "accept" else "REJECTED"
-        invitation.responded_at = timezone.now()
-        invitation.save()
+        if action == "accept":
+            invitation.status = "ACCEPTED"
+
+            ideas = Idea.objects.filter(season=invitation.season)
+
+            for idea in ideas:
+                EvaluationAssignment.objects.get_or_create(
+                    evaluator=request.user,
+                    idea=idea,
+                    season=invitation.season,
+                    invitation=invitation,
+                    defaults={
+                        "meeting_date": invitation.meeting_date
+                    }
+                )
+
+        else:
+            invitation.status = "REJECTED"
+            
+            invitation.responded_at = timezone.now()
+            invitation.save()
 
         return Response({"detail": "تم تحديث الحالة"})
 
@@ -162,3 +182,46 @@ class MyEvaluationDetailAPIView(APIView):
             return Response({"detail": "لا يوجد تقييم"}, status=404)
 
         return Response(evaluation)
+    
+#///////////////////////////// INVITATION DETAILS //////////////
+
+class MyInvitationsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        invitations = EvaluationInvitation.objects.filter(
+            user=request.user
+        ).order_by("-created_at")
+
+        data = [
+            {
+                "id": i.id,
+                "season": i.season.name,
+                "expertise_field": i.expertise_field,
+                "meeting_date": i.meeting_date,
+                "expected_duration": i.expected_duration,
+                "status": i.status,
+            }
+            for i in invitations
+        ]
+
+        return Response(data)
+    
+#////////////////////// EVALUATION PROGRESS  > كم فكرة عنده / كم خلص /كم باقي //////////
+
+class EvaluationProgressAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        assignments = EvaluationAssignment.objects.filter(
+            evaluator=request.user
+        )
+
+        total = assignments.count()
+        completed = assignments.filter(is_completed=True).count()
+
+        return Response({
+            "total": total,
+            "completed": completed,
+            "remaining": total - completed
+        })
