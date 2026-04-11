@@ -26,11 +26,13 @@ class SeasonPhaseService:
             return None
 
         now = timezone.now()
+        
         return SeasonPhase.objects.filter(
             season=season,
             start_date__lte=now,
             end_date__gte=now
-        ).first()
+        ).first() 
+        
 
 
     @staticmethod

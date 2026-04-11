@@ -24,8 +24,6 @@ from .serializers import (
     VolunteerAvailabilitySerializer,
     VolunteerAvailabilityCreateUpdateSerializer,
 
-    VolunteerJoinRequestSerializer,
-
     ConsultationRequestSerializer,
 
     CreateConsultationRequestSerializer,

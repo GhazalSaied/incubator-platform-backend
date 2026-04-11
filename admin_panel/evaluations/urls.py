@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (AssignmentDashboardAPIView,AvailableEvaluatorsView,AssignEvaluatorsToIdeaView,MeetingDashboardAPIView,IdeaEvaluatorsAPIView, PublishCriteriaView,SetMeetingAPIView,CriteriaListCreateView,
-                    CriteriaUpdateView,CriteriaToggleActiveView,CriteriaPreviewView,PublishCriteriaView)
+                    CriteriaUpdateView,CriteriaToggleActiveView,CriteriaPreviewView,PublishCriteriaView,EvaluationResultsView,EvaluationDetailsView,AcceptIdeaView,RejectIdeaView)
 
 urlpatterns = [
     #\\\عرض المشاريع المقبولة بالمعسكر لتعيين مقيمين\\\\\\\\\\
@@ -25,5 +25,14 @@ urlpatterns = [
     path("criteria/preview/",CriteriaPreviewView.as_view(),name="criteria-preview"),
     #\\\\\\\\\\\\\\\\\\\\\نشر نموذج التقييم\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("criteria/publish/",PublishCriteriaView.as_view(),name="criteria-publish"),
+    #\\\\\\\\\\\\\\\\\\\\\جدول عرض نتائج التقييمات\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    path("evaluation-results/",EvaluationResultsView.as_view(),name="evaluation-results"),
+    #\\\\\\\\\\\\\\\\\\\\\عرض المقيمين مع ملاحظاتن\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    path("evaluation-details/<int:idea_id>/",EvaluationDetailsView.as_view(),name="evaluation-details"),
+    #\\\\\\\\\\\\\\\\\\\\\قبول فكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    path("accept-idea/<int:idea_id>/",AcceptIdeaView.as_view(),name="accept-idea"),
+    #\\\\\\\\\\\\\\\\\\\\\رفض فكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    path("reject-idea/<int:idea_id>/",RejectIdeaView.as_view(),name="reject-idea")
+
 ]
     

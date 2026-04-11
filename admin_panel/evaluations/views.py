@@ -1,16 +1,18 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+
+from .services.evaluation_results_service import EvaluationDecisionService, EvaluationDetailsService, EvaluationResultsService
 from .services.EvaluationCriteriaService import EvaluationCriteriaService
-from admin_panel.evaluations.services.meeting_service import schedule_meeting
-from core.permissions import IsAdminOrSecretary
+from .services.meeting_service import schedule_meeting
+from core.permissions import IsAdminOrSecretary, IsDirector
 from rest_framework import status
 from evaluations.models import EvaluationCriterion
 from ideas.models import Idea
 from django.shortcuts import get_object_or_404
 from ideas.services.season_phase_service import SeasonPhaseService
-
+from rest_framework.permissions import IsAuthenticated
 from .selectors.assignment_dashboard_selectors import (get_assignment_dashboard_ideas)
-from .serializers import (AssignmentDashboardSerializer, EvaluatorInfoSerializer, MeetingDashboardSerializer,SeasonEvaluatorSerializer,AssignEvaluatorsSerializer,SetMeetingSerializer,EvaluationCriteriaSerializer)
+from .serializers import (AssignmentDashboardSerializer, DecisionSerializer, EvaluatorInfoSerializer, MeetingDashboardSerializer,SeasonEvaluatorSerializer,AssignEvaluatorsSerializer,SetMeetingSerializer,EvaluationCriteriaSerializer)
 from .selectors.volunteer_selectors import (get_available_season_evaluators)
 from ideas.services.season_phase_service import SeasonPhaseService
 from rest_framework import status
@@ -20,6 +22,7 @@ from .services.evaluation_assignment_service import (EvaluationAssignmentService
 
 #\\\\\\عرض المشاريع القبولة بالمعسكر لتعيين مقيمين لها\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class AssignmentDashboardAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsDirector]
 
     
 
@@ -50,6 +53,7 @@ class AssignmentDashboardAPIView(APIView):
 
 
 class AvailableEvaluatorsView(APIView):
+    permission_classes = [IsAuthenticated, IsDirector]
 
     def get(self, request):
 
@@ -76,6 +80,7 @@ class AvailableEvaluatorsView(APIView):
 #\\\\\\\\\\\\\\\\\\\تعيين مقيمين على فكرة معينة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class AssignEvaluatorsToIdeaView(APIView):
+    permission_classes = [IsAuthenticated, IsDirector]
 
     def post(self, request):
 
@@ -106,7 +111,7 @@ class AssignEvaluatorsToIdeaView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\عرض جدول المشاريع لتحديد موعد اللجنة \\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class MeetingDashboardAPIView(APIView):
 
-    
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
     def get(self, request):
 
@@ -133,7 +138,7 @@ class MeetingDashboardAPIView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض المقيمين المعينين على فكرة معينة في جدول تحديد موعد اللجنة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class IdeaEvaluatorsAPIView(APIView):
 
-    
+    permission_classes = [IsAuthenticated, IsDirector]
     def get(self, request, idea_id):
 
         idea = get_object_or_404(Idea, id=idea_id)
@@ -150,6 +155,7 @@ class IdeaEvaluatorsAPIView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\\\تحديد موعد اللجنة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class SetMeetingAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsDirector]
 
    
 
@@ -174,6 +180,7 @@ class SetMeetingAPIView(APIView):
 
 #\\\\\\\\\\\\\\\\\\\\\\\انشاء معيار تقييم\\\\\\\\\\\\\\\\\\\\\\from rest_framework.views import APIView
 class CriteriaListCreateView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
     def get(self, request):
         criteria = EvaluationCriterion.objects.all()
@@ -198,6 +205,7 @@ class CriteriaListCreateView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\تعديل معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
 
 class CriteriaUpdateView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
     def put(self, request, pk):
         criteria = get_object_or_404(EvaluationCriterion, pk=pk)
@@ -215,6 +223,7 @@ class CriteriaUpdateView(APIView):
 
 #\\\\\\\\\\\\\\\\\\\\\\\\تفعيل/تعطيل معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
 class CriteriaToggleActiveView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
     def post(self, request, pk):
         criteria = get_object_or_404(EvaluationCriterion, pk=pk)
@@ -225,6 +234,8 @@ class CriteriaToggleActiveView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\معاينة نموذج التقييم\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class CriteriaPreviewView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
 
     def get(self, request):
 
@@ -236,6 +247,7 @@ class CriteriaPreviewView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\نشر معايير التقييم\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class PublishCriteriaView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
     def post(self, request):
 
@@ -244,3 +256,74 @@ class PublishCriteriaView(APIView):
         return Response({
             "message": "تم نشر النموذج"
         })
+
+
+
+#\\\\\\\\\\\\\\\\\\\\\\\\جدول عرض نتائج التقييمات\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class EvaluationResultsView(APIView):
+    
+
+    def get(self, request):
+
+        sector = request.query_params.get("sector")
+        status = request.query_params.get("status")
+
+        data = EvaluationResultsService.get_results(
+            sector=sector,
+            status=status
+        )
+
+        return Response(data)
+    
+    
+#\\\\\\\\\\\\\\\\\\\\\عرض المقيمين مع ملاحظاتن\\\\\\\\\\\\\\\\\\\
+class EvaluationDetailsView(APIView):
+    permission_classes = [IsAuthenticated, IsDirector]
+
+    def get(self, request, idea_id):
+
+        idea = get_object_or_404(Idea, id=idea_id)
+
+        data = EvaluationDetailsService.get_idea_evaluation_details(
+            idea=idea
+        )
+
+        return Response(data)
+    
+    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\قبول فكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class AcceptIdeaView(APIView):
+    
+
+    def post(self, request, idea_id):
+
+        idea = get_object_or_404(Idea, id=idea_id)
+
+        serializer = DecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        EvaluationDecisionService.accept_idea(
+            idea=idea,
+            message=serializer.validated_data["message"]
+        )
+
+        return Response({"message": "تم قبول الفكرة"})
+    
+    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\رفض فكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class RejectIdeaView(APIView):
+    permission_classes = [IsAuthenticated, IsDirector]
+
+    def post(self, request, idea_id):
+
+        idea = get_object_or_404(Idea, id=idea_id)
+
+        serializer = DecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        EvaluationDecisionService.reject_idea(
+            idea=idea,
+            message=serializer.validated_data["message"]
+        )
+
+        return Response({"message": "تم رفض الفكرة"})

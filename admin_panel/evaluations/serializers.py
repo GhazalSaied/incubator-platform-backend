@@ -117,3 +117,9 @@ class EvaluationCriteriaSerializer(serializers.ModelSerializer):
     class Meta:
         model = EvaluationCriterion
         fields = ["id", "title", "max_score", "is_active"]
+        
+        
+        
+#\\\\\\\\\\\\\\\\\\\\\\\\\DecisionSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class DecisionSerializer(serializers.Serializer):
+    message = serializers.CharField(required=True, allow_blank=False)
