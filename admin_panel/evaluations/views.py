@@ -53,7 +53,7 @@ class AssignmentDashboardAPIView(APIView):
 
 
 class AvailableEvaluatorsView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
+    
 
     def get(self, request):
 

@@ -5,6 +5,7 @@ from ideas.models import Idea,IdeaStatus
 from django.core.exceptions import ValidationError
 from notifications.services.notification_service import NotificationService
 from evaluations.models import EvaluationAssignment
+from .phase_transition_service import PhaseTransitionService
 
 from django.db.models import Prefetch
 from evaluations.models import Evaluation, EvaluationAssignment, EvaluationScore
@@ -147,6 +148,19 @@ class EvaluationDetailsService:
 class EvaluationDecisionService:
 
     @staticmethod
+    def _try_finish_evaluation_phase(season):
+
+        remaining = season.ideas.filter(
+            status=IdeaStatus.EVALUATION
+        ).count()
+
+        print("Remaining ideas:", remaining)  # debug مؤقت
+
+        if remaining == 0:
+
+            PhaseTransitionService._move_to_incubation(season)
+
+    @staticmethod
     def _validate_decision(idea, message):
 
         # 🟢 تحقق من المرحلة
@@ -176,8 +190,7 @@ class EvaluationDecisionService:
 
         idea.status = IdeaStatus.ACCEPTED
         idea.save(update_fields=["status"])
-       
-
+        EvaluationDecisionService._try_finish_evaluation_phase(idea.season)
         NotificationService.send(
             user=idea.owner,
             title="تم قبول فكرتك 🎉",
@@ -198,7 +211,7 @@ class EvaluationDecisionService:
 
         idea.status = IdeaStatus.REJECTED
         idea.save(update_fields=["status"])
-        
+        EvaluationDecisionService._try_finish_evaluation_phase(idea.season)
 
         NotificationService.send(
             user=idea.owner,

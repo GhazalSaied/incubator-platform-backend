@@ -215,3 +215,23 @@ class EvaluationSettings(models.Model):
 
     def __str__(self):
         return "Evaluation Settings"
+    
+#\\\\\\\\\\\\\\\\\\\\IncubationAssignment\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+class IncubationAssignment(models.Model):
+
+    idea = models.ForeignKey(
+        "ideas.Idea",
+        on_delete=models.CASCADE,
+        related_name="incubation_assignments"
+    )
+
+    mentor = models.ForeignKey(
+        "volunteers.VolunteerProfile",
+        on_delete=models.CASCADE
+    )
+
+    assigned_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("idea", "mentor")
