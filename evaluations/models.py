@@ -131,6 +131,7 @@ class EvaluationInvitation(BaseModel):
         ("PENDING", "Pending"),
         ("ACCEPTED", "Accepted"),
         ("REJECTED", "Rejected"),
+        ("REVOKED", "Revoked")
     )
 
     user = models.ForeignKey(
@@ -146,10 +147,12 @@ class EvaluationInvitation(BaseModel):
     )
 
     expertise_field = models.CharField(max_length=255)
+    description = models.TextField(null=True, blank=True)
 
     meeting_date = models.DateTimeField()
 
     expected_duration = models.CharField(max_length=255)
+    task = models.TextField(null=True, blank=True)
 
     status = models.CharField(
         max_length=10,
