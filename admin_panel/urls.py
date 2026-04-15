@@ -7,4 +7,5 @@ urlpatterns = [
     path("evaluations/", include("admin_panel.evaluations.urls")),
     path("incubations/", include("admin_panel.incubations.urls")),
     path("volunteers/", include("admin_panel.volunteers.urls")),
+    path("users/", include("admin_panel.users.urls")),
 ]

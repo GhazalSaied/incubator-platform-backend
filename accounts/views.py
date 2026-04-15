@@ -77,6 +77,21 @@ class RegisterAPIView(APIView):
 class LoginAPIView(TokenObtainPairView):
     serializer_class = LoginSerializer
 
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.user  # ✅ هون اليوزر
+
+        # 🛑 تحقق تغيير كلمة المرور
+        if user.must_change_password:
+            return Response({
+                "error": "يجب تغيير كلمة المرور",
+                "force_password_change": True
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 #/////////////////////////// USER PROFILE VIEW //////////////////////////////////////////
 

@@ -17,7 +17,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-    
+    must_change_password = models.BooleanField(default=False)
 
     email_verified_at = models.DateTimeField(null=True, blank=True)
 
