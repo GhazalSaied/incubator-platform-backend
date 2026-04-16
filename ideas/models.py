@@ -47,6 +47,7 @@ class Season(models.Model):
 
     start_date = models.DateField()
     end_date = models.DateField()
+    exhibition_datetime = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -216,6 +217,9 @@ class TeamMember(models.Model):
     joined_at = models.DateTimeField(auto_now_add=True)
     
     
+
+    
+    
     
 #///////////////////////////////// TEAM REQUEST ///////////////////////////////
 
@@ -279,3 +283,79 @@ class SuggestedVolunteer(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    
+ #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ EXHIBITION FORM \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   
+class ExhibitionForm(models.Model):
+    season = models.OneToOneField(
+        "ideas.Season",
+        on_delete=models.CASCADE,
+        related_name="exhibition_form"
+    )
+
+    title = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=False)
+    
+    
+    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ EXHIBITION QUESTIONS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class ExhibitionQuestion(models.Model):
+
+    TEXT = 'text'
+    NUMBER = 'number'
+    SELECT = 'select'
+    BOOLEAN = 'boolean'
+    SELECT_MULTIPLE = 'select_multiple'
+
+    QUESTION_TYPES = [
+        (TEXT, 'Text'),
+        (NUMBER, 'Number'),
+        (SELECT, 'Select (single)'),
+        (SELECT_MULTIPLE, 'Select (multiple)'),
+        (BOOLEAN, 'Yes / No'),
+    ]
+
+    form = models.ForeignKey(
+        ExhibitionForm,
+        on_delete=models.CASCADE,
+        related_name='questions'
+    )
+
+    key = models.CharField(max_length=100)
+    label = models.CharField(max_length=255)
+
+    type = models.CharField(
+        max_length=20,
+        choices=QUESTION_TYPES
+    )
+
+    required = models.BooleanField(default=False)
+
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['form', 'key'],
+                name='unique_exhibition_question_key_per_form'
+            )
+        ]
+
+    def __str__(self):
+        return self.label
+ #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ EXHIBITION QUESTION OPTIONS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   
+class ExhibitionQuestionOption(models.Model):
+
+    question = models.ForeignKey(
+        ExhibitionQuestion,
+        on_delete=models.CASCADE,
+        related_name="options"
+    )
+
+    value = models.CharField(max_length=255)
+    label = models.CharField(max_length=255)
+
+    order = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return self.label

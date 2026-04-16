@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import IncubationProjectsView,IdeaMentorsView,RemoveMentorsView,AvailableEvaluatorsView,AssignMentorsView,ScheduleMeetingView,IdeaDetailsAPIView,IdeaLatestReviewView
+from .views import GraduateIdeaView, IncubationProjectsView,IdeaMentorsView,RemoveMentorsView,AvailableEvaluatorsView,AssignMentorsView,ScheduleMeetingView,IdeaDetailsAPIView,IdeaLatestReviewView
 
 urlpatterns = [
     #\\\\\\\\\\\\\\\\\\\\\\\\\\عرض المشاريع المحتضنة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -18,5 +18,7 @@ urlpatterns = [
     path("ideas/<int:pk>/details/", IdeaDetailsAPIView.as_view()),
     #\\\\\\\\\\\\\\\\\عرض ملاحظات آخر جلسة متابعة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("ideas/<int:idea_id>/latest-review/", IdeaLatestReviewView.as_view()),
+    #\\\\\\\\\\\\\\\\\تخرج فكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    path("ideas/<int:idea_id>/graduate/", GraduateIdeaView.as_view()),
 
 ]
