@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from django.db.models import Max
+from core.events import EventBus
 
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer, ConversationListSerializer
@@ -84,13 +85,13 @@ class SendMessageAPIView(APIView):
         #  إرسال إشعارات لباقي المشاركين
         for user in conversation.participants.all():
             if user != request.user:
-                NotificationService.send(
-                    user=user,
-                    title="رسالة جديدة",
-                    type="INFO",
-                    message=f"لديك رسالة جديدة من {getattr(request.user, 'full_name', request.user.email)}",
-                    related_object_id=conversation.id,
-                    related_object_type="conversation",
+                EventBus.emit(
+                    "message_sent",
+                    payload={
+                        "message": message,
+                        "conversation": conversation,
+                    },
+                    actor=request.user,
                     action_url=f"/chat/{conversation.id}"
                 )
 

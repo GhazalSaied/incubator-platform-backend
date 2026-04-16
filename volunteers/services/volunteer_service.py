@@ -5,6 +5,7 @@ from volunteers.models import (
     WorkshopRegistration,
 )
 from django.utils import timezone
+from core.events import EventBus
 from messaging.models import Conversation
 from notifications.services.notification_service import NotificationService
 from ideas.models import TeamMember 
@@ -73,15 +74,13 @@ class VolunteerService:
             conversation, _ = Conversation.objects.get_or_create()
             conversation.participants.add(user, consultation.requester)
 
-            NotificationService.send(
-                user=consultation.requester,
-                title="تم قبول طلبك",
-                message="تم قبول طلبك من قبل المتطوع",
-                notification_type="SUCCESS",
-                related_object=consultation,
-                action_url=f"/chat/{conversation.id}",
-                target_role="VOLUNTEER"
-            )
+            # اشعار من المتطوع لصاحب الفكرة بدون فريق 
+            EventBus.emit("volunteer_joined_team", {
+                "idea": idea,
+                "volunteer": user,
+                "owner": idea.owner,
+                "action_url": f"/team-dashboard"
+            })
 
             if consultation.request_type == ConsultationRequest.JOIN_REQUEST:
                 
@@ -131,14 +130,12 @@ class VolunteerService:
         else:
             consultation.status = ConsultationRequest.REJECTED
 
-            NotificationService.send(
-                user=consultation.requester,
-                title="تم رفض طلبك",
-                message="تم رفض طلبك من قبل المتطوع",
-                notification_type="WARNING",
-                related_object=consultation,
-                target_role="IDEA_OWNER"
-            )
+            EventBus.emit("join_request_rejected", {
+                "idea": consultation.idea,
+                "volunteer": user,
+                "requester": consultation.requester,
+                "action_url": "/consultations"
+            })
 
         consultation.save()
         return consultation

@@ -1,22 +1,73 @@
-from notifications.models import NotificationTemplate
-from django.core.exceptions import ObjectDoesNotExist
+TEMPLATES = {
 
+    # ===============================
+    # CONSULTATIONS
+    # ===============================
 
-class TemplateService:
+    "consultation_requested": {
+        "title": "طلب استشارة جديد",
+        "message": lambda c: f"لديك طلب استشارة من مشروع {c.idea.title}",
+    },
 
-    @staticmethod
-    def render(code: str, context: dict):
+    "consultation_accepted": {
+        "title": "تم قبول طلبك",
+        "message": lambda c: f"تم قبول طلبك من {c.volunteer.user.full_name}",
+    },
 
-        try:
-            template = NotificationTemplate.objects.get(code=code, is_active=True)
-        except ObjectDoesNotExist:
-            return "Notification", "No message"
+    "consultation_rejected": {
+        "title": "تم رفض طلبك",
+        "message": lambda c: f"اعتذر {c.volunteer.user.full_name} عن قبول طلبك",
+    },
 
-        message = template.message
-        title = template.title
+    # ===============================
+    # WORKSHOPS
+    # ===============================
 
-        for key, value in context.items():
-            message = message.replace(f"{{{{ {key} }}}}", str(value))
-            title = title.replace(f"{{{{ {key} }}}}", str(value))
+    "workshop_submitted": {
+        "title": "تم إرسال الورشة",
+        "message": lambda w: f"تم إرسال ورشتك {w.title} للمراجعة",
+    },
 
-        return title, message
+    "workshop_registered": {
+        "title": "تسجيل جديد",
+        "message": lambda w, u: f"قام {u.full_name} بالتسجيل في ورشتك {w.title}",
+    },
+
+    # ===============================
+    # TEAM
+    # ===============================
+
+    "join_request_sent": {
+        "title": "طلب انضمام",
+        "message": lambda c: f"لديك طلب انضمام لفريق مشروع {c.idea.title}",
+    },
+
+    # ===============================
+    # EVALUATION
+    # ===============================
+
+    "evaluation_invitation_sent": {
+        "title": "دعوة لجنة تقييم",
+        "message": lambda i: f"تم دعوتك للانضمام إلى لجنة تقييم ({i.season.name})",
+    },
+
+    "evaluation_invitation_accepted": {
+        "title": "تم قبولك",
+        "message": lambda i: "أصبحت الآن عضو في لجنة التقييم",
+    },
+
+    # ===============================
+    # SYSTEM
+    # ===============================
+
+    "message_sent": {
+        "title": "رسالة جديدة",
+        "message": lambda sender: f"لديك رسالة من {sender.full_name}",
+    },
+
+    "account_suspended": {
+        "title": "تم تجميد الحساب",
+        "message": lambda u: "تم تجميد حسابك مؤقتاً",
+    },
+
+}

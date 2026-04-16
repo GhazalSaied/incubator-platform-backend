@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from core.events import EventBus
 
 from messaging.models import Conversation
 from django.shortcuts import get_object_or_404
@@ -247,7 +248,7 @@ class ConsultationRequestDecisionAPIView(APIView):
         if action not in ["accept", "reject"]:
             return Response({"detail": "إجراء غير صالح"}, status=400)
 
-        from volunteers.services.volunteer_service import VolunteerService
+        
 
         try:
             consultation = VolunteerService.handle_consultation_decision(
@@ -257,6 +258,17 @@ class ConsultationRequestDecisionAPIView(APIView):
             )
         except Exception as e:
             return Response({"detail": str(e)}, status=400)
+        
+        #NOTIFICATION
+        EventBus.emit(
+            "consultation_decided",
+            payload={
+                "consultation": consultation,
+                "action": action,
+            },
+            actor=request.user,
+            action_url=f"/consultations/{consultation.id}"
+        )
 
         return Response(ConsultationRequestSerializer(consultation).data)
     
@@ -318,12 +330,13 @@ class CreateConsultationRequestAPIView(APIView):
         )
 
         # Notification للمتطوع
-        NotificationService.send(
-            user=consultation.volunteer.user,
-            title="طلب جديد",
-            message="لديك طلب جديد",
-            related_object=consultation,
-            target_role="VOLUNTEER"
+        EventBus.emit(
+            "consultation_requested",
+            payload={
+                "consultation": consultation,
+            },
+            actor=request.user,
+            action_url=f"/consultations/{consultation.id}"
         )
 
         return Response(
@@ -443,14 +456,14 @@ class SendJoinRequestAPIView(APIView):
         )
 
         #  Notification للمتطوع
-        NotificationService.send(
-            user=consultation.volunteer.user,
-            title="طلب انضمام جديد",
-            message=f"لديك طلب انضمام من مشروع {consultation.idea.title}",
-            related_object=consultation,
-            target_role="VOLUNTEER"
+        EventBus.emit(
+            "join_request_sent",
+            payload={
+                "consultation": consultation,
+            },
+            actor=request.user,
+            action_url=f"/consultations/{consultation.id}"
         )
-
         return Response({
             "detail": "تم إرسال طلب الانضمام بنجاح"
         }, status=201)
@@ -533,7 +546,7 @@ class CreateWorkshopAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        Workshop.objects.create(
+        workshop= Workshop.objects.create(
             title=request.data["title"],
             category=request.data["category"],
             description=request.data["description"],
@@ -548,8 +561,18 @@ class CreateWorkshopAPIView(APIView):
             capacity=request.data["capacity"],
             created_by=request.user
         )
-
+        #اشعار 
+        EventBus.emit(
+            "workshop_submitted",
+            payload={
+                "workshop": workshop,
+            },
+            actor=request.user,
+            action_url=f"/my-workshops/{workshop.id}"
+        )
         return Response({"detail": "تم إنشاء الورشة"})
+    
+    
     
 
 #///////////////////// WORKSHOPS FOR PUBLIC //////////////
@@ -606,6 +629,7 @@ class RegisterWorkshopAPIView(APIView):
             status="ACCEPTED"
         )
 
+
         if workshop.registrations.count() >= workshop.capacity:
             return Response({"detail": "الورشة ممتلئة"}, status=400)
 
@@ -618,7 +642,14 @@ class RegisterWorkshopAPIView(APIView):
             }
         )
 
+        EventBus.emit(
+            "workshop_registered",
+            workshop=workshop,
+            user=request.user
+        )
+
         return Response({"detail": "تم التسجيل"})
+        
 
 
 #/////////////////// CANCEL WORKSHOP REGISTRATION /////////////

@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from django.utils.timezone import now
+from core.events import EventBus
 
 from .models import BootcampSession, BootcampAbsenceRequest
 from .serializers import BootcampSessionSerializer
@@ -54,5 +55,10 @@ class CreateAbsenceRequestAPIView(APIView):
             session_id=session_id,
             reason=reason
         )
-
+        EventBus.emit("absence_requested", {
+            "idea": idea,
+            "user": request.user,
+            "session_id": session_id,
+            "action_url": "/bootcamp"
+        })       
         return Response({"detail": "تم إرسال الطلب"})

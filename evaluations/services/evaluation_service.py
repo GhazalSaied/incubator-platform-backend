@@ -1,5 +1,6 @@
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from core.events import EventBus
 
 from evaluations.models import (
     Evaluation,
@@ -74,6 +75,13 @@ class EvaluationService:
         evaluation.is_submitted = True
         evaluation.submitted_at = timezone.now()
         evaluation.save()
+
+        EventBus.emit("evaluation_submitted", {
+            "evaluation": evaluation,
+            "idea": idea,
+            "user": user,
+            "action_url": f"/ideas/{idea.id}/evaluation"
+        })
 
         EvaluationAssignment.objects.filter(
             evaluator=user,
@@ -166,28 +174,28 @@ def get_dashboard(user):
 
     # ////////////////////////////////// MY EVALUATION DETAIL //////////////////////////////////
 
-    @staticmethod
-    def get_user_evaluation_detail(user, idea_id):
-        evaluation = Evaluation.objects.filter(
-            evaluator=user,
-            idea_id=idea_id
-        ).prefetch_related("scores__criterion").first()
+@staticmethod
+def get_user_evaluation_detail(user, idea_id):
+    evaluation = Evaluation.objects.filter(
+        evaluator=user,
+        idea_id=idea_id
+    ).prefetch_related("scores__criterion").first()
 
-        if not evaluation:
-            return None
+    if not evaluation:
+        return None
 
-        scores = [
-            {
-                "criterion": s.criterion.title,
-                "score": s.score,
-                "max_score": s.criterion.max_score
-            }
-            for s in evaluation.scores.all()
-        ]
-
-        return {
-            "idea_id": evaluation.idea.id,
-            "notes": evaluation.notes,
-            "is_submitted": evaluation.is_submitted,
-            "scores": scores
+    scores = [
+        {
+            "criterion": s.criterion.title,
+            "score": s.score,
+            "max_score": s.criterion.max_score
         }
+        for s in evaluation.scores.all()
+    ]
+
+    return {
+        "idea_id": evaluation.idea.id,
+        "notes": evaluation.notes,
+        "is_submitted": evaluation.is_submitted,
+        "scores": scores
+    }

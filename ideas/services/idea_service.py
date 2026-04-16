@@ -23,7 +23,7 @@ class IdeaService:
         - إطلاق event
         """
 
-        # 1 جلب الموسم المفتوح
+        # جلب الموسم المفتوح
         season = Season.objects.filter(is_open=True).first()
 
         if not season or not hasattr(season, "form"):
@@ -31,11 +31,11 @@ class IdeaService:
 
         answers = data.get("answers", {})
 
-        # 2 Dynamic Form Validation
+        #  Dynamic Form Validation
         validator = IdeaFormValidator(season.form, answers)
         validator.validate()
 
-        # 3 إنشاء الفكرة
+        #  إنشاء الفكرة
         idea = Idea.objects.create(
             owner=user,
             season=season,
@@ -45,11 +45,13 @@ class IdeaService:
             status=IdeaStatus.SUBMITTED
         )
 
-        # 4 إطلاق event 
-        EventBus.publish(
-            "idea_status_changed",
-            idea=idea,
-            new_status=IdeaStatus.SUBMITTED
+        EventBus.emit(
+            "idea_submitted",
+            payload={
+                "idea": idea,
+            },
+            actor=user,
+            action_url=f"/ideas/{idea.id}"
         )
 
         return idea
@@ -92,14 +94,14 @@ class IdeaService:
         # 3 تنفيذ السحب
         idea.status = IdeaStatus.WITHDRAWN
         idea.save()
-
-        #  event
-        EventBus.publish(
-            "idea_status_changed",
-            idea=idea,
-            new_status=IdeaStatus.WITHDRAWN
+        EventBus.emit(
+            "idea_withdrawn",
+            payload={
+                "idea": idea,
+            },
+            actor=user,
+            action_url="/my-ideas"
         )
-
         return idea
 
 #//////////////////////// GET USER IDEA //////////////////
@@ -222,12 +224,16 @@ def create_team_request(user, data):
     )
 
     # Notification
-    NotificationService.send(
-        user=user,
-        title="تم إرسال طلب الفريق",
-        message="طلبك قيد المراجعة من الإدارة",
-        notification_type="INFO"
+    EventBus.emit(
+        "team_request_created",
+        payload={
+            "team_request": team_request,
+            "idea": idea,
+        },
+        actor=user,
+        action_url=f"/team-requests/{team_request.id}"
     )
+        
 
     return team_request
 
