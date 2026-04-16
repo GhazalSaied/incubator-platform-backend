@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Season,Idea,IdeaForm,FormQuestion,FormQuestionChoice,TeamMember
+from .models import Season,Idea,IdeaForm,FormQuestion,FormQuestionChoice,TeamMember,ExhibitionForm,ExhibitionQuestion,ExhibitionQuestionOption          
 from .phases import SeasonPhase
 
 admin.site.register(SeasonPhase)
@@ -9,6 +9,9 @@ admin.site.register(IdeaForm)
 admin.site.register(FormQuestion)
 admin.site.register(FormQuestionChoice)
 admin.site.register(TeamMember)
+admin.site.register(ExhibitionForm)     
+admin.site.register(ExhibitionQuestion)
+admin.site.register(ExhibitionQuestionOption)
 
 
 

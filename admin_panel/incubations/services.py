@@ -391,3 +391,34 @@ class IncubationNotesService:
             },
             "mentors": mentors
         }
+        
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تخريج الفكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class GraduationService:
+
+    @staticmethod
+    def graduate_positive(*, idea):
+        
+
+        # ❗ لازم تكون ضمن الاحتضان
+        if idea.status != IdeaStatus.INCUBATION:
+            raise ValidationError("لا يمكن تخريج الفكرة")
+
+        # ❗ لازم يكون في تقييمات
+        if not idea.reviews.exists():
+            raise ValidationError("لا يمكن التخريج الإيجابي بدون تقييمات")
+
+        idea.status = IdeaStatus.GRADUATED_POSITIVE
+        idea.save(update_fields=["status"])
+
+        return idea
+    
+    @staticmethod
+    def graduate_negative(*, idea):
+
+        if idea.status != IdeaStatus.INCUBATION:
+            raise ValidationError("لا يمكن تخريج الفكرة")
+
+        idea.status = IdeaStatus.GRADUATED_NEGATIVE
+        idea.save(update_fields=["status"])
+
+        return idea

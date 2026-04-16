@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404
 from admin_panel.seasons.services import SeasonAdminService
 from core.permissions import IsAdminOrSecretary,IsDirector
 from ideas.serializers import IdeaDetailSerializer
-from .services import IncubationDashboardService, IncubationNotesService, IncubationQueryService,IncubationAssignmentService,IncubationMeetingService
+from .services import GraduationService, IncubationDashboardService, IncubationNotesService, IncubationQueryService,IncubationAssignmentService,IncubationMeetingService
 from rest_framework.permissions import IsAuthenticated
 from ideas.models import Idea
 from rest_framework import status
@@ -229,3 +229,35 @@ class IdeaLatestReviewView(APIView):
         )
 
         return Response(data)
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تخريج فكرة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class GraduateIdeaView(APIView):
+    
+
+    def post(self, request, idea_id):
+        action = request.data.get("action")  # positive / negative
+
+        idea = get_object_or_404(Idea, id=idea_id)
+
+        try:
+            if action == "positive":
+                GraduationService.graduate_positive(idea=idea)
+
+            elif action == "negative":
+                GraduationService.graduate_negative(idea=idea)
+
+            else:
+                return Response(
+                    {"error": "نوع العملية غير صحيح"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        except ValidationError as e:
+            return Response(
+                {"error": e.message},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response({
+            "message": "تم تحديث حالة الفكرة بنجاح",
+            "status": idea.status
+        }, status=status.HTTP_200_OK)

@@ -130,10 +130,12 @@ class ChangePasswordAPIView(APIView):
             )
 
         user.set_password(serializer.validated_data["new_password"])
+        user.must_change_password = False
         user.save()
 
         return Response(
             {"detail": "تم تغيير كلمة المرور بنجاح"},
+            {"must_change_password": False},
             status=status.HTTP_200_OK
         )
     
