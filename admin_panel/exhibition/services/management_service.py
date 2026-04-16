@@ -332,3 +332,37 @@ class ExhibitionAdminService:
         form.save()
 
         return form
+    
+    
+    
+
+class ExhibitionSubmissionManagementService:
+
+    @staticmethod
+    def approve(submission, message=None):
+
+        if submission.status != "pending":
+            raise ValidationError("تمت معالجة هذا الطلب مسبقاً")
+
+        submission.status = "approved"
+        submission.message = message
+        submission.reviewed_at = timezone.now()
+        submission.save()
+        project = submission.project
+        project.status = "EXHIBITION"
+        project.save()
+
+        return submission
+
+    @staticmethod
+    def reject(submission, message=None):
+
+        if submission.status != "pending":
+            raise ValidationError("تمت معالجة هذا الطلب مسبقاً")
+
+        submission.status = "rejected"
+        submission.message = message
+        submission.reviewed_at = timezone.now()
+        submission.save()
+
+        return submission

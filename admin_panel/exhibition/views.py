@@ -4,8 +4,8 @@ from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from core.permissions import IsAdminOrSecretary, IsDirector
-from ideas.models import ExhibitionForm, ExhibitionQuestion
-from .services.management_service import ExhibitionAdminService
+from ideas.models import ExhibitionForm, ExhibitionQuestion, ExhibitionSubmission
+from .services.management_service import ExhibitionAdminService, ExhibitionSubmissionManagementService
 from .services.query_service import ExhibitionQueryService, ExhibitionSubmissionQueryService
 
 
@@ -99,8 +99,48 @@ class PublishExhibitionFormAPIView(APIView):
     
 class SubmissionListAPIView(APIView):
     
+    permission_classes = [IsAuthenticated, IsDirector]
     def get(self, request):
 
         data = ExhibitionSubmissionQueryService.list_submissions()
 
         return Response(data)
+    
+    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض تفاصيل الطلب \\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+class SubmissionDetailsAPIView(APIView):
+    
+    permission_classes = [IsAuthenticated, IsDirector]
+    def get(self, request, submission_id):
+
+        submission = get_object_or_404(ExhibitionSubmission, id=submission_id)
+
+        data = ExhibitionSubmissionQueryService.get_submission_details(submission)
+
+        return Response(data)
+    
+    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\قبول او رفض الطلب \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class SubmissionDecisionAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsDirector]
+    
+    def post(self, request, submission_id):
+
+        submission = get_object_or_404(ExhibitionSubmission, id=submission_id)
+
+        action = request.data.get("action")  # approve / reject
+        message = request.data.get("message")
+
+        if action == "approve":
+            ExhibitionSubmissionManagementService.approve(submission, message)
+
+        elif action == "reject":
+            ExhibitionSubmissionManagementService.reject(submission, message)
+
+        else:
+            return Response({"error": "Invalid action"}, status=400)
+
+        return Response({
+            "message": "تم تنفيذ العملية بنجاح"
+        })

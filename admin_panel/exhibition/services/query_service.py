@@ -117,3 +117,65 @@ class ExhibitionSubmissionQueryService:
             }
             for s in submissions
         ]
+        
+        
+    
+
+    @staticmethod
+    def get_submission_details(submission):
+
+        project = submission.project
+        form = submission.form
+
+        questions = form.questions.all().order_by("order")
+
+        answers = submission.data or {}
+
+        return {
+            # =========================
+            # PROJECT INFO
+            # =========================
+            "project": {
+                "name": project.title,
+                "image": project.exhibition_image.url if project.exhibition_image else None,
+                "owner_name": project.owner.full_name,
+            },
+
+            # =========================
+            # FORM + ANSWERS
+            # =========================
+            "fields": [
+                {
+                    "label": q.label,
+                    "type": q.type,
+                    "answer": ExhibitionSubmissionQueryService._format_answer(
+                        q,
+                        answers.get(q.key)
+                    )
+                }
+                for q in questions
+            ],
+
+            "status": submission.status
+        }
+
+    # =========================
+    # FORMAT ANSWER (🔥 مهم)
+    # =========================
+    @staticmethod
+    def _format_answer(question, value):
+
+        if value is None:
+            return None
+
+        # select → رجع label بدل value
+        if question.type in ["select", "radio"]:
+            option = question.options.filter(value=value).first()
+            return option.label if option else value
+
+        # multiple select
+        if question.type == "select_multiple":
+            options = question.options.filter(value__in=value)
+            return [opt.label for opt in options]
+
+        return value

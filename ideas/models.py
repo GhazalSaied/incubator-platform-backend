@@ -379,5 +379,7 @@ class ExhibitionSubmission(models.Model):
         ],
         default="pending"
     )
+    message = models.TextField(null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
