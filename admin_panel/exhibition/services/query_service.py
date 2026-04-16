@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 
-from ideas.models import ExhibitionSubmission
+from ideas.models import ExhibitionSubmission, Season
 
 
 class ExhibitionQueryService:
@@ -179,3 +179,74 @@ class ExhibitionSubmissionQueryService:
             return [opt.label for opt in options]
 
         return value
+    
+    
+class ExhibitionHistoryQueryService:
+
+    @staticmethod
+    def list_exhibitions():
+
+        seasons = Season.objects.exclude(
+            exhibition_datetime=None
+        ).order_by("-exhibition_datetime")
+
+        data = []
+
+        for season in seasons:
+
+            # 🔥 عدد المشاريع المشاركة
+            projects_count = season.ideas.filter(
+                status="EXHIBITION"
+            ).count()
+
+            data.append({
+                "id": season.id,
+                "title": f"معرض خريجين {season.name}",
+                "date": season.exhibition_datetime,
+                "projects_count": projects_count
+            })
+
+        return data
+    
+
+
+    @staticmethod
+    def get_exhibition_projects(season, search=None, sector=None):
+
+        submissions = ExhibitionSubmission.objects.filter(
+            project__season=season,
+            project__status="EXHIBITION"
+        ).select_related(
+            "project__owner"
+        ).prefetch_related(
+            "project__team_members__user"
+        )
+
+        # 🔍 search
+        if search:
+            submissions = submissions.filter(
+                project__title__icontains=search
+            )
+
+        # 🎯 filter
+        if sector:
+            submissions = submissions.filter(
+                project__sector__iexact=sector
+            )
+
+        return [
+            {
+                "submission_id": s.id,  # 🔥 المهم
+
+                "project_name": s.project.title,
+                "sector": s.project.sector,
+
+                "owner_name": s.project.owner.full_name,
+
+                "team": [
+                    member.user.full_name
+                    for member in s.project.team_members.all()
+                ]
+            }
+            for s in submissions
+        ]

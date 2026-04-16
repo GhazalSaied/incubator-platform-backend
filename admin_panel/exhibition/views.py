@@ -4,9 +4,9 @@ from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from core.permissions import IsAdminOrSecretary, IsDirector
-from ideas.models import ExhibitionForm, ExhibitionQuestion, ExhibitionSubmission
+from ideas.models import ExhibitionForm, ExhibitionQuestion, ExhibitionSubmission, Season
 from .services.management_service import ExhibitionAdminService, ExhibitionSubmissionManagementService
-from .services.query_service import ExhibitionQueryService, ExhibitionSubmissionQueryService
+from .services.query_service import ExhibitionHistoryQueryService, ExhibitionQueryService, ExhibitionSubmissionQueryService
 
 
 
@@ -144,3 +144,35 @@ class SubmissionDecisionAPIView(APIView):
         return Response({
             "message": "تم تنفيذ العملية بنجاح"
         })
+        
+        
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\سجل المعارض\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+class ExhibitionHistoryAPIView(APIView):
+    
+    permission_classes = [IsAuthenticated, IsDirector]
+    def get(self, request):
+
+        data = ExhibitionHistoryQueryService.list_exhibitions()
+
+        return Response(data)
+    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تفاصيل معرض معين\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class ExhibitionProjectsAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsDirector]
+    
+    def get(self, request, exhibition_id):
+
+        season = get_object_or_404(Season, id=exhibition_id)
+
+        search = request.GET.get("search")
+        sector = request.GET.get("sector")
+
+        data = ExhibitionHistoryQueryService.get_exhibition_projects(
+            season=season,
+            search=search,
+            sector=sector
+        )
+
+        return Response(data)
+        
