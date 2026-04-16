@@ -1,5 +1,7 @@
 from django.core.exceptions import ValidationError
 
+from ideas.models import ExhibitionSubmission
+
 
 class ExhibitionQueryService:
 
@@ -87,3 +89,31 @@ class ExhibitionQueryService:
         }
 
         return mapping.get(q_type, "TextInput")
+    
+    
+    
+class ExhibitionSubmissionQueryService:
+
+    @staticmethod
+    def list_submissions():
+
+        submissions = ExhibitionSubmission.objects.select_related(
+            "project__owner"
+        ).all().order_by("-created_at")
+
+        return [
+            {
+                "id": s.id,
+                "project_name": s.project.title,
+
+                "owner_name": s.project.owner.full_name,
+
+                "owner_image": (
+                    s.project.owner.avatar.url
+                    if s.project.owner.avatar else None
+                ),
+
+                "status": s.status
+            }
+            for s in submissions
+        ]

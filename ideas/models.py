@@ -359,3 +359,25 @@ class ExhibitionQuestionOption(models.Model):
 
     def __str__(self):
         return self.label
+    
+    
+    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ExhibitionSubmission\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    
+class ExhibitionSubmission(models.Model):
+
+    project = models.ForeignKey(Idea, on_delete=models.CASCADE)
+    form = models.ForeignKey(ExhibitionForm, on_delete=models.CASCADE)
+
+    data = models.JSONField()  # إجابات الفورم
+
+    status = models.CharField(
+        choices=[
+            ("pending", "Pending"),
+            ("approved", "Approved"),
+            ("rejected", "Rejected"),
+        ],
+        default="pending"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)

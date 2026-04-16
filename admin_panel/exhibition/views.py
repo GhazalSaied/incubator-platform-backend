@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from core.permissions import IsAdminOrSecretary, IsDirector
 from ideas.models import ExhibitionForm, ExhibitionQuestion
 from .services.management_service import ExhibitionAdminService
-from .services.query_service import ExhibitionQueryService
+from .services.query_service import ExhibitionQueryService, ExhibitionSubmissionQueryService
 
 
 
@@ -94,3 +94,13 @@ class PublishExhibitionFormAPIView(APIView):
         return Response({
             "message": "تم نشر البطاقة بنجاح"
         })
+        
+ #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض طلبات البطاقات\\\\\\\\\\\\\\\\\\\\\\\\\\\       
+    
+class SubmissionListAPIView(APIView):
+    
+    def get(self, request):
+
+        data = ExhibitionSubmissionQueryService.list_submissions()
+
+        return Response(data)
