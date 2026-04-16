@@ -50,7 +50,7 @@ class CreateFormView(APIView):
 
         return Response({"id": form.id, "title": form.title})
     
-#\\\\\\\\\\\\\\\\\\\\\\\\\انشاء سؤال للمعرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+#\\\\\\\\\\\\\\\\\\\\\\\\\انشاء سؤال  للمعرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class ExhibitionFormBuilderAPIView(APIView):
     
@@ -70,7 +70,6 @@ class ExhibitionFormBuilderAPIView(APIView):
 
 class ExhibitionFormPreviewAPIView(APIView):
     permission_classes = [IsAuthenticated, IsAdminOrSecretary]
-
     def get(self, request, form_id):
 
         form = get_object_or_404(ExhibitionForm, id=form_id)
@@ -78,3 +77,20 @@ class ExhibitionFormPreviewAPIView(APIView):
         data = ExhibitionQueryService.get_form_preview(form)
 
         return Response(data)
+    
+    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\نشر بطاقة المعرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+class PublishExhibitionFormAPIView(APIView):
+    
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    def post(self, request, form_id):
+
+        form = get_object_or_404(ExhibitionForm, id=form_id)
+
+        ExhibitionAdminService.publish_form(form)
+
+        return Response({
+            "message": "تم نشر البطاقة بنجاح"
+        })

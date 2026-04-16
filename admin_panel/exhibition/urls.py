@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ExhibitionFormBuilderAPIView, CreateExhibitionView, CreateFormView,ExhibitionFormPreviewAPIView
+from .views import ExhibitionFormBuilderAPIView, CreateExhibitionView, CreateFormView,ExhibitionFormPreviewAPIView,PublishExhibitionFormAPIView
 
 urlpatterns = [
     #\\\\\\\\\\\\\\\\\\\\\\\\\انشاء معرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -10,4 +10,6 @@ urlpatterns = [
     path("form/<int:form_id>/questions/", ExhibitionFormBuilderAPIView.as_view()),
     #\\\\\\\\\\\\\\\\\\\\\\\\\معاينة بطاقة المعرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("form/<int:form_id>/preview/", ExhibitionFormPreviewAPIView.as_view()),
+    #\\\\\\\\\\\\\\\\\\\\\\\\\نشر بطاقة المعرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    path("form/<int:form_id>/publish/", PublishExhibitionFormAPIView.as_view()),
 ]                 

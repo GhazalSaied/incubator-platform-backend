@@ -130,7 +130,7 @@ class ExhibitionAdminService:
     @staticmethod
     @transaction.atomic
     def sync_form(form, questions_data):
-
+        ExhibitionAdminService.check_not_published(form)
         # =========================
         # VALIDATION (REQUEST LEVEL)
         # =========================
@@ -229,6 +229,7 @@ class ExhibitionAdminService:
     # ==================================================
     @staticmethod
     def _sync_options(question, options_data):
+        
 
         # ❗ if not selectable type → remove all options
         if question.type not in ["select", "select_multiple"]:
@@ -293,4 +294,41 @@ class ExhibitionAdminService:
         if to_delete:
             question.options.filter(id__in=to_delete).delete()
 
-   
+
+    # =========================
+    # 🔒 CHECK LOCK
+    # =========================
+    @staticmethod
+    def check_not_published(form):
+        if form.is_active:
+            raise ValidationError("لا يمكن التعديل على بطاقة منشورة")
+
+    # =========================
+    # 🚀 PUBLISH FORM
+    # =========================
+    @staticmethod
+    def publish_form(form):
+
+        # 🔒 إذا منشور مسبقاً
+        if form.is_active:
+            raise ValidationError("الفورم منشور مسبقاً")
+
+        # 🟢 تحقق من الموسم
+        season = SeasonPhaseService.get_current_season()
+        if not season:
+            raise ValidationError("لا يوجد موسم فعال")
+
+        # 🟢 تحقق من المرحلة
+        phase = SeasonPhaseService.get_current_phase(season)
+        if not phase or phase.phase != PhaseEnum.EXHIBITION:
+            raise ValidationError("لا يمكن النشر إلا في مرحلة المعرض")
+
+        # 🟢 تحقق انه الفورم فيه أسئلة
+        if not form.questions.exists():
+            raise ValidationError("لا يمكن نشر فورم فارغ")
+
+        # 🟢 نشر
+        form.is_active = True
+        form.save()
+
+        return form
