@@ -82,44 +82,26 @@ class CanEvaluateIdea(IsEvaluator, IsInPhase):
     required_phase = SeasonPhase.EVALUATION
 
 
-#//////////////////////// GROUP PERMISSIONS ///////////////////////////////
-
-class IsDirector(BasePermission):
-    message = "يجب أن تكون مديرة الحاضنة للوصول إلى هذه الوظيفة."
-
-    def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated and
-            request.user.is_active and
-            request.user.groups.filter(name="incubator directors").exists()
-        )
+class IsDirector(HasRole):
+    required_role_code = "DIRECTOR"
 
 
-class IsSecretary(BasePermission):
-    message = "يجب أن تكون سكرتيرة الحاضنة للوصول إلى هذه الوظيفة."
-
-    def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated and
-            request.user.is_active and
-            request.user.groups.filter(name="incubator secretary").exists()
-        )
-
-
+class IsSecretary(HasRole):
+    required_role_code = "SECRETARY"
+    
+    
 class IsAdminOrSecretary(BasePermission):
-    message = "يجب أن تكون مديرة أو سكرتيرة الحاضنة."
 
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated and
-            request.user.is_active and
-            (
-                request.user.groups.filter(name="incubator directors").exists() or
-                request.user.groups.filter(name="incubator secretary").exists()
-            )
-        )
 
+        if not request.user.is_authenticated:
+            return False
 
+        return UserRole.objects.filter(
+            user=request.user,
+            role__code__in=["DIRECTOR", "SECRETARY"],
+            is_active=True
+        ).exists()
 class IsReadOnly(BasePermission):
     def has_permission(self, request, view):
         return request.method in SAFE_METHODS

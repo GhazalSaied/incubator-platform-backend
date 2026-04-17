@@ -3,6 +3,8 @@ from django.db import transaction
 from django.core.exceptions import ValidationError
 
 from accounts.models import Role, UserRole
+from core import roles
+from django.db import transaction
 
 User = get_user_model()
 
@@ -36,5 +38,27 @@ class AdminUserService:
             assigned_by=created_by,
             is_active=True
         )
+
+        return user
+    
+
+    
+    @staticmethod
+    def update_user_roles(user, role_ids):
+
+        roles = Role.objects.filter(id__in=role_ids)
+
+        if roles.count() != len(role_ids):
+            raise ValidationError("بعض الأدوار غير موجودة")
+
+        with transaction.atomic():
+        # احذف الأدوار القديمة
+            UserRole.objects.filter(user=user).delete()
+
+        # أضف الأدوار الجديدة
+            UserRole.objects.bulk_create([
+                UserRole(user=user, role=role)
+                for role in roles
+            ])
 
         return user

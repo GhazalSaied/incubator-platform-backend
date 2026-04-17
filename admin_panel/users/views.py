@@ -1,12 +1,13 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from accounts.models import Role, User
 from core.permissions import IsAdminOrSecretary
-
+from django.shortcuts import get_object_or_404
 from .serializers import AdminUserSerializer,CreateUserSerializer
 from .selectors import get_users
 from rest_framework import status
-from .services import AdminUserService
+from .services.user_management_service import AdminUserService
 
 
 class AdminUserListView(APIView):
@@ -45,3 +46,37 @@ class CreateUserView(APIView):
                 "email": user.email
             }
         }, status=status.HTTP_201_CREATED)
+        
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض الادوار\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class RoleListAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+    def get(self, request):
+
+        roles = Role.objects.exclude(code="DIRECTOR")
+
+        return Response([
+            {
+                "id": r.id,
+                "name": r.name_ar
+            }
+            for r in roles
+        ])   
+        
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تحديث أدوار المستخدم \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+class UpdateUserRolesAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    
+
+    def put(self, request, user_id):
+
+        user = get_object_or_404(User, id=user_id)
+
+        role_ids = request.data.get("roles", [])
+
+        AdminUserService.update_user_roles(user, role_ids)
+
+        return Response({
+            "message": "تم تحديث الأدوار بنجاح"
+        })
