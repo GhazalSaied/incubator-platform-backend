@@ -644,10 +644,12 @@ class RegisterWorkshopAPIView(APIView):
 
         EventBus.emit(
             "workshop_registered",
-            workshop=workshop,
-            user=request.user
+            payload={
+                "workshop": workshop,
+                "user": request.user,
+            },
+            actor=request.user,
         )
-
         return Response({"detail": "تم التسجيل"})
         
 

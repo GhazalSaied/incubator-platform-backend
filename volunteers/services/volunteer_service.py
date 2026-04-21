@@ -9,6 +9,8 @@ from core.events import EventBus
 from messaging.models import Conversation
 from notifications.services.notification_service import NotificationService
 from ideas.models import TeamMember 
+from ideas.services.team_service import TeamService
+from ideas.models import TeamStatus
 
 
 
@@ -31,18 +33,20 @@ class VolunteerService:
         profile = VolunteerService.get_profile(user)
 
         availability = profile.availabilities.all().order_by("day")
-
         consultations = profile.consultation_requests.all()
 
-        next_workshop = get_next_workshop(user)
+        next_workshop = VolunteerService.get_next_workshop(user)
 
         return {
             "profile": profile,
             "availability": availability,
+
             "consultations": {
                 "pending": consultations.filter(status="PENDING").count(),
                 "accepted": consultations.filter(status="ACCEPTED").count(),
                 "rejected": consultations.filter(status="REJECTED").count(),
+            },
+
             "workshop_stats": get_workshop_stats(user),
             "next_workshop": {
                 "title": next_workshop.title,
@@ -50,8 +54,8 @@ class VolunteerService:
                 "time_from": next_workshop.time_from
         } if next_workshop else None,
             
-            }
         }
+        
     
 #/////////////////////////// CONSULTATION REQUEST ///////////////////
 
@@ -65,26 +69,32 @@ class VolunteerService:
             volunteer=profile
         )
 
-        if consultation.idea.team_status == "team_full":
+        idea = consultation.idea
+
+        if consultation.idea.team_status == TeamStatus.TEAM_FULL:
              raise Exception("الفريق مكتمل بالفعل")
         
         if action == "accept":
+
             consultation.status = ConsultationRequest.ACCEPTED
+
 
             conversation, _ = Conversation.objects.get_or_create()
             conversation.participants.add(user, consultation.requester)
 
             # اشعار من المتطوع لصاحب الفكرة بدون فريق 
-            EventBus.emit("volunteer_joined_team", {
+            EventBus.emit(
+                "volunteer_joined_team",
+                payload={
                 "idea": idea,
                 "volunteer": user,
-                "owner": idea.owner,
-                "action_url": f"/team-dashboard"
-            })
+                "owner": idea.owner ,
+            },
+             actor=user,
+            )
 
             if consultation.request_type == ConsultationRequest.JOIN_REQUEST:
                 
-                idea = consultation.idea
                 team_request = consultation.team_request
 
                 current_members = TeamMember.objects.filter(
@@ -94,35 +104,36 @@ class VolunteerService:
                 if current_members >= team_request.members_needed:
                     raise Exception("تم الوصول للعدد المطلوب من الفريق")
 
-                TeamMember.objects.get_or_create(
+
+
+                TeamService.add_member(
                     idea=idea,
-                    user=user
+                    user=user,
+                    team_request=team_request
                 )
 
-                #  تحديث حالة الفريق
-                current_members += 1
-
                 if current_members >= team_request.members_needed:
-                    idea.team_status = "team_full"
+                    idea.team_status = TeamStatus.TEAM_FULL
                     #  notification 
-                    NotificationService.send(
-                        user=idea.owner,
-                        title="اكتمل فريقك 🎉",
-                        message="تم اكتمال فريق مشروعك بنجاح",
-                        notification_type="SUCCESS",
-                        target_role="IDEA_OWNER"
+                    EventBus.emit(
+                        "team_completed",
+                        payload={
+                            "idea": idea,
+                        },
+                        actor=user,
                     )
 
                 else:
-                    consultation.idea.team_status = "team_building"
+                    consultation.idea.team_status = TeamStatus.TEAM_BUILDING
 
                     #  notification انضمام عضو جديد
-                    NotificationService.send(
-                        user=idea.owner,
-                        title="انضمام متطوع جديد",
-                        message=f"تم انضمام {user.full_name} إلى فريق مشروعك",
-                        notification_type="INFO",
-                        target_role="IDEA_OWNER"
+                    EventBus.emit(
+                        "team_member_joined",
+                        payload={
+                            "idea": idea,
+                            "member": user,
+                        },
+                        actor=user,
                     )
 
                 idea.save()
@@ -130,12 +141,15 @@ class VolunteerService:
         else:
             consultation.status = ConsultationRequest.REJECTED
 
-            EventBus.emit("join_request_rejected", {
+            EventBus.emit(
+                "join_request_rejected",
+                payload={
                 "idea": consultation.idea,
                 "volunteer": user,
                 "requester": consultation.requester,
-                "action_url": "/consultations"
-            })
+            },
+            actor=user,
+            )
 
         consultation.save()
         return consultation

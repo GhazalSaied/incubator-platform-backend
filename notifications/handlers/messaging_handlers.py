@@ -2,14 +2,14 @@ from core.events import EventBus
 from notifications.services.notification_service import NotificationService
 
 
-def message_sent_handler(sender, receiver, conversation, event_name, action_url=None, **kwargs):
+def message_sent_handler(payload):
 
     NotificationService.send(
-        user=receiver,
-        event_name=event_name,
-        actor=sender,
-        obj=conversation,
-        action_url=action_url,
+        user=payload["receiver"],
+        event_name=payload["event_name"],
+        actor=payload.get("sender"),
+        obj=payload.get("conversation"),
+        action_url=payload.get("action_url"),
         target_role="USER"
     )
 

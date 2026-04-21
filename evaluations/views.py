@@ -99,7 +99,6 @@ class RespondToInvitationAPIView(APIView):
                     "invitation": invitation,
                 },
                 actor=request.user,
-                action_url="/evaluation-dashboard"
             )
 
         else:
@@ -115,7 +114,6 @@ class RespondToInvitationAPIView(APIView):
                     "invitation": invitation,
                 },
                 actor=request.user,
-                action_url="/invitations"
             )
 
         return Response({"detail": "تم تحديث الحالة"})

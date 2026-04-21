@@ -1,12 +1,15 @@
 from django.db import transaction
-from ideas.models import Idea, IdeaStatus, Season , IdeaAuditLog , TeamRequest
+from ideas.models import Idea, IdeaStatus, Season , IdeaAuditLog , TeamRequest ,TeamStatus
+
 from ideas.services.idea_validation import IdeaFormValidator
 from core.events import EventBus
 from ideas.services.season_phase_service import SeasonPhaseService
 from ideas.phases import SeasonPhase
 from ideas.serializers import TeamRequestSerializer
 from notifications.services.notification_service import NotificationService
-
+from ideas.services.idea_workflow import IdeaWorkflow
+from ideas.services.state.idea_state_service import IdeaStateService
+from evaluations.serializers import IncubationReviewSerializer
 
 class IdeaService:
 
@@ -42,7 +45,15 @@ class IdeaService:
             title=data.get("title"),
             description=data.get("description"),
             answers=answers,
-            status=IdeaStatus.SUBMITTED
+            status=IdeaStatus.DRAFT
+        )
+
+        # proper state transition
+        IdeaStateService.change_status(
+            idea=idea,
+            to_status=IdeaStatus.SUBMITTED,
+            user=user,
+            reason="initial_submission"
         )
 
         EventBus.emit(
@@ -51,7 +62,6 @@ class IdeaService:
                 "idea": idea,
             },
             actor=user,
-            action_url=f"/ideas/{idea.id}"
         )
 
         return idea
@@ -92,15 +102,19 @@ class IdeaService:
             raise ValueError("لا يمكن سحب هذه الفكرة في حالتها الحالية")
 
         # 3 تنفيذ السحب
-        idea.status = IdeaStatus.WITHDRAWN
-        idea.save()
+        IdeaStateService.change_status(
+            idea=idea,
+            to_status=IdeaStatus.WITHDRAWN,
+            user=user,
+            reason="user_withdraw"
+        )
+
         EventBus.emit(
             "idea_withdrawn",
             payload={
                 "idea": idea,
             },
             actor=user,
-            action_url="/my-ideas"
         )
         return idea
 
@@ -126,8 +140,6 @@ class IdeaService:
             raise ValueError("لم يتم الاحتضان بعد")
 
         reviews = idea.reviews.order_by("-meeting_date")
-
-        from evaluations.serializers import IncubationReviewSerializer
 
         return {
             "phase": "INCUBATION",
@@ -212,7 +224,7 @@ def create_team_request(user, data):
     team_request = serializer.save(idea=idea)
 
     # تحديث حالة الفريق
-    idea.team_status = "team_building"
+    idea.team_status = TeamStatus.TEAM_BUILDING
     idea.save()
 
     # Audit log
@@ -231,7 +243,6 @@ def create_team_request(user, data):
             "idea": idea,
         },
         actor=user,
-        action_url=f"/team-requests/{team_request.id}"
     )
         
 

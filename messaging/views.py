@@ -90,9 +90,10 @@ class SendMessageAPIView(APIView):
                     payload={
                         "message": message,
                         "conversation": conversation,
+                        "sender": request.user,
+                        "receiver": user,
                     },
                     actor=request.user,
-                    action_url=f"/chat/{conversation.id}"
                 )
 
         return Response(

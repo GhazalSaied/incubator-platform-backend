@@ -76,12 +76,15 @@ class EvaluationService:
         evaluation.submitted_at = timezone.now()
         evaluation.save()
 
-        EventBus.emit("evaluation_submitted", {
+        EventBus.emit(
+            "evaluation_submitted", 
+            payload={
             "evaluation": evaluation,
             "idea": idea,
             "user": user,
-            "action_url": f"/ideas/{idea.id}/evaluation"
-        })
+        },
+        actor=user,
+        )
 
         EvaluationAssignment.objects.filter(
             evaluator=user,

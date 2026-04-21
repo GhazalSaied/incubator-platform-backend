@@ -6,17 +6,13 @@ TEMPLATES = {
 
     "consultation_requested": {
         "title": "طلب استشارة جديد",
-        "message": lambda c: f"لديك طلب استشارة من مشروع {c.idea.title}",
+        "message": lambda obj, actor=None, extra=None: f"لديك طلب استشارة من مشروع {obj.idea.title}",
     },
 
-    "consultation_accepted": {
-        "title": "تم قبول طلبك",
-        "message": lambda c: f"تم قبول طلبك من {c.volunteer.user.full_name}",
-    },
-
-    "consultation_rejected": {
-        "title": "تم رفض طلبك",
-        "message": lambda c: f"اعتذر {c.volunteer.user.full_name} عن قبول طلبك",
+    "consultation_decided": {
+        "title": "تم الرد على طلبك",
+        "message": lambda obj, actor=None, extra=None:
+            f"تم {'قبول' if extra=='accept' else 'رفض'} طلبك",
     },
 
     # ===============================
@@ -25,12 +21,13 @@ TEMPLATES = {
 
     "workshop_submitted": {
         "title": "تم إرسال الورشة",
-        "message": lambda w: f"تم إرسال ورشتك {w.title} للمراجعة",
+        "message": lambda obj, actor=None, extra=None: f"تم إرسال ورشتك {obj.title}",
     },
 
     "workshop_registered": {
         "title": "تسجيل جديد",
-        "message": lambda w, u: f"قام {u.full_name} بالتسجيل في ورشتك {w.title}",
+        "message": lambda obj, actor=None, extra=None:
+            f"قام {actor.full_name} بالتسجيل في ورشتك {obj.title}",
     },
 
     # ===============================
@@ -39,7 +36,18 @@ TEMPLATES = {
 
     "join_request_sent": {
         "title": "طلب انضمام",
-        "message": lambda c: f"لديك طلب انضمام لفريق مشروع {c.idea.title}",
+        "message": lambda obj, actor=None, extra=None:
+            f"لديك طلب انضمام لفريق مشروع {obj.title}",
+    },
+
+    "team_completed": {
+    "title": "اكتمل الفريق ",
+    "message": lambda idea: f"اكتمل فريق مشروع {idea.title}",
+    },
+
+    "team_member_removed": {
+    "title": "تم مغادرة عضو",
+    "message": lambda idea, member: f"غادر {member.full_name} فريق {idea.title}",
     },
 
     # ===============================
@@ -48,12 +56,14 @@ TEMPLATES = {
 
     "evaluation_invitation_sent": {
         "title": "دعوة لجنة تقييم",
-        "message": lambda i: f"تم دعوتك للانضمام إلى لجنة تقييم ({i.season.name})",
+        "message":lambda obj, actor=None, extra=None: 
+            f"تم دعوتك للانضمام إلى لجنة تقييم ({obj.season.name})",
     },
 
     "evaluation_invitation_accepted": {
         "title": "تم قبولك",
-        "message": lambda i: "أصبحت الآن عضو في لجنة التقييم",
+        "message": lambda obj, actor=None, extra=None:
+            f"أصبحت الآن عضو في لجنة التقييم",
     },
 
     # ===============================
@@ -62,12 +72,20 @@ TEMPLATES = {
 
     "message_sent": {
         "title": "رسالة جديدة",
-        "message": lambda sender: f"لديك رسالة من {sender.full_name}",
+        "message": lambda obj, actor=None, extra=None:
+            f"لديك رسالة من {actor.full_name}",
     },
 
     "account_suspended": {
         "title": "تم تجميد الحساب",
-        "message": lambda u: "تم تجميد حسابك مؤقتاً",
+        "message": lambda obj, actor=None, extra=None:
+            f"تم تجميد حسابك مؤقتاً",
+    },
+
+    "idea_status_changed": {
+        "title": "تحديث حالة الفكرة",
+        "message": lambda obj, actor=None, extra=None:
+            f"تم تغيير حالة فكرتك إلى {extra}",
     },
 
 }

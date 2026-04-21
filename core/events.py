@@ -39,7 +39,7 @@ class EventBus:
 
         #  استدعاء handlers
         for handler in cls._listeners.get(event_name, []):
-            handler(**payload)
+            handler(payload)
 
     # ----------------------------------
 
