@@ -75,7 +75,7 @@ class Notification(models.Model):
     related_object_id = models.PositiveIntegerField(null=True, blank=True)
     related_object_type = models.CharField(max_length=50, null=True, blank=True)
 
-    action_url = models.CharField(max_length=255, blank=True)
+    action_url = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
         return f"{self.user} - {self.title}"
@@ -93,3 +93,42 @@ class NotificationTemplate(models.Model):
 
     def __str__(self):
         return self.code
+    
+
+#/////////////////////// NOTIFICATION PREFERENCE /////////////// 
+
+class NotificationPreference(models.Model):
+
+    EVENT_CHOICES = [
+        ("consultation_requested", "Consultation Requested"),
+        ("consultation_accepted", "Consultation Accepted"),
+        ("consultation_rejected", "Consultation Rejected"),
+
+        ("workshop_submitted", "Workshop Submitted"),
+        ("workshop_registered", "Workshop Registered"),
+
+        ("join_request_sent", "Join Request"),
+
+        ("evaluation_invitation_sent", "Evaluation Invitation"),
+        ("evaluation_invitation_accepted", "Evaluation Accepted"),
+
+        ("message_sent", "Message"),
+
+        ("account_suspended", "Account Suspended"),
+    ]
+
+    ROLE_CHOICES = [
+        ("VOLUNTEER", "Volunteer"),
+        ("IDEA_OWNER", "Idea Owner"),
+        ("USER", "User"),
+    ]
+
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE)
+
+    event_name = models.CharField(max_length=100, choices=EVENT_CHOICES)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+
+    is_enabled = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ("user", "event_name", "role")

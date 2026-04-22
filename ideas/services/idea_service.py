@@ -1,12 +1,15 @@
 from django.db import transaction
-from ideas.models import Idea, IdeaStatus, Season , IdeaAuditLog , TeamRequest
+from ideas.models import Idea, IdeaStatus, Season , IdeaAuditLog , TeamRequest ,TeamStatus
+
 from ideas.services.idea_validation import IdeaFormValidator
 from core.events import EventBus
 from ideas.services.season_phase_service import SeasonPhaseService
 from ideas.phases import SeasonPhase
 from ideas.serializers import TeamRequestSerializer
 from notifications.services.notification_service import NotificationService
-
+from ideas.services.idea_workflow import IdeaWorkflow
+from ideas.services.state.idea_state_service import IdeaStateService
+from evaluations.serializers import IncubationReviewSerializer
 
 class IdeaService:
 
@@ -23,7 +26,7 @@ class IdeaService:
         - إطلاق event
         """
 
-        # 1 جلب الموسم المفتوح
+        # جلب الموسم المفتوح
         season = Season.objects.filter(is_open=True).first()
 
         if not season or not hasattr(season, "form"):
@@ -31,25 +34,34 @@ class IdeaService:
 
         answers = data.get("answers", {})
 
-        # 2 Dynamic Form Validation
+        #  Dynamic Form Validation
         validator = IdeaFormValidator(season.form, answers)
         validator.validate()
 
-        # 3 إنشاء الفكرة
+        #  إنشاء الفكرة
         idea = Idea.objects.create(
             owner=user,
             season=season,
             title=data.get("title"),
             description=data.get("description"),
             answers=answers,
-            status=IdeaStatus.SUBMITTED
+            status=IdeaStatus.DRAFT
         )
 
-        # 4 إطلاق event 
-        EventBus.publish(
-            "idea_status_changed",
+        # proper state transition
+        IdeaStateService.change_status(
             idea=idea,
-            new_status=IdeaStatus.SUBMITTED
+            to_status=IdeaStatus.SUBMITTED,
+            user=user,
+            reason="initial_submission"
+        )
+
+        EventBus.emit(
+            "idea_submitted",
+            payload={
+                "idea": idea,
+            },
+            actor=user,
         )
 
         return idea
@@ -90,16 +102,20 @@ class IdeaService:
             raise ValueError("لا يمكن سحب هذه الفكرة في حالتها الحالية")
 
         # 3 تنفيذ السحب
-        idea.status = IdeaStatus.WITHDRAWN
-        idea.save()
-
-        #  event
-        EventBus.publish(
-            "idea_status_changed",
+        IdeaStateService.change_status(
             idea=idea,
-            new_status=IdeaStatus.WITHDRAWN
+            to_status=IdeaStatus.WITHDRAWN,
+            user=user,
+            reason="user_withdraw"
         )
 
+        EventBus.emit(
+            "idea_withdrawn",
+            payload={
+                "idea": idea,
+            },
+            actor=user,
+        )
         return idea
 
 #//////////////////////// GET USER IDEA //////////////////
@@ -124,8 +140,6 @@ class IdeaService:
             raise ValueError("لم يتم الاحتضان بعد")
 
         reviews = idea.reviews.order_by("-meeting_date")
-
-        from evaluations.serializers import IncubationReviewSerializer
 
         return {
             "phase": "INCUBATION",
@@ -210,7 +224,7 @@ def create_team_request(user, data):
     team_request = serializer.save(idea=idea)
 
     # تحديث حالة الفريق
-    idea.team_status = "team_building"
+    idea.team_status = TeamStatus.TEAM_BUILDING
     idea.save()
 
     # Audit log
@@ -222,12 +236,15 @@ def create_team_request(user, data):
     )
 
     # Notification
-    NotificationService.send(
-        user=user,
-        title="تم إرسال طلب الفريق",
-        message="طلبك قيد المراجعة من الإدارة",
-        notification_type="INFO"
+    EventBus.emit(
+        "team_request_created",
+        payload={
+            "team_request": team_request,
+            "idea": idea,
+        },
+        actor=user,
     )
+        
 
     return team_request
 

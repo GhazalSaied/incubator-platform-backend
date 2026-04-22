@@ -5,18 +5,26 @@ from rest_framework.response import Response
 from .models import Notification
 from .serializers import NotificationSerializer
 from ideas.models import TeamMember
+from notifications.services.notification_service import NotificationService
 
 
-    
+#//////////////// GET ALL NOTIFICATIONS /////////////////////
+
+class NotificationListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        notifications = NotificationService.get_user_notifications(request.user)
+        serializer = NotificationSerializer(notifications, many=True)
+
+        return Response(serializer.data)
+
 #///////////////////////////////// MARK AS READ /////////////////////////////
 
 class MarkNotificationAsReadAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, notification_id):
-
-        from notifications.services.notification_service import NotificationService
-
         try:
             NotificationService.mark_as_read(request.user, notification_id)
         except Notification.DoesNotExist:

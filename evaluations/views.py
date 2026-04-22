@@ -7,6 +7,7 @@ from rest_framework.response import Response
 
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from core.events import EventBus
 
 from .models import EvaluationInvitation, EvaluationCriterion ,  EvaluationAssignment
 from .serializers import EvaluationSerializer
@@ -91,12 +92,29 @@ class RespondToInvitationAPIView(APIView):
                         "meeting_date": invitation.meeting_date
                     }
                 )
+            # اشعار بقبول الانصمام 
+            EventBus.emit(
+                "evaluation_invitation_accepted",
+                payload={
+                    "invitation": invitation,
+                },
+                actor=request.user,
+            )
 
         else:
             invitation.status = "REJECTED"
             
             invitation.responded_at = timezone.now()
             invitation.save()
+           
+           #اشعار برفض الانضمام الى اللجنة
+            EventBus.emit(
+                "evaluation_invitation_rejected",
+                payload={
+                    "invitation": invitation,
+                },
+                actor=request.user,
+            )
 
         return Response({"detail": "تم تحديث الحالة"})
 

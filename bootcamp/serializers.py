@@ -1,9 +1,13 @@
 from rest_framework import serializers
-from .models import BootcampSession,BootcampAbsenceRequest, BootcampAttendance
+from .models import BootcampSession, BootcampAbsenceRequest, BootcampAttendance
 from ideas.models import Idea
 
 
+# USER SIDE 
+
+
 #/////////////////////////// BOOTCAMP SESSION ////////////////////////
+
 class BootcampSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = BootcampSession
@@ -24,9 +28,16 @@ class BootcampSessionSerializer(serializers.ModelSerializer):
                 "وقت البداية يجب أن يكون قبل النهاية"
             )
         return data
+    
 
 
-# 🔹 Attendance
+
+
+
+# ///////////////////// ADMIN ///////////////////////////////
+
+
+#  Attendance
 class SessionAttendanceSerializer(serializers.ModelSerializer):
     idea_title = serializers.CharField(source="idea.title", read_only=True)
 
@@ -35,7 +46,7 @@ class SessionAttendanceSerializer(serializers.ModelSerializer):
         fields = ["id", "idea", "idea_title", "status"]
 
 
-# 🔹 Decision (input)
+#  Decision (input)
 class BootcampDecisionSerializer(serializers.Serializer):
     idea_id = serializers.IntegerField()
     decision = serializers.ChoiceField(choices=["approve", "reject"])

@@ -82,9 +82,9 @@ class LoginAPIView(TokenObtainPairView):
 
         serializer.is_valid(raise_exception=True)
 
-        user = serializer.user  # ✅ هون اليوزر
+        user = serializer.user  #  هون اليوزر
 
-        # 🛑 تحقق تغيير كلمة المرور
+        #  تحقق تغيير كلمة المرور
         if user.must_change_password:
             return Response({
                 "error": "يجب تغيير كلمة المرور",
@@ -133,11 +133,10 @@ class ChangePasswordAPIView(APIView):
         user.must_change_password = False
         user.save()
 
-        return Response(
-            {"detail": "تم تغيير كلمة المرور بنجاح"},
-            {"must_change_password": False},
-            status=status.HTTP_200_OK
-        )
+        return Response({
+            "detail": "تم تغيير كلمة المرور بنجاح",
+            "must_change_password": False
+        }, status=status.HTTP_200_OK)
     
 #///////////////////////// LOGOUT VIEW   ////////////////////////////
 

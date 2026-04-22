@@ -4,9 +4,11 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from django.utils.timezone import now
+from core.events import EventBus
 
 from .models import BootcampSession, BootcampAbsenceRequest
-from .serializers import BootcampSessionSerializer
+from .serializers import BootcampSessionSerializer 
+from bootcamp.services.absence_service import AbsenceService
 
 from ideas.models import Idea
 
@@ -37,6 +39,7 @@ class NextSessionAPIView(APIView):
             return Response({"detail": "لا يوجد جلسة قادمة"})
 
         return Response(BootcampSessionSerializer(session).data)
+    
 
 #////////////////////////// ABSENCE REQUEST /////////////////////////////
 
@@ -44,15 +47,18 @@ class CreateAbsenceRequestAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        idea = Idea.objects.get(owner=request.user)
-
-        session_id = request.data.get("session")
+        session_id = request.data.get("session_id")
         reason = request.data.get("reason")
 
-        absence = BootcampAbsenceRequest.objects.create(
-            idea=idea,
-            session_id=session_id,
-            reason=reason
-        )
+        try:
+            absence = AbsenceService.request_absence(
+                user=request.user,
+                session_id=session_id,
+                reason=reason
+            )
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
 
-        return Response({"detail": "تم إرسال الطلب"})
+        return Response({
+            "detail": "تم إرسال الطلب بنجاح"
+        }, status=201)

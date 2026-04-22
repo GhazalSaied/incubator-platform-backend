@@ -52,7 +52,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "city",
             "bio",
             "avatar",
-             "must_change_password" 
+            "must_change_password" 
         ]
 
 #//////////////////////// CHANGE PASSWORD SERIALIZER ///////////////////////////////////////
