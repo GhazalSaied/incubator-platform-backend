@@ -1,20 +1,25 @@
-from core.roles import user_has_role, user_has_any_role
-from core.exceptions import BusinessLogicException
+
+from rest_framework.permissions import BasePermission
+from ideas.models import Idea, IdeaStatus
 
 
-class IdeaPermissions:
+class CanSubmitIdea(BasePermission):
 
-    @staticmethod
-    def can_submit(user, idea):
-        if idea.owner != user:
-            raise BusinessLogicException("Not your idea")
+    def has_permission(self, request, view):
 
-    @staticmethod
-    def can_accept(user):
-        if not user_has_any_role(user, ["ADMIN", "EVALUATOR"]):
-            raise BusinessLogicException("Not allowed to accept ideas")
+        user = request.user
 
-    @staticmethod
-    def can_move_to_bootcamp(user):
-        if not user_has_role(user, "ADMIN"):
-            raise BusinessLogicException("Only admin can move to bootcamp")
+        if not user or not user.is_authenticated:
+            return False
+
+        # منع وجود فكرة فعالة
+        existing = Idea.objects.filter(
+            owner=user
+        ).exclude(
+            status__in=[
+                IdeaStatus.BOOTCAMP_FAILED,
+                IdeaStatus.REJECTED
+            ]
+        ).exists()
+
+        return not existing

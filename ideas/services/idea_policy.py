@@ -8,23 +8,13 @@ class IdeaPolicy:
     @staticmethod
     def can_accept(user, idea):
 
-        if idea.status != IdeaStatus.EVALUATION:
-            raise BusinessLogicException("Idea not in evaluation stage")
+        if idea.status != IdeaStatus.EVALUATED:
+            raise BusinessLogicException("Idea not evaluated yet")
 
         if not user_has_any_role(user, ["ADMIN", "EVALUATOR"]):
             raise BusinessLogicException("Not allowed")
 
 
-    @staticmethod
-    def can_submit(user, idea):
-
-        if idea.owner != user:
-            raise BusinessLogicException("Not your idea")
-
-        if idea.status != IdeaStatus.DRAFT:
-            raise BusinessLogicException("Already submitted")
-        
-    
 
     @staticmethod
     def can_start_evaluation(user, idea):

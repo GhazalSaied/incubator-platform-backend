@@ -25,6 +25,7 @@ from evaluations.serializers import IncubationReviewSerializer
 from volunteers.models import VolunteerProfile , ConsultationRequest
 from notifications.services.notification_service import NotificationService
 from ideas.services.idea_service import IdeaService
+from ideas.services.idea_permissions import CanSubmitIdea
 
 
 #///////////////////////////GET CUURENT IDEA FORM /////////////////////////////////
@@ -293,10 +294,12 @@ class IdeaTeamAPIView(APIView):
             "has_team": idea.team_members.exists(),
             "current_team": [
                 {
+                    "id": m.user.id,
+                    "name": m.user.full_name,
                     "email": m.user.email,
-                    "role": m.role
+                    "can_message": True
                 }
-                for m in idea.team_members.all()
+                for m in idea.team_members.select_related("user")
             ]
         })
 

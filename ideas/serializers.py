@@ -1,16 +1,24 @@
 from rest_framework import serializers
 from .models import (Idea, FormQuestion, 
                      IdeaForm, Season,
-                     TeamRequest
+                     TeamRequest,
+                     FormQuestionChoice
 )
 from ideas.services.season_phase_service import SeasonPhaseService
+
 #///////////////////////////IDAE FORM SERIALIZER /////////////////////////////////
+
+class FormQuestionChoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FormQuestionChoice
+        fields = ["value", "label"]
 
 
 class FormQuestionSerializer(serializers.ModelSerializer):
+    choices = FormQuestionChoiceSerializer(many=True)
     class Meta:
         model = FormQuestion
-        fields = ['key', 'label', 'type', 'required', 'order']
+        fields = ['id','key','label','type','required','order','choices','placeholder', 'help_text']
 
 
 class IdeaFormSerializer(serializers.ModelSerializer):

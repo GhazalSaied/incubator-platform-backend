@@ -1,4 +1,5 @@
 from ideas.models import IdeaAuditLog
+from django.db import models
 
 
 class AuditService:
@@ -10,4 +11,5 @@ class AuditService:
             from_status=from_status,
             to_status=to_status,
             performed_by=user
+           
         )
