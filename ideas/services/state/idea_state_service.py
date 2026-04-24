@@ -53,7 +53,7 @@ class IdeaStateService:
         if not current_phase:
             raise Exception("No active phase")
 
-        allowed_statuses = IdeaStateService.PHASE_STATUS_RULES.get(current_phase, [])
+        allowed_statuses = IdeaStateService.PHASE_STATUS_RULES.get(current_phase.phase, [])
 
         if to_status not in allowed_statuses:
             raise Exception(
@@ -72,7 +72,7 @@ class IdeaStateService:
 
         #  2. لا يمكن دخول الاحتضان بدون فريق
         if to_status == IdeaStatus.INCUBATION:
-            if idea.team_members.count() == 0:
+            if not hasattr(idea, "team_members") or idea.team_members.count() == 0:
                 raise Exception("Idea must have a team before incubation")
 
         #  3. لا يمكن عرض فكرة بدون بيانات معرض

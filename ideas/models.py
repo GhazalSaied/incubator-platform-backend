@@ -160,6 +160,8 @@ class FormQuestion(models.Model):
     type = models.CharField(max_length=20, choices=QUESTION_TYPES)
     required = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
+    placeholder = models.CharField(max_length=255, null=True, blank=True)
+    help_text = models.TextField(null=True, blank=True)
 
     class Meta:
         constraints = [
@@ -171,6 +173,9 @@ class FormQuestion(models.Model):
 
     def __str__(self):
         return self.label
+    
+#///////////////// FORM OUESTIONS CHOICE ////////////////////
+
 class FormQuestionChoice(models.Model):
     question = models.ForeignKey(
         FormQuestion,
@@ -266,6 +271,7 @@ class IdeaAuditLog(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
+    reason = models.TextField(null=True, blank=True)
 
 
 #/////////////////////////// SUGGESTED VOLUNTEER /////////////////////
