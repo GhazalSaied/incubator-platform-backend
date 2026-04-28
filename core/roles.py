@@ -1,3 +1,5 @@
+
+
 def user_has_role(user, role_code: str) -> bool:
     return user.userrole_set.filter(
         role__code=role_code,

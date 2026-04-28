@@ -51,6 +51,8 @@ class VolunteerProfile(models.Model):
     years_of_experience = models.PositiveIntegerField()
     primary_skills = models.TextField()
     additional_skills = models.TextField(blank=True)
+    bio=models.TextField(blank=True)
+    projects_count=models.PositiveIntegerField(null=True,blank=True)
 
     volunteer_type = models.CharField(
         max_length=100,
@@ -64,6 +66,9 @@ class VolunteerProfile(models.Model):
 
     motivation = models.TextField()
     cv = models.FileField(upload_to="volunteer_cvs/", blank=True, null=True)
+
+    current_company = models.CharField(max_length=255, null=True, blank=True)
+    specialization = models.CharField(max_length=255, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -107,12 +112,12 @@ class ConsultationRequest(models.Model):
         (REJECTED, "مرفوض"),
     ]
 
-    CONSULTATION = "CONSULTATION"
-    JOIN_REQUEST = "JOIN"
+    ONE_TIME="ONE_TIME"
+    ONGOING="ONGOING"
 
-    TYPE_CHOICES = [
-        (CONSULTATION, "استشارة"),
-        (JOIN_REQUEST, "انضمام لفريق"),
+    HELP_TYPE_CHOICES = [
+        (ONE_TIME, "استشارة لمرة واحدة"),
+        (ONGOING, "متابعة دورية"),
     ]
 
     volunteer = models.ForeignKey(
@@ -136,19 +141,15 @@ class ConsultationRequest(models.Model):
        
     )
 
-    request_type = models.CharField(
+    help_type = models.CharField(
         max_length=20,
-        choices=TYPE_CHOICES,
-        default=CONSULTATION
-    )
-
-    team_request = models.ForeignKey(
-        "ideas.TeamRequest",
-        on_delete=models.CASCADE,
+        choices=HELP_TYPE_CHOICES,
         null=True,
         blank=True
     )
 
+    required_skill = models.CharField(max_length=100,null=True)
+    
     description = models.TextField()
 
     status = models.CharField(
@@ -163,6 +164,59 @@ class ConsultationRequest(models.Model):
         ordering = ["-created_at"]
     
 
+#/////////////////////// JOIN REQUEST ///////////////////////
+
+class JoinRequest(models.Model):
+
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+
+    STATUS_CHOICES = [
+        (PENDING, "قيد المراجعة"),
+        (ACCEPTED, "مقبول"),
+        (REJECTED, "مرفوض"),
+    ]
+
+    volunteer = models.ForeignKey(
+        "volunteers.VolunteerProfile",
+        on_delete=models.CASCADE,
+        related_name="join_requests"
+    )
+
+    requester = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="sent_join_requests"
+    )
+
+    idea = models.ForeignKey(
+        "ideas.Idea",
+        on_delete=models.CASCADE,
+        related_name="join_requests"
+    )
+
+    team_request = models.ForeignKey(
+        "ideas.TeamRequest",
+        on_delete=models.CASCADE
+    )
+
+    description = models.TextField()
+    tasks = models.TextField(max_length=100,null=True)
+    required_skill = models.CharField(max_length=100,null=True)
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=PENDING
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
 #//////////////////////////////// WORKSHOP //////////////////////
 
 
@@ -173,6 +227,8 @@ class Workshop(BaseModel):
         ("ACCEPTED", "Accepted"),
         ("REJECTED", "Rejected"),
     )
+
+
 
     title = models.CharField(max_length=255)
 
@@ -191,10 +247,10 @@ class Workshop(BaseModel):
     time_from = models.TimeField()
     time_to = models.TimeField()
 
-    duration = models.CharField(max_length=50)  # "2 hours"
+    
 
     capacity = models.PositiveIntegerField()
-
+    sessions = models.PositiveIntegerField(null=True)
     image = models.ImageField(upload_to="workshops/", null=True, blank=True)
 
     created_by = models.ForeignKey(
@@ -238,4 +294,14 @@ class WorkshopRegistration(BaseModel):
         unique_together = ("user", "workshop")
 
 
+#///////////////// VOLUNTEER VACATION ////////////////////////
 
+class VolunteerVacation(models.Model):
+    volunteer = models.ForeignKey(
+        VolunteerProfile,
+        on_delete=models.CASCADE,
+        related_name="vacations"
+    )
+
+    start_day = models.CharField(max_length=15, choices=WeekDay.choices,null=True)
+    end_day = models.CharField(max_length=15, choices=WeekDay.choices,null=True)

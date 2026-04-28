@@ -13,7 +13,6 @@ def workshop_submitted_handler(payload):
         target_role="VOLUNTEER"
     )
 
-
 def workshop_registered_handler(payload):
     workshop = payload["workshop"]
 
@@ -25,6 +24,7 @@ def workshop_registered_handler(payload):
         action_url=payload.get("action_url"),
         target_role="VOLUNTEER"
     )
+
 
 
 EventBus.register("workshop_submitted", workshop_submitted_handler)

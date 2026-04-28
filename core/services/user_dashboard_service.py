@@ -6,7 +6,7 @@ from ideas.models import TeamMember
 from evaluations.models import EvaluationAssignment
 from evaluations.services.evaluation_service import EvaluationService
 
-from volunteers.services.volunteer_service import get_workshop_stats, get_next_workshop
+from volunteers.services.volunteer_service import VolunteerService
 from notifications.models import Notification
 from notifications.services.notification_service import NotificationService
 
@@ -40,14 +40,14 @@ class UserDashboardService:
         #  VOLUNTEER DASHBOARD
         if is_volunteer:
             volunteer_data = VolunteerService.get_dashboard(user)
-            next_workshop = get_next_workshop(user)
+            next_workshop = VolunteerService.get_next_workshop(user)
 
             response["volunteer_dashboard"] = {
                 "profile": volunteer_data["profile"].id,
                 "availability_count": len(volunteer_data["availability"]),
                 "consultations": volunteer_data["consultations"],
 
-                "workshop_stats": get_workshop_stats(user),
+                "workshop_stats": VolunteerService.get_workshop_stats(user),
 
                 "next_workshop": {
                     "title": next_workshop.title,

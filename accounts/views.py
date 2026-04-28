@@ -10,6 +10,7 @@ from rest_framework import status
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from core.events import EventBus
 
 from .models import User
 from .serializers import (
@@ -131,6 +132,7 @@ class ChangePasswordAPIView(APIView):
 
         user.set_password(serializer.validated_data["new_password"])
         user.must_change_password = False
+        user.last_password_change = timezone.now()
         user.save()
 
         return Response({
@@ -198,7 +200,30 @@ class ForgotPasswordAPIView(APIView):
             status=status.HTTP_200_OK
         )
         
-        
+
+#//////////////////////// CONTACT US ///////////////////////////
+
+class ContactUsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        inquiry_type = request.data.get("type")
+        message = request.data.get("message")
+
+        if not message:
+            return Response({"detail": "message required"}, status=400)
+
+        EventBus.emit(
+            "contact_message_sent",
+            payload={
+                "user": request.user,
+                "message": message,
+                "type": inquiry_type
+            },
+            actor=request.user
+        )
+
+        return Response({"detail": "تم إرسال الرسالة"})   
         
         
         

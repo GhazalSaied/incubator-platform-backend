@@ -1,285 +1,306 @@
 EVENTS = {
 
-# ===============================
-# VOLUNTEER LIFECYCLE
-# ===============================
+    # ===============================
+    # VOLUNTEER LIFECYCLE
+    # ===============================
 
-"volunteer_approved": {
-    "target": "VOLUNTEER",
-    "description": "تم قبول المستخدم كمتطوع",
-    "payload": ["user"],
-    "action_url": "/profile/edit"
-},
+    "volunteer_approved": {
+        "target": "VOLUNTEER",
+        "description": "تم قبول المستخدم كمتطوع",
+        "payload": ["user"],
+        "action_url": "/profile/edit"
+    },
 
-"role_activated": {
-    "target": "USER",
-    "description": "تم تفعيل دور إضافي (متطوع/مدرب)",
-    "payload": ["user", "role"],
-    "action_url": "/profile"
-},
+    "role_activated": {
+        "target": "USER",
+        "description": "تم تفعيل دور إضافي (متطوع/مدرب)",
+        "payload": ["user", "role"],
+        "action_url": "/profile"
+    },
 
-# ===============================
-# WORKSHOPS
-# ===============================
+    # ===============================
+    # WORKSHOPS
+    # ===============================
 
-"workshop_submitted": {
-    "target": "ADMIN",
-    "payload": ["workshop", "user"]
-},
+    "workshop_submitted": {
+        "target": "ADMIN",
+        "payload": ["workshop", "user"]
+    },
 
-"workshop_approved": {
-    "target": "VOLUNTEER",
-    "payload": ["workshop"],
-    "action_url": "/my-workshops/{workshop}"
-},
+    "workshop_approved": {
+        "target": "VOLUNTEER",
+        "payload": ["workshop"],
+        "action_url": "/my-workshops/{workshop}"
+    },
 
-"workshop_rejected": {
-    "target": "VOLUNTEER",
-    "payload": ["workshop", "rejection_reason"],
-    "action_url": "/my-workshops/{id}"
-},
+    "workshop_rejected": {
+        "target": "VOLUNTEER",
+        "payload": ["workshop", "rejection_reason"],
+        "action_url": "/my-workshops/{id}"
+    },
 
-"workshop_published": {
-    "target": "ALL_USERS",
-    "payload": ["workshop"],
-    "action_url": "/workshops/{id}"
-},
+    "workshop_published": {
+        "target": "ALL_USERS",
+        "payload": ["workshop"],
+        "action_url": "/workshops/{id}"
+    },
 
-"workshop_registered": {
-    "target": "VOLUNTEER",
-    "payload": ["workshop", "user"],
-    "action_url": "/my-workshops/{id}/registrations"
-},
+    "workshop_registered": {
+        "target": "VOLUNTEER",
+        "payload": ["workshop", "user"],
+        "action_url": "/my-workshops/{id}/registrations"
+    },
 
-# ===============================
-# CONSULTATIONS
-# ===============================
+    # ===============================
+    # CONSULTATIONS
+    # ===============================
 
-"consultation_requested": {
-    "target": "VOLUNTEER",
-    "payload": ["consultation"],
-    "action_url": "/consultations/{id}"
-},
+    "consultation_requested": {
+        "target": "VOLUNTEER",
+        "payload": ["consultation"],
+        "action_url": "/consultations/{id}"
+    },
 
-"consultation_reminder": {
-    "target": "VOLUNTEER",
-    "payload": ["consultation"],
-    "action_url": "/consultations/{id}"
-},
+    "consultation_reminder": {
+        "target": "VOLUNTEER",
+        "payload": ["consultation"],
+        "action_url": "/consultations/{id}"
+    },
 
-"consultation_decided": {
+    "consultation_decided": {
+        "target": "IDEA_OWNER",
+        "payload": ["consultation", "action"],
+        "action_url": "/consultations/{id}"
+    },
+
+    "consultation_accepted": {
+        "target": "IDEA_OWNER",
+        "payload": ["consultation", "action"],
+        "action_url": "/consultations/{id}"
+    },
+
+    "consultation_rejected": {
+        "target": "IDEA_OWNER",
+        "payload": ["consultation"],
+        "action_url": "/consultants"
+    },
+
+    # ===============================
+    # TEAM JOIN REQUESTS
+    # ===============================
+
+    "join_request_sent": {
+        "target": "VOLUNTEER",
+        "payload": ["join_request"],
+        "action_url": "/join-requests/{join_request}"
+    },
+
+    "volunteer_joined_team": {
+        "target": "IDEA_OWNER",
+        "payload": ["idea", "volunteer"],
+        "action_url": "/team-dashboard"
+    },
+
+
+    "join_request_accepted": {
     "target": "IDEA_OWNER",
-    "payload": ["consultation", "action"],
-    "action_url": "/consultations/{id}"
-},
-
-# ===============================
-# TEAM JOIN REQUESTS
-# ===============================
-
-"join_request_sent": {
-    "target": "VOLUNTEER",
-    "payload": ["consultation"],
-    "action_url": "/consultations/{id}"
-},
-
-"volunteer_joined_team": {
-    "target": "IDEA_OWNER",
-    "payload": ["idea", "volunteer"],
+    "payload": ["join_request"],
     "action_url": "/team-dashboard"
-},
+    },
 
-"join_request_rejected": {
-    "target": "IDEA_OWNER",
-    "payload": ["consultation"],
-    "action_url": "/consultations"
-},
+    "join_request_rejected": {
+        "target": "IDEA_OWNER",
+        "payload": ["join_request"],
+        "action_url": "/suggested-volunteers"
+    },
 
-# ===============================
-# EVALUATION (VOLUNTEER AS EVALUATOR)
-# ===============================
+    # ===============================
+    # EVALUATION (VOLUNTEER AS EVALUATOR)
+    # ===============================
 
-"evaluation_invitation_sent": {
-    "target": "VOLUNTEER",
-    "payload": ["invitation"],
-    "action_url": "/invitations"
-},
+    "evaluation_invitation_sent": {
+        "target": "VOLUNTEER",
+        "payload": ["invitation"],
+        "action_url": "/invitations"
+    },
 
-"evaluation_invitation_accepted": {
-    "target": "VOLUNTEER",
-    "payload": ["invitation"],
-    "action_url": "/evaluation-dashboard"
-},
+    "evaluation_invitation_accepted": {
+        "target": "VOLUNTEER",
+        "payload": ["invitation"],
+        "action_url": "/evaluation-dashboard"
+    },
 
-"evaluation_invitation_rejected": {
-    "target": "ADMIN",
-    "payload": ["invitation"]
-},
+    "evaluation_invitation_rejected": {
+        "target": "ADMIN",
+        "payload": ["invitation"]
+    },
 
-"evaluation_joined_committee": {
-    "target": "VOLUNTEER",
-    "payload": ["invitation"],
-    "action_url": "/evaluation-dashboard"
-},
+    "evaluation_joined_committee": {
+        "target": "VOLUNTEER",
+        "payload": ["invitation"],
+        "action_url": "/evaluation-dashboard"
+    },
 
-"evaluation_session_reminder": {
-    "target": "VOLUNTEER",
-    "payload": ["assignment"],
-    "action_url": "/evaluation-dashboard"
-},
+    "evaluation_session_reminder": {
+        "target": "VOLUNTEER",
+        "payload": ["assignment"],
+        "action_url": "/evaluation-dashboard"
+    },
 
-# ===============================
-# IDEA EVENTS
-# ===============================
+    # ===============================
+    # IDEA EVENTS
+    # ===============================
 
-"idea_submitted": {
-    "target": "USER",
-    "payload": ["idea"],
-    "action_url": "/ideas/{id}"
-},
+    "idea_submitted": {
+        "target": "USER",
+        "payload": ["idea"],
+        "action_url": "/ideas/{id}"
+    },
 
-"idea_withdrawn": {
-    "target": "USER",
-    "payload": ["idea"],
-    "action_url": "/my-ideas"
-},
+    "idea_withdrawn": {
+        "target": "USER",
+        "payload": ["idea"],
+        "action_url": "/my-ideas"
+    },
 
-"idea_accepted": {
-    "target": "IDEA_OWNER",
-    "payload": ["idea"],
-    "action_url": "/incubation"
-},
+    "idea_accepted": {
+        "target": "IDEA_OWNER",
+        "payload": ["idea"],
+        "action_url": "/incubation"
+    },
 
-"idea_rejected": {
-    "target": "IDEA_OWNER",
-    "payload": ["idea"],
-    "action_url": "/idea-feedback"
-},
+    "idea_rejected": {
+        "target": "IDEA_OWNER",
+        "payload": ["idea"],
+        "action_url": "/idea-feedback"
+    },
 
-# ===============================
-# EVALUATION RESULTS
-# ===============================
+    "idea_status_changed": {},
 
-"evaluation_report_published": {
-    "target": "IDEA_OWNER",
-    "payload": ["idea", "review"],
-    "action_url": "/incubation"
-},
+    # ===============================
+    # EVALUATION RESULTS
+    # ===============================
 
-# ===============================
-# BOOTCAMP
-# ===============================
+    "evaluation_report_published": {
+        "target": "IDEA_OWNER",
+        "payload": ["idea", "review"],
+        "action_url": "/incubation"
+    },
 
-"bootcamp_started": {
-    "target": "IDEA_OWNER",
-    "payload": ["season"],
-    "action_url": "/bootcamp"
-},
+    # ===============================
+    # BOOTCAMP
+    # ===============================
 
-"bootcamp_session_reminder": {
-    "target": "IDEA_OWNER",
-    "payload": ["session"],
-    "action_url": "/bootcamp"
-},
+    "bootcamp_started": {
+        "target": "IDEA_OWNER",
+        "payload": ["season"],
+        "action_url": "/bootcamp"
+    },
 
-# ===============================
-# ABSENCE
-# ===============================
+    "bootcamp_session_reminder": {
+        "target": "IDEA_OWNER",
+        "payload": ["session"],
+        "action_url": "/bootcamp"
+    },
 
-"absence_requested": {
-    "target": "ADMIN",
-    "payload": ["absence"]
-},
+    # ===============================
+    # ABSENCE
+    # ===============================
 
-"absence_approved": {
-    "target": "IDEA_OWNER",
-    "payload": ["absence"],
-    "action_url": "/bootcamp"
-},
+    "absence_requested": {
+        "target": "ADMIN",
+        "payload": ["absence"]
+    },
 
-"absence_rejected": {
-    "target": "IDEA_OWNER",
-    "payload": ["absence"],
-    "action_url": "/bootcamp"
-},
+    "absence_approved": {
+        "target": "IDEA_OWNER",
+        "payload": ["absence"],
+        "action_url": "/bootcamp"
+    },
 
-# ===============================
-# EXHIBITION
-# ===============================
+    "absence_rejected": {
+        "target": "IDEA_OWNER",
+        "payload": ["absence"],
+        "action_url": "/bootcamp"
+    },
 
-"exhibition_preparation_reminder": {
-    "target": "IDEA_OWNER",
-    "payload": ["idea"],
-    "action_url": "/exhibition"
-},
+    # ===============================
+    # EXHIBITION
+    # ===============================
 
-"exhibition_approved": {
-    "target": "IDEA_OWNER",
-    "payload": ["idea"],
-    "action_url": "/exhibition"
-},
+    "exhibition_preparation_reminder": {
+        "target": "IDEA_OWNER",
+        "payload": ["idea"],
+        "action_url": "/exhibition"
+    },
 
-# ===============================
-# TEAM BUILDING
-# ===============================
+    "exhibition_approved": {
+        "target": "IDEA_OWNER",
+        "payload": ["idea"],
+        "action_url": "/exhibition"
+    },
 
-"team_request_created": {
-    "target": "ADMIN",
-    "payload": ["team_request"]
-},
+    # ===============================
+    # TEAM BUILDING
+    # ===============================
 
-"volunteers_suggested": {
-    "target": "IDEA_OWNER",
-    "payload": ["idea", "volunteers"],
-    "action_url": "/team-dashboard"
-},
+    "team_request_created": {
+        "target": "ADMIN",
+        "payload": ["team_request"]
+    },
 
-# ===============================
-# CONSULTANT FROM ADMIN
-# ===============================
+    "volunteers_suggested": {
+        "target": "IDEA_OWNER",
+        "payload": ["idea", "volunteers"],
+        "action_url": "/team-dashboard"
+    },
 
-"consultant_suggested": {
-    "target": "IDEA_OWNER",
-    "payload": ["consultant"],
-    "action_url": "/consultants"
-},
+    # ===============================
+    # CONSULTANT FROM ADMIN
+    # ===============================
 
-# ===============================
-# INVESTOR CONTACT
-# ===============================
+    "consultant_suggested": {
+        "target": "IDEA_OWNER",
+        "payload": ["consultant"],
+        "action_url": "/consultants"
+    },
 
-"investor_contact_request": {
-    "target": "IDEA_OWNER",
-    "payload": ["conversation"],
-    "action_url": "/chat/{id}"
-},
+    # ===============================
+    # INVESTOR CONTACT
+    # ===============================
 
-# ===============================
-# SYSTEM
-# ===============================
+    "investor_contact_request": {
+        "target": "IDEA_OWNER",
+        "payload": ["conversation"],
+        "action_url": "/chat/{id}"
+    },
 
-"message_sent": {
-    "target": "USER",
-    "payload": ["message", "conversation"],
-    "action_url": "/chat/{id}"
-},
+    # ===============================
+    # SYSTEM
+    # ===============================
 
-"account_suspended": {
-    "target": "USER",
-    "payload": ["user"],
-    "action_url": "/contact-admin"
-},
+    "message_sent": {
+        "target": "USER",
+        "payload": ["message", "conversation"],
+        "action_url": "/chat/{id}"
+    },
 
-"admin_reply_sent": {
-    "target": "USER",
-    "payload": ["message"],
-    "action_url": "/support"
-},
+    "account_suspended": {
+        "target": "USER",
+        "payload": ["user"],
+        "action_url": "/contact-admin"
+    },
 
-"exhibition_invitation": {
-    "target": "ALL_USERS",
-    "payload": ["event"],
-    "action_url": "/events"
-},
+    "admin_reply_sent": {
+        "target": "USER",
+        "payload": ["message"],
+        "action_url": "/support"
+    },
+
+    "exhibition_invitation": {
+        "target": "ALL_USERS",
+        "payload": ["event"],
+        "action_url": "/events"
+    },
 
 }

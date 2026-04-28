@@ -44,16 +44,26 @@ class LoginSerializer(TokenObtainPairSerializer):
 #////////////////////// PROFILE SERIALIZER (display & edit) ////////////////////////////////////////
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(read_only=True)
+    avatar_url = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
             "full_name",
+            "email",
             "phone",
             "city",
             "bio",
             "avatar",
-            "must_change_password" 
+            "avatar_url",
+            "must_change_password"
         ]
+
+    def get_avatar_url(self, obj):
+        if obj.avatar:
+            return obj.avatar.url
+        return None
 
 #//////////////////////// CHANGE PASSWORD SERIALIZER ///////////////////////////////////////
 

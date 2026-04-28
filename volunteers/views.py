@@ -1,16 +1,18 @@
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from core.events import EventBus
+from datetime import datetime, date
 
 from messaging.models import Conversation
 from django.shortcuts import get_object_or_404
 
 from notifications.models import Notification
 from messaging.models import Conversation
+from datetime import datetime, date
 
 from .models import (
     VolunteerProfile,
@@ -18,12 +20,17 @@ from .models import (
     ConsultationRequest, 
     Workshop,
     WorkshopRegistration,
+    VolunteerVacation,
+    JoinRequest
       
       )
 from .serializers import (
     VolunteerProfileSerializer,
     VolunteerAvailabilitySerializer,
     VolunteerAvailabilityCreateUpdateSerializer,
+    CreateWorkshopSerializer,
+    CreateJoinRequestSerializer,
+    JoinRequestSerializer,
 
     ConsultationRequestSerializer,
 
@@ -33,7 +40,9 @@ from volunteers.services.volunteer_service import VolunteerService
 from core.permissions import IsVolunteer
 from ideas.models import TeamMember 
 from notifications.services.notification_service import NotificationService
-
+from django.contrib.auth import get_user_model
+from django.db import transaction
+User = get_user_model()
 
 
 
@@ -49,22 +58,39 @@ class VolunteerApplyAPIView(APIView):
                 {"detail": "لديك طلب تطوع سابق"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        with transaction.atomic():
+            profile = VolunteerProfile.objects.create(
+                user=request.user,
+                primary_skills=request.data["primary_skills"],
+                years_of_experience=request.data["years_of_experience"],
+                current_company=request.data.get("current_company"),
+                specialization=request.data.get("specialization"),
+                volunteer_type=request.data["volunteer_type"],
+                residence=request.data["residence"],
+                motivation=request.data["motivation"],
+            )
 
-        serializer = VolunteerProfileSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+            # availability
+            availability_data = request.data.get("availability", [])
 
-        profile = serializer.save(user=request.user)
+            for item in availability_data:
+                VolunteerAvailability.objects.create(
+                    volunteer=profile,
+                    day=item["day"],
+                    start_time=item["start_time"],
+                    end_time=item["end_time"],
+                )
 
         return Response(
-            VolunteerProfileSerializer(profile).data,
-            status=status.HTTP_201_CREATED
+            {"detail": "تم إرسال الطلب"},
+            status=201
         )
 
 
 #/////////////////////////// VOLUNTEER PROFILE ///////////////////////
 
 class VolunteerProfileAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsVolunteer]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         return Response(
@@ -74,46 +100,6 @@ class VolunteerProfileAPIView(APIView):
         )
 
 
-#/////////////////////////// VOLUNTEER AVAILABILITY ///////////////////////
-
-class VolunteerAvailabilityAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsVolunteer]
-
-    def get(self, request):
-        availability = VolunteerAvailability.objects.filter(
-            volunteer=request.user.volunteer_profile
-        ).order_by("day")
-
-        serializer = VolunteerAvailabilitySerializer(availability, many=True)
-        return Response(serializer.data)
-
-    def put(self, request):
-        if not isinstance(request.data, list):
-            return Response(
-                {"detail": "البيانات يجب أن تكون قائمة"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        VolunteerAvailability.objects.filter(
-            volunteer=request.user.volunteer_profile
-        ).delete()
-
-        serializer = VolunteerAvailabilitySerializer(
-            data=request.data,
-            many=True
-        )
-        serializer.is_valid(raise_exception=True)
-
-        for item in serializer.validated_data:
-            VolunteerAvailability.objects.create(
-                volunteer=request.user.volunteer_profile,
-                **item
-            )
-
-        return Response(
-            {"detail": "تم تحديث التوفر الأسبوعي بنجاح"},
-            status=status.HTTP_200_OK
-        )
 
 #/////////////////////////// UPDATE VOLUNTEER PROFILE ///////////////////////
 
@@ -129,18 +115,28 @@ class VolunteerProfileUpdateAPIView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = VolunteerProfileSerializer(
-            profile,
-            data=request.data,
-            partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+       
+        user = request.user
+        user.full_name = request.data.get("full_name", user.full_name)
+        user.phone = request.data.get("phone", user.phone)
+        # + email 
+        user.save()
 
-        return Response(
-            VolunteerProfileSerializer(profile).data,
-            status=status.HTTP_200_OK
-        )
+
+       
+        profile.residence = request.data.get("residence", profile.residence)
+        profile.years_of_experience = request.data.get("years_of_experience", profile.years_of_experience)
+        profile.primary_skills = request.data.get("primary_skills", profile.primary_skills)
+        profile.additional_skills = request.data.get("additional_skills", profile.additional_skills)
+        profile.volunteer_type = request.data.get("volunteer_type", profile.volunteer_type)
+        profile.availability_type = request.data.get("availability_type", profile.availability_type)
+        profile.projects_count = request.data.get("projects_count",profile.projects_count)
+        #+bio
+        profile.save()
+
+        return Response({
+            "detail": "تم التحديث"
+        })
     
 #/////////////////////////// AVAILABLITY  CREATE ///////////////////////
 
@@ -165,32 +161,25 @@ class VolunteerAvailabilityCreateAPIView(APIView):
             status=status.HTTP_201_CREATED
         )
 
-#////////////////////////////// AVAILABLITY UPDATE //////////////////////////////
+#////////////////////////////// AVAILABLITY VIEW  //////////////////////////////
 
-class VolunteerAvailabilityUpdateAPIView(APIView):
+class VolunteerAvailabilityListAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def put(self, request, availability_id):
-        try:
-            availability = VolunteerAvailability.objects.get(
-                id=availability_id,
-                volunteer=request.user.volunteer_profile
-            )
-        except (VolunteerAvailability.DoesNotExist, VolunteerProfile.DoesNotExist):
-            return Response(
-                {"detail": "غير مسموح"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+    def get(self, request):
+        profile = request.user.volunteer_profile
 
-        serializer = VolunteerAvailabilityCreateUpdateSerializer(
-            availability,
-            data=request.data,
-            partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        data = [
+            {
+                "id": a.id,
+                "day": a.day,
+                "from": a.start_time,
+                "to": a.end_time,
+            }
+            for a in profile.availabilities.all()
+        ]
 
-        return Response(serializer.data)
+        return Response(data)
 
 #///////////////////////// AVAILABLITY DELETE ///////////////////////////
 
@@ -212,14 +201,44 @@ class VolunteerAvailabilityDeleteAPIView(APIView):
 
         availability.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+
+
+#/////////////////////////////// VOLUNTEER DASHBOARD VIEW //////////////////////////////////////////////
+
+class VolunteerDashboardAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsVolunteer]
+
+    def get(self, request):
+
+        try:
+            data = VolunteerService.get_dashboard(request.user)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
+
+        return Response({
+            "profile": VolunteerProfileSerializer(data["profile"]).data,
+            "availability": VolunteerAvailabilitySerializer(
+                data["availability"], many=True
+            ).data,
+            "consultations": data["consultations"],
+            "workshop_stats": data["workshop_stats"],
+            "next_workshop": data["next_workshop"],
+        })
+
+
 
 #///////////////////////// Consultation REQUEST VIEW ///////////////////////////////////
 
 class MyConsultationRequestsAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsVolunteer]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
+
         profile = request.user.volunteer_profile
+
+        if not hasattr(request.user, "volunteer_profile"):
+             return Response({"detail": "ليس لديك صلاحية"}, status=403)
 
         request_type = request.query_params.get("type")
 
@@ -239,7 +258,7 @@ class MyConsultationRequestsAPIView(APIView):
 #///////////////////////// [ACCEPT/REJECT] Consultation ///////////////////////////////////
 
 class ConsultationRequestDecisionAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsVolunteer]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, request_id):
 
@@ -259,59 +278,10 @@ class ConsultationRequestDecisionAPIView(APIView):
         except Exception as e:
             return Response({"detail": str(e)}, status=400)
         
-        #NOTIFICATION
-        EventBus.emit(
-            "consultation_decided",
-            payload={
-                "consultation": consultation,
-                "action": action,
-            },
-            actor=request.user,
-            action_url=f"/consultations/{consultation.id}"
-        )
 
         return Response(ConsultationRequestSerializer(consultation).data)
     
 
-#/////////////////////////////// VOLUNTEER DASHBOARD VIEW //////////////////////////////////////////////
-
-class VolunteerDashboardAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsVolunteer]
-
-    def get(self, request):
-
-        try:
-            data = VolunteerService.get_dashboard(request.user)
-        except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
-
-        return Response({
-            "profile": VolunteerProfileSerializer(data["profile"]).data,
-            "availability": VolunteerAvailabilitySerializer(
-                data["availability"], many=True
-            ).data,
-            "consultations": data["consultations"]
-        })
-
-
-#//////////////////////////////////  VOLUNTEER REQUESTS  ///////////////////////////////////////
-
-class VolunteerRequestsAPIView(APIView):
-
-    def get(self, request):
-        profile = request.user.volunteer_profile
-
-        request_type = request.query_params.get("type")
-
-        requests = profile.consultation_requests.all()
-
-        if request_type:
-            requests = requests.filter(request_type=request_type)
-
-        return Response(
-            ConsultationRequestSerializer(requests, many=True).data
-        )
-    
     
 #//////////////////////////// CREATE CONSULTATION REQUEST /////////////////////////////////////////
 
@@ -331,66 +301,142 @@ class CreateConsultationRequestAPIView(APIView):
 
         # Notification للمتطوع
         EventBus.emit(
-            "consultation_requested",
-            payload={
-                "consultation": consultation,
-            },
+            "consultation_requested", 
+            consultation=consultation,
+            action="accept",
             actor=request.user,
             action_url=f"/consultations/{consultation.id}"
         )
+
+        
 
         return Response(
             ConsultationRequestSerializer(consultation).data,
             status=201
         )
+ 
 
-#//////////////////////////////////// CONSULTATION REQUEST DETAILS ///////////////////////////////////
+#/////////////////////////////////// CREATE JOIN REQUEST ////////////////////////
 
-class ConsultationRequestDetailAPIView(APIView):
+class CreateJoinRequestAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = CreateJoinRequestSerializer(
+            data=request.data,
+            context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        join_request = serializer.save(requester=request.user)
+
+        EventBus.emit(
+            "join_request_sent",
+            join_request=join_request,
+            actor=request.user,
+        )
+
+        return Response(JoinRequestSerializer(join_request).data, status=201)
+    
+#//////////////////////////////////// JOIN REQUEST (GET LIST) ///////////////////////
+
+class JoinRequestsAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsVolunteer]
+
+    def get(self, request):
+        profile = request.user.volunteer_profile
+
+        requests = JoinRequest.objects.filter(volunteer=profile)
+
+        return Response(JoinRequestSerializer(requests, many=True).data)
+    
+#////////////////////////////////// JOIN REQUEST DETAILS //////////////////////
+
+class JoinRequestDetailAPIView(APIView):
     permission_classes = [IsAuthenticated, IsVolunteer]
 
     def get(self, request, request_id):
-        consultation = get_object_or_404(
-            ConsultationRequest,
+        jr = get_object_or_404(
+            JoinRequest,
             id=request_id,
             volunteer=request.user.volunteer_profile
         )
 
-        idea = consultation.idea
-        requester = consultation.requester
+        idea = jr.idea
 
-        data = {
-            "request_info": {
-                "id": consultation.id,
-                "type": consultation.request_type,
-                "status": consultation.status,
-                "description": consultation.description,
-                "created_at": consultation.created_at,
-            },
-
+        return Response({
             "requester": {
-                "name": getattr(requester, "full_name", ""),
-                "email": requester.email,
+                "name": jr.requester.full_name,
+                "email": jr.requester.email,
             },
-
             "project": {
                 "title": idea.title,
-                "description": idea.description,
-
-                # هدول ممكن تطوريهم لاحقاً إذا عندك fields
-                "field": getattr(idea, "project_field", None),
-                "target_group": getattr(idea, "target_group", None),
-                "problem": getattr(idea, "problem_statement", None),
+                "target_audience":  idea.target_audience,
+                "problem": idea.answers.get("problem"),
             },
-
-            "team_request": {
-                "skill_required": consultation.team_request.skill_required if consultation.team_request else None,
-                "members_needed": consultation.team_request.members_needed if consultation.team_request else None,
-                "tasks": consultation.team_request.description if consultation.team_request else None,
+            "request": {
+                "required_skill": jr.required_skill,
+                "tasks": jr.tasks,
+                "description": jr.description,
             }
-        }
+        })
+    
+#/////////////////////////////////// JOIN REQUEST DECISION [ACCEPT | REJECT ] /////////////////////////
 
-        return Response(data)
+class JoinRequestDecisionAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, request_id):
+        action = request.data.get("action")
+
+        if action not in ["accept", "reject"]:
+            return Response({"detail": "إجراء غير صالح"}, status=400)
+
+        try:
+            jr = VolunteerService.handle_join_request_decision(
+                user=request.user,
+                request_id=request_id,
+                action=action
+            )
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
+
+        return Response(JoinRequestSerializer(jr).data)
+    
+#////////////////////////////////// ALL VOLUNTEER REQUESTS /////////////////////////////
+
+class MyAllRequestsAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsVolunteer]
+
+    def get(self, request):
+        profile = request.user.volunteer_profile
+        request_type = request.query_params.get("type")  # all / consultation / join
+
+        consultations = ConsultationRequest.objects.filter(
+            volunteer=profile,
+            status=ConsultationRequest.PENDING
+        )
+
+        joins = JoinRequest.objects.filter(
+            volunteer=profile,
+            status=JoinRequest.PENDING
+        )
+
+        if request_type == "consultation":
+            return Response({
+                "consultations": ConsultationRequestSerializer(consultations, many=True).data
+            })
+
+        if request_type == "join":
+            return Response({
+                "join_requests": JoinRequestSerializer(joins, many=True).data
+            })
+
+        return Response({
+            "consultations": ConsultationRequestSerializer(consultations, many=True).data,
+            "join_requests": JoinRequestSerializer(joins, many=True).data
+        })
+    
 
 #//////////////////////////////////// Assigned Projects APIView  ////////////////////////////////////////
 
@@ -399,25 +445,60 @@ class AssignedProjectsAPIView(APIView):
 
     def get(self, request):
         profile = request.user.volunteer_profile
+        if profile.status != "APPROVED":
+            return Response({"detail": "الحساب غير مفعل"}, status=403)
 
         #  الاستشارات المقبولة
         consultations = ConsultationRequest.objects.filter(
             volunteer=profile,
             status=ConsultationRequest.ACCEPTED,
-            request_type=ConsultationRequest.CONSULTATION
-        )
+            help_type=ConsultationRequest.ONE_TIME
+
+        ).order_by("-created_at")
 
         consultations_data = [
             {
                 "idea_id": c.idea.id,
                 "idea_title": c.idea.title,
                 "description": c.description,
+                "requester_name": c.requester.get_full_name() if c.requester else None,
+                "requester_email": c.requester.email if c.requester else None,
+                "required_skill": c.required_skill,
+                "help_type": c.help_type,
+                "conversation_id": Conversation.objects.filter(
+                    participants=request.user
+                ).filter(
+                    participants=c.requester
+                ).values_list("id", flat=True).first()
             }
             for c in consultations
         ]
 
-        #  المتابعة (حالياً نفس الاستشارات)
-        ongoing_data = consultations_data
+        #  المتابعة
+        ongoing =  ConsultationRequest.objects.filter(
+            volunteer=profile,
+            status=ConsultationRequest.ACCEPTED,
+            help_type=ConsultationRequest.ONGOING
+            
+        ).order_by("-created_at")
+
+        ongoing_data = [
+        {
+            "idea_id": c.idea.id,
+            "idea_title": c.idea.title,
+            "description": c.description,
+            "requester_name": c.requester.get_full_name() if c.requester else None,
+            "requester_email": c.requester.email if c.requester else None,
+            "required_skill": c.required_skill,
+            "help_type": c.help_type,
+            "conversation_id": Conversation.objects.filter(
+                participants=request.user
+            ).filter(
+                participants=c.requester
+            ).values_list("id", flat=True).first()
+        }
+        for c in ongoing
+    ]
 
         #  المشاريع المنضم لها
         joined = TeamMember.objects.filter(user=request.user)
@@ -426,7 +507,8 @@ class AssignedProjectsAPIView(APIView):
             {
                 "idea_id": j.idea.id,
                 "idea_title": j.idea.title,
-                "description": j.idea.description,
+                "owner_name": j.idea.owner.full_name,
+                "owner_email": j.idea.owner.email,
             }
             for j in joined
         ]
@@ -437,36 +519,6 @@ class AssignedProjectsAPIView(APIView):
             "joined_projects": joined_data
         })
     
-
-#/////////////////////// SEND JOIN REQUEST (TEAM MEMBER ) ////////////////
-
-class SendJoinRequestAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        serializer = CreateConsultationRequestSerializer(
-            data=request.data,
-            context={"request": request}
-        )
-        serializer.is_valid(raise_exception=True)
-
-        consultation = serializer.save(
-            requester=request.user,
-            request_type=ConsultationRequest.JOIN
-        )
-
-        #  Notification للمتطوع
-        EventBus.emit(
-            "join_request_sent",
-            payload={
-                "consultation": consultation,
-            },
-            actor=request.user,
-            action_url=f"/consultations/{consultation.id}"
-        )
-        return Response({
-            "detail": "تم إرسال طلب الانضمام بنجاح"
-        }, status=201)
     
 
 #//////////////////////// MY WORKSHOPS > للمتطوع  ///////////////////
@@ -487,7 +539,7 @@ class MyWorkshopsAPIView(APIView):
                 "title": w.title,
                 "start_date": w.start_date,
                 "end_date": w.end_date,
-                "sessions": len(w.days),
+                "sessions": w.sessions,
                 "days": w.days,
                 "time_from": w.time_from,
                 "time_to": w.time_to,
@@ -501,7 +553,7 @@ class MyWorkshopsAPIView(APIView):
 #/////////////////////// MY WORKSHOPS DETAILS ///////////////////
 
 class MyWorkshopDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ]
 
     def get(self, request, workshop_id):
         w = get_object_or_404(
@@ -509,6 +561,7 @@ class MyWorkshopDetailAPIView(APIView):
             id=workshop_id,
             created_by=request.user
         )
+    
 
         data = {
             "title": w.title,
@@ -520,8 +573,8 @@ class MyWorkshopDetailAPIView(APIView):
             "days": w.days,
             "time_from": w.time_from,
             "time_to": w.time_to,
-            "duration": w.duration,
             "category": w.category,
+            "sessions":w.sessions,
             "status": w.status,
         }
 
@@ -546,26 +599,16 @@ class CreateWorkshopAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        workshop= Workshop.objects.create(
-            title=request.data["title"],
-            category=request.data["category"],
-            description=request.data["description"],
-            objectives=request.data["objectives"],
-            target_audience=request.data["target_audience"],
-            start_date=request.data["start_date"],
-            end_date=request.data["end_date"],
-            days=request.data["days"],
-            time_from=request.data["time_from"],
-            time_to=request.data["time_to"],
-            duration=request.data["duration"],
-            capacity=request.data["capacity"],
-            created_by=request.user
-        )
+        serializer = CreateWorkshopSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        workshop = serializer.save(created_by=request.user)
         #اشعار 
         EventBus.emit(
             "workshop_submitted",
             payload={
                 "workshop": workshop,
+                "event_name":"workshop_submitted",
             },
             actor=request.user,
             action_url=f"/my-workshops/{workshop.id}"
@@ -578,7 +621,7 @@ class CreateWorkshopAPIView(APIView):
 #///////////////////// WORKSHOPS FOR PUBLIC //////////////
 
 class PublicWorkshopsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         filter_type = request.GET.get("filter")
@@ -605,8 +648,11 @@ class PublicWorkshopsAPIView(APIView):
             data.append({
                 "id": w.id,
                 "title": w.title,
+                "description": w.description,
                 "image": w.image.url if w.image else None,
                 "capacity": w.capacity,
+                "trainer_name": w.created_by.full_name,
+                "available_seats": w.capacity - w.registrations.count(),
                 "status": (
                     "لم تبدأ" if w.start_date > today else
                     "منتهية" if w.end_date < today else
@@ -615,9 +661,29 @@ class PublicWorkshopsAPIView(APIView):
             })
 
         return Response(data)
-    
+
+#///////////////////// WORKSHOPS DETAILS FOR PUBLIC //////////////
+
+class WorkshopDetailAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, workshop_id):
+        w = get_object_or_404(Workshop, id=workshop_id, status="ACCEPTED")
+
+        return Response({
+            "title": w.title,
+            "description": w.description,
+            "start_date": w.start_date,
+            "days": w.days,
+            "time_from": w.time_from,
+            "time_to": w.time_to,
+            "target_audience": w.target_audience,
+            "image": w.image.url if w.image else None,
+        })  
 
 #/////////// WORKSHOP REGISTER > PUBLIC  اليوزرات اللي بدن يسجلوا بالورشات ////////
+
+
 
 class RegisterWorkshopAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -629,29 +695,63 @@ class RegisterWorkshopAPIView(APIView):
             status="ACCEPTED"
         )
 
+        today = timezone.now().date()
+        if workshop.end_date < today:
+            return Response({"detail": "انتهت الورشة"}, status=400)
+
+        #   منع التسجيل المكرر
+        exists = WorkshopRegistration.objects.filter(
+            user=request.user,
+            workshop=workshop
+        ).exists()
+
+        if exists:
+            return Response({"detail": "أنت مسجل مسبقاً"}, status=400)
 
         if workshop.registrations.count() >= workshop.capacity:
             return Response({"detail": "الورشة ممتلئة"}, status=400)
 
-        WorkshopRegistration.objects.get_or_create(
+        WorkshopRegistration.objects.create(
             user=request.user,
             workshop=workshop,
-            defaults={
-                "name": request.user.get_full_name(),
-                "email": request.user.email
-            }
+            name=request.user.full_name,
+            email=request.user.email
         )
-
+        count = workshop.registrations.count()
         EventBus.emit(
             "workshop_registered",
             payload={
+                "event_name": "workshop_registered",
                 "workshop": workshop,
                 "user": request.user,
+                "registrations_count": count,
             },
             actor=request.user,
         )
+
         return Response({"detail": "تم التسجيل"})
-        
+
+#//////////////////////// NEAREST WORKSHOP /////////////////////////////
+
+class NearestWorkshopAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        today = timezone.now().date()
+
+        workshop = Workshop.objects.filter(
+            status="ACCEPTED",
+            start_date__gte=today
+        ).order_by("start_date").first()
+
+        if not workshop:
+            return Response({"detail": "لا يوجد ورشات قادمة"})
+
+        return Response({
+            "title": workshop.title,
+            "date": workshop.start_date.strftime("%A %Y-%m-%d"),
+            "time": f"{workshop.time_from.strftime('%I:%M %p')} - {workshop.time_to.strftime('%I:%M %p')}"
+        })      
 
 
 #/////////////////// CANCEL WORKSHOP REGISTRATION /////////////
@@ -688,6 +788,141 @@ class MyRegisteredWorkshopsAPIView(APIView):
                 "title": w.title,
                 "start_date": w.start_date,
                 "status": w.status
+            })
+
+        return Response(data)
+    
+#////////////////////// PUBLIC VIEW عرض كما يظهر للاخرين /////////////
+
+class PublicVolunteerProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+
+        try:
+            profile = user.volunteer_profile
+        except VolunteerProfile.DoesNotExist:
+            return Response({"detail": "ليس متطوع"}, status=404)
+
+        availability = profile.availabilities.all()
+
+        total_hours = 0
+        availability_data = []
+
+        for a in availability:
+            hours = (
+                datetime.combine(date.min, a.end_time) -
+                datetime.combine(date.min, a.start_time)
+            ).seconds / 3600
+
+            total_hours += hours
+
+            availability_data.append({
+                "day": a.day,
+                "from": a.start_time,
+                "to": a.end_time,
+            })
+
+        projects_count = TeamMember.objects.filter(user=user).count()
+
+        return Response({
+            "name": user.full_name,
+            "residence": profile.residence,
+            "avatar": user.avatar.url if user.avatar else None,
+            "bio": user.bio,
+            "availability": availability_data,
+            "weekly_hours": total_hours,
+            "additional_skills": profile.additional_skills,
+            "years_of_experience": profile.years_of_experience,
+            "primary_skills": profile.primary_skills,
+            "projects_count": profile.projects_count,
+            "availability_type": profile.availability_type,
+            "volunteer_type": profile.volunteer_type,
+        })
+    
+#///////////////////// VOLUNTEER VACATION VIEW (ADD + VIEW)  //////////////////////
+
+
+
+class VolunteerVacationAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        vacations = request.user.volunteer_profile.vacations.all()
+        data = [
+            {
+                "id": v.id,
+                "start_day": v.start_day,
+                "end_day": v.end_day,
+            }
+            for v in vacations
+        ]
+        return Response(data)
+
+    def post(self, request):
+        profile = request.user.volunteer_profile
+
+        vacation = VolunteerVacation.objects.create(
+            volunteer=profile,
+            start_day=request.data["start_day"],
+            end_day=request.data["end_day"],
+        )
+
+        return Response({
+            "id": vacation.id,
+            "start_day": vacation.start_day,
+            "end_day": vacation.end_day,
+        }, status=201)
+
+
+#////////////////////// DELETE VACATION //////////////////////
+
+
+class DeleteVolunteerVacationAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, vacation_id):
+        VolunteerVacation.objects.filter(
+            id=vacation_id,
+            volunteer=request.user.volunteer_profile
+        ).delete()
+
+        return Response({"detail": "تم الحذف"})
+    
+#/////////////////////// CONSULTANTS LIST عرض المستشارين /////////////////////////
+
+class ConsultantsListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        skill = request.query_params.get("skill")
+
+        consultants = VolunteerProfile.objects.filter(
+            status=VolunteerProfile.APPROVED
+        ).select_related("user").prefetch_related("availabilities")
+
+        if skill:
+            consultants = consultants.filter(primary_skills__iexact=skill)
+
+        data = []
+
+        for c in consultants:
+            availability = [
+                {
+                    "day": a.day,
+                    "start_time": a.start_time,
+                    "end_time": a.end_time
+                }
+                for a in c.availabilities.all()
+            ]
+
+            data.append({
+                "id": c.id,
+                "name": c.user.full_name,
+                "avatar": getattr(c.user, "avatar", None),
+                "primary_skill": c.primary_skills,
+                "availability": availability
             })
 
         return Response(data)

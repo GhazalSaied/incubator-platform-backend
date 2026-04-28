@@ -6,6 +6,7 @@ from .views import (
     MarkAsReadAPIView,
     UnreadMessagesCountAPIView,
     ConversationListAPIView,
+    StartConversationAPIView
 )
 
 urlpatterns = [
@@ -15,4 +16,5 @@ urlpatterns = [
     path("<int:conversation_id>/read/", MarkAsReadAPIView.as_view()),
     path("unread-count/", UnreadMessagesCountAPIView.as_view()),
     path("conversations/", ConversationListAPIView.as_view()),
+    path("start-conversation/",StartConversationAPIView.as_view())
 ]

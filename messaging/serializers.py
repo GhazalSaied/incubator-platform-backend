@@ -9,6 +9,8 @@ from django.db.models import Count, Q
 class ParticipantSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     email = serializers.EmailField()
+    full_name = serializers.CharField()
+    avatar = serializers.CharField(allow_null=True)
 
 
 #///////////////////////////// MESSAGE /////////////////////////
@@ -48,7 +50,9 @@ class ConversationSerializer(serializers.ModelSerializer):
         return [
             {
                 "id": user.id,
-                "email": user.email
+                "email": user.email,
+                "full_name": user.full_name,
+                "avatar": user.avatar.url if user.avatar else None
             }
             for user in obj.participants.all()
         ]
@@ -74,6 +78,7 @@ class ConversationListSerializer(serializers.ModelSerializer):
         model = Conversation
         fields = [
             "id",
+            "participants",
             "other_user",
             "last_message",
             "unread_count",
@@ -92,6 +97,8 @@ class ConversationListSerializer(serializers.ModelSerializer):
         return {
             "id": other.id,
             "email": other.email,
+            "full_name": other.full_name,
+            "avatar": other.avatar.url if other.avatar else None
         }
 
     def get_last_message(self, obj):
@@ -111,3 +118,15 @@ class ConversationListSerializer(serializers.ModelSerializer):
         return obj.messages.filter(
             is_read=False
         ).exclude(sender=request.user).count()
+    
+    
+    def get_participants(self, obj):
+        return [
+            {
+                "id": u.id,
+                "email": u.email,
+                "full_name": u.full_name,
+                "avatar": u.avatar.url if u.avatar else None
+            }
+            for u in obj.participants.all()
+        ]

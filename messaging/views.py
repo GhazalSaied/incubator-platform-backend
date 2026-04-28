@@ -5,6 +5,8 @@ from rest_framework import status
 from rest_framework.generics import ListAPIView
 from django.db.models import Max
 from core.events import EventBus
+from django.db import models
+
 
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer, ConversationListSerializer
@@ -12,7 +14,8 @@ from notifications.models import Notification
 from .pagination import MessagePagination
 from notifications.services.notification_service import NotificationService
 
-
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 
 
@@ -119,6 +122,15 @@ class MarkAsReadAPIView(APIView):
             is_read=False
         ).exclude(sender=request.user).update(is_read=True)
 
+        EventBus.emit(
+            "message_read",
+            payload={
+                "conversation_id": conversation.id,
+                "user": request.user,
+            },
+            actor=request.user
+        )
+
         return Response({"detail": "تم القراءة"})
     
 #/////////////////////////////// UNREAD MESSAGES COUNT ///////////////////////////
@@ -166,7 +178,7 @@ class ConversationDetailAPIView(APIView):
         except Conversation.DoesNotExist:
             return Response({"detail": "غير مسموح"}, status=404)
 
-        messages = conversation.messages.order_by("-created_at")
+        messages = conversation.messages.order_by("created_at")
 
         paginator = MessagePagination()
         paginated = paginator.paginate_queryset(messages, request)
@@ -174,3 +186,39 @@ class ConversationDetailAPIView(APIView):
         serializer = MessageSerializer(paginated, many=True)
 
         return paginator.get_paginated_response(serializer.data)
+    
+
+#//////////////////// START CONVERSATION //////////////////////
+
+class StartConversationAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user_id = request.data.get("user_id")
+
+        if not user_id:
+            return Response(
+                {"detail": "user_id مطلوب"},
+                status=400
+            )
+
+        try:
+            other_user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"detail": "المستخدم غير موجود"}, status=404)
+
+        # check existing conversation
+        conversation = Conversation.objects.filter(
+            participants=request.user
+        ).filter(
+            participants=other_user
+        ).annotate(
+            num_participants=models.Count('participants')
+        ).filter(num_participants=2).first()
+        if not conversation:
+            conversation = Conversation.objects.create()
+            conversation.participants.add(request.user, other_user)
+
+        return Response({
+            "conversation_id": conversation.id
+        })
