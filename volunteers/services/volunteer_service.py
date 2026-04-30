@@ -103,7 +103,6 @@ class VolunteerService:
             EventBus.emit(
                 "consultation_accepted",
                 consultation=consultation,
-                action="accept",
                 actor=user,
                 action_url=f"/conversations/{conversation.id}"
             )
@@ -114,7 +113,6 @@ class VolunteerService:
             EventBus.emit(
                 "consultation_rejected",
                 consultation=consultation,
-                action="reject",
                 actor=user
             )
         consultation.save()

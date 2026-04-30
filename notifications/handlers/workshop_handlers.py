@@ -2,6 +2,7 @@ from core.events import EventBus
 from notifications.services.notification_service import NotificationService
 
 
+
 def workshop_submitted_handler(payload):
     workshop = payload["workshop"]
 
@@ -9,8 +10,9 @@ def workshop_submitted_handler(payload):
         user=workshop.created_by,
         event_name=payload["event_name"],
         obj=workshop,
+        actor=payload.get("actor"),
         action_url=payload.get("action_url"),
-        target_role="VOLUNTEER"
+        target_role="ADMIN"
     )
 
 def workshop_registered_handler(payload):
@@ -21,6 +23,9 @@ def workshop_registered_handler(payload):
         event_name=payload["event_name"],
         obj=workshop,
         actor=payload.get("user"),
+        extra={
+                "registrations_count": payload.get("registrations_count")
+        },
         action_url=payload.get("action_url"),
         target_role="VOLUNTEER"
     )

@@ -1,5 +1,14 @@
 from django.urls import path
-from .views import RegisterAPIView, LoginAPIView , UserProfileAPIView , ChangePasswordAPIView , ForgotPasswordAPIView,DeleteAccountAPIView,LogoutAPIView,AdminLoginAPIView
+from .views import (RegisterAPIView, 
+                    LoginAPIView , 
+                    UserProfileAPIView , 
+                    ChangePasswordAPIView ,
+                      ForgotPasswordAPIView,
+                      DeleteAccountAPIView,
+                      LogoutAPIView,
+                      AdminLoginAPIView,
+                      ResetPasswordConfirmAPIView
+                      )
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -11,5 +20,7 @@ urlpatterns = [
     path('logout/', LogoutAPIView.as_view(),name='logout'),
     path('delete-account/',DeleteAccountAPIView.as_view(),name='delete-account'),
     path('forgot-password/',ForgotPasswordAPIView.as_view(),name='forgot-password'),
+    path('reset-password/',ResetPasswordConfirmAPIView.as_view()),
+
     path("admin-login/", AdminLoginAPIView.as_view()),
 ]

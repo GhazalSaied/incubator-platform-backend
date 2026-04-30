@@ -48,7 +48,7 @@ EVENTS = {
     "workshop_registered": {
         "target": "VOLUNTEER",
         "payload": ["workshop", "user"],
-        "action_url": "/my-workshops/{id}/registrations"
+        "action_url": "/workshop-details/{workshop}/"
     },
 
     # ===============================
@@ -64,7 +64,7 @@ EVENTS = {
     "consultation_reminder": {
         "target": "VOLUNTEER",
         "payload": ["consultation"],
-        "action_url": "/consultations/{id}"
+        "action_url": "/consultations/{consultation}"
     },
 
     "consultation_decided": {
@@ -76,13 +76,13 @@ EVENTS = {
     "consultation_accepted": {
         "target": "IDEA_OWNER",
         "payload": ["consultation", "action"],
-        "action_url": "/consultations/{id}"
+        "action_url": "/conversations/{conversation}"
     },
 
     "consultation_rejected": {
         "target": "IDEA_OWNER",
         "payload": ["consultation"],
-        "action_url": "/consultants"
+        "action_url": "/api/volunteers/consultants/"
     },
 
     # ===============================

@@ -33,14 +33,15 @@ TEMPLATES = {
     # ===============================
 
     "workshop_submitted": {
-        "title": "تم إرسال الورشة",
-        "message": lambda obj, actor=None, extra=None: f"تم إرسال ورشتك {obj.title}",
+        "title": "ورشة جديدة",
+        "message": lambda obj, actor=None, extra=None:
+            f"تمت إضافة ورشة جديدة بعنوان {obj.title} من قبل {actor.full_name}",
     },
 
     "workshop_registered": {
         "title": "تسجيل جديد",
         "message": lambda obj, actor=None, extra=None:
-            f"تسجيل جديد في ورشتك {obj.title} - العدد الحالي: {extra.get('registrations_count')}"
+            f"تسجيل جديد في ورشتك {obj.title} - العدد الحالي: {(extra or {}).get('registrations_count')}"
     },
 
     # ===============================

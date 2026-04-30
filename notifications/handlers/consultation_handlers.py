@@ -24,8 +24,7 @@ def consultation_accepted_handler(payload):
         user=consultation.requester,
         event_name=payload["event_name"],
         obj=consultation,
-        actor=payload.get("actor"),
-        extra=payload.get("action"),  
+        actor=payload.get("actor"),  
         action_url=payload.get("action_url"),
         target_role="IDEA_OWNER"
     )
@@ -38,8 +37,7 @@ def consultation_rejected_handler(payload):
         user=consultation.requester,
         event_name=payload["event_name"],
         obj=consultation,
-        actor=payload.get("actor"),
-        extra=payload.get("action"),  
+        actor=payload.get("actor"),  
         action_url=payload.get("action_url"),
         target_role="IDEA_OWNER"
     )

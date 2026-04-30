@@ -11,8 +11,11 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from core.events import EventBus
+from django.utils import timezone
+from datetime import timedelta
+from django.core.mail import send_mail
 
-from .models import User
+from .models import User, PasswordResetOTP
 from .serializers import (
     RegisterSerializer,
     LoginSerializer,
@@ -54,6 +57,7 @@ from .serializers import (
     UserProfileSerializer,
     ChangePasswordSerializer,
     ForgotPasswordSerializer,
+    ResetPasswordConfirmSerializer
 )
 
 
@@ -172,7 +176,9 @@ class DeleteAccountAPIView(APIView):
             status=status.HTTP_204_NO_CONTENT
         )
 
-#///////////////////////// FORGOT PASSWORD VIEW PHASE2 ////////////////////////////
+    
+#////////////////////// FORGOT PASSWORD VIEW //////////////////////////
+
 
 class ForgotPasswordAPIView(APIView):
     permission_classes = [AllowAny]
@@ -181,25 +187,95 @@ class ForgotPasswordAPIView(APIView):
         serializer = ForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = User.objects.filter(
-            email=serializer.validated_data["email"]
-        ).first()
+        email = serializer.validated_data["email"]
 
+        user = User.objects.filter(email=email).first()
+
+        # لا تكشف وجود المستخدم
         if not user:
             return Response(
-                {"detail": "إذا كان الإيميل موجود سيتم إرسال رابط"},
+                {"detail": "إذا كان الإيميل موجود سيتم إرسال رمز"},
                 status=status.HTTP_200_OK
             )
 
-        # لاحقاً:
-        # - generate token
-        # - send email
+        # حذف أي OTP سابق غير مستخدم
+        PasswordResetOTP.objects.filter(user=user, is_used=False).delete()
+
+        otp = PasswordResetOTP.generate_otp()
+
+        PasswordResetOTP.objects.create(
+            user=user,
+            otp=otp,
+            expires_at=timezone.now() + timedelta(minutes=10)
+        )
+
+        # إرسال OTP 
+        send_mail(
+            subject="رمز إعادة تعيين كلمة المرور",
+            message=f"رمزك هو: {otp}",
+            from_email=None,
+            recipient_list=[email],
+        )
 
         return Response(
-            {"detail": "تم إرسال طلب إعادة تعيين كلمة المرور"},
+            {"detail": "تم إرسال رمز إعادة التعيين"},
             status=status.HTTP_200_OK
         )
-        
+
+
+#////////////////////////// RESET PASSWORD CONFIRM ////////////////////
+
+class ResetPasswordConfirmAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ResetPasswordConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"]
+        otp_input = serializer.validated_data["otp"]
+        password = serializer.validated_data["password"]
+
+        user = User.objects.filter(email=email).first()
+
+        if not user:
+            return Response(
+                {"detail": "بيانات غير صحيحة"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        otp_obj = PasswordResetOTP.objects.filter(
+            user=user,
+            otp=otp_input,
+            is_used=False
+        ).order_by("-created_at").first()
+
+        if not otp_obj:
+            return Response(
+                {"detail": "OTP غير صحيح"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if otp_obj.is_expired():
+            return Response(
+                {"detail": "OTP منتهي الصلاحية"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # تغيير كلمة المرور بشكل آمن
+        user.set_password(password)
+        user.must_change_password = False
+        user.last_password_change = timezone.now()
+        user.save()
+
+        # منع إعادة الاستخدام
+        otp_obj.is_used = True
+        otp_obj.save()
+
+        return Response(
+            {"detail": "تم تغيير كلمة المرور بنجاح"},
+            status=status.HTTP_200_OK
+        )
 
 #//////////////////////// CONTACT US ///////////////////////////
 

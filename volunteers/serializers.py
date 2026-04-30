@@ -304,6 +304,8 @@ class CreateWorkshopSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
+        request = self.context.get("request")
+
         if data["start_date"] > data["end_date"]:
             raise serializers.ValidationError("تاريخ البداية يجب أن يكون قبل النهاية")
 
@@ -312,5 +314,55 @@ class CreateWorkshopSerializer(serializers.ModelSerializer):
 
         if not data.get("days"):
             raise serializers.ValidationError("يجب تحديد الأيام")
+        
+        if Workshop.objects.filter(
+            created_by=request.user,
+            status="PENDING",
+            title=data["title"],
+            objectives=data["objectives"],
+            target_audience=data["target_audience"],
+        ).exists():
+            raise serializers.ValidationError(
+                "لديك طلب مشابه قيد المراجعة"
+            )
 
         return data
+    
+#///////////////////////////// CONSULTANTS LIST //////////////////////////////
+
+class ConsultantListSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="user.full_name", read_only=True)
+    avatar = serializers.SerializerMethodField()
+    primary_skill = serializers.CharField(source="primary_skills", read_only=True)
+    availability = serializers.SerializerMethodField()
+
+    class Meta:
+        model = VolunteerProfile
+        fields = [
+            "id",
+            "name",
+            "avatar",
+            "primary_skill",
+            "availability",
+        ]
+
+    def get_avatar(self, obj):
+        #  لا يوجد field  safe return
+        if hasattr(obj.user, "avatar"):
+            return obj.user.avatar.url if obj.user.avatar else None
+        return None
+
+    def get_availability(self, obj):
+        availabilities = obj.availabilities.all()
+
+        if not availabilities:
+            return None
+
+        # حسب الفلو: "من - إلى"
+        first = availabilities.first()
+
+        return {
+            "day": first.day,
+            "from": first.start_time,
+            "to": first.end_time
+        }

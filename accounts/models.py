@@ -2,6 +2,9 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 from common.models import BaseModel
 from .managers import UserManager
+import random
+from datetime import timedelta
+from django.utils import timezone
 
 #/////////////////////////// USER MODEL /////////////////////////////////////
 
@@ -64,3 +67,20 @@ class UserRole(BaseModel):
 
     class Meta:
         unique_together = ('user', 'role')
+
+
+#/////////////////////////// PASSWORD RESET OTP ////////////////////
+
+class PasswordResetOTP(models.Model):
+    user = models.ForeignKey("User", on_delete=models.CASCADE)
+    otp = models.CharField(max_length=4)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    @staticmethod
+    def generate_otp():
+        return str(random.randint(1000, 9999))
