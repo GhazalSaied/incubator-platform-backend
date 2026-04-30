@@ -3,8 +3,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
-from core.permissions import IsAdminOrSecretary, IsDirector
+from core.permissions import IsAdminOrSecretary, IsAdmin
 from ideas.models import ExhibitionForm, ExhibitionQuestion, ExhibitionSubmission, Season
+from ideas.services.season_phase_service import SeasonPhaseService
 from .services.management_service import ExhibitionAdminService, ExhibitionSubmissionManagementService
 from .services.query_service import ExhibitionHistoryQueryService, ExhibitionQueryService, ExhibitionSubmissionQueryService
 
@@ -15,8 +16,10 @@ from .services.query_service import ExhibitionHistoryQueryService, ExhibitionQue
 
 class CreateExhibitionView(APIView):
    
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
     def post(self, request):
+        permissions= SeasonPhaseService.get_phase_permissions()
+        if not permissions.get("can_create_exhibition", False):
+            return Response({"error": "غير مسموح بإنشاء معرض في الوقت الحالي"}, status=403)
 
         date = request.data.get("date")
         time = request.data.get("time")
@@ -38,8 +41,12 @@ class CreateExhibitionView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\انشاء بطاقة المعرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class CreateFormView(APIView):
     
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    
     def post(self, request):
+        permissions= SeasonPhaseService.get_phase_permissions()
+        if not permissions.get("can_create_exhibition", False):
+            return Response({"error": "غير مسموح بإنشاء بطاقة معرض في الوقت الحالي"}, status=403)
+
 
         title = request.data.get("title")
 
@@ -54,8 +61,12 @@ class CreateFormView(APIView):
 
 class ExhibitionFormBuilderAPIView(APIView):
     
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    
     def put(self, request, form_id):
+        permissions= SeasonPhaseService.get_phase_permissions()
+        if not permissions.get("can_create_exhibition", False):
+            return Response({"error": "غير مسموح بإنشاء بطاقة معرض في الوقت الحالي"}, status=403)
+
 
         form = get_object_or_404(ExhibitionForm, id=form_id)
 
@@ -69,8 +80,9 @@ class ExhibitionFormBuilderAPIView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\معاينة بطاقة المعرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class ExhibitionFormPreviewAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    
     def get(self, request, form_id):
+        
 
         form = get_object_or_404(ExhibitionForm, id=form_id)
 
@@ -84,8 +96,12 @@ class ExhibitionFormPreviewAPIView(APIView):
 
 class PublishExhibitionFormAPIView(APIView):
     
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
     def post(self, request, form_id):
+        permissions= SeasonPhaseService.get_phase_permissions()
+        if not permissions.get("can_create_exhibition", False):
+            return Response({"error": "غير مسموح بنشر بطاقة معرض في الوقت الحالي"}, status=403)
+
+
 
         form = get_object_or_404(ExhibitionForm, id=form_id)
 
@@ -99,7 +115,6 @@ class PublishExhibitionFormAPIView(APIView):
     
 class SubmissionListAPIView(APIView):
     
-    permission_classes = [IsAuthenticated, IsDirector]
     def get(self, request):
 
         data = ExhibitionSubmissionQueryService.list_submissions()
@@ -111,7 +126,6 @@ class SubmissionListAPIView(APIView):
 
 class SubmissionDetailsAPIView(APIView):
     
-    permission_classes = [IsAuthenticated, IsDirector]
     def get(self, request, submission_id):
 
         submission = get_object_or_404(ExhibitionSubmission, id=submission_id)
@@ -122,35 +136,35 @@ class SubmissionDetailsAPIView(APIView):
     
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\قبول او رفض الطلب \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-class SubmissionDecisionAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
-    
+class ExhibitionSubmissionDecisionAPIView(APIView):
+
     def post(self, request, submission_id):
+        permissions = SeasonPhaseService.get_phase_permissions()
+        if not permissions.get("can_decide_exhibition_card", False):
+            return Response({"error": "غير مسموح باتخاذ قرار على بطاقة المعرض في الوقت الحالي"}, status=403)
 
-        submission = get_object_or_404(ExhibitionSubmission, id=submission_id)
-
-        action = request.data.get("action")  # approve / reject
+        decision = request.data.get("decision")
         message = request.data.get("message")
 
-        if action == "approve":
-            ExhibitionSubmissionManagementService.approve(submission, message)
-
-        elif action == "reject":
-            ExhibitionSubmissionManagementService.reject(submission, message)
-
-        else:
-            return Response({"error": "Invalid action"}, status=400)
+        submission = (
+            ExhibitionSubmissionManagementService
+            .process_decision(
+                submission_id=submission_id,
+                decision=decision,
+                admin_message=message,
+                actor=request.user
+            )
+        )
 
         return Response({
-            "message": "تم تنفيذ العملية بنجاح"
+            "detail": "تم اتخاذ القرار بنجاح",
+            "status": submission.status
         })
-        
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\سجل المعارض\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class ExhibitionHistoryAPIView(APIView):
     
-    permission_classes = [IsAuthenticated, IsDirector]
     def get(self, request):
 
         data = ExhibitionHistoryQueryService.list_exhibitions()
@@ -159,7 +173,7 @@ class ExhibitionHistoryAPIView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تفاصيل معرض معين\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class ExhibitionProjectsAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
+    
     
     def get(self, request, exhibition_id):
 

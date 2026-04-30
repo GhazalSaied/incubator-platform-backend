@@ -1,29 +1,40 @@
 from rest_framework import serializers
 from .models import BootcampSession, BootcampAbsenceRequest, BootcampAttendance
 from ideas.models import Idea
-
+from admin_panel.bootcamp.sessions.services import BootcampSessionQueryService
 
 # USER SIDE 
 
 
 #/////////////////////////// BOOTCAMP SESSION ////////////////////////
-
 class BootcampSessionSerializer(serializers.ModelSerializer):
+    trainer_name = serializers.SerializerMethodField()
+    time_range = serializers.SerializerMethodField()
+
     class Meta:
         model = BootcampSession
         fields = [
             "id",
             "title",
             "trainer",
+            "trainer_name",
             "date",
-            "start_time",
-            "end_time",
+            "time_range",
             "tasks",
             "location",
         ]
 
+    def get_trainer_name(self, obj):
+        return BootcampSessionQueryService.get_trainer_name(obj)
+
+    def get_time_range(self, obj):
+        return BootcampSessionQueryService.get_time_range(obj)
+
     def validate(self, data):
-        if data["start_time"] >= data["end_time"]:
+        start = data.get("start_time")
+        end = data.get("end_time")
+
+        if start and end and start >= end:
             raise serializers.ValidationError(
                 "وقت البداية يجب أن يكون قبل النهاية"
             )
@@ -46,11 +57,13 @@ class SessionAttendanceSerializer(serializers.ModelSerializer):
         fields = ["id", "idea", "idea_title", "status"]
 
 
-#  Decision (input)
+
+
+
 class BootcampDecisionSerializer(serializers.Serializer):
-    idea_id = serializers.IntegerField()
     decision = serializers.ChoiceField(choices=["approve", "reject"])
-    message = serializers.CharField()
+    
+    
     
 #\\\\\\\ BootcampIdeaList\\\\\\\\\
 class BootcampIdeaListSerializer(serializers.Serializer):
@@ -80,10 +93,7 @@ class AbsenceRequestSerializer(serializers.ModelSerializer):
 
 #\\\\\\\AbsenceDecision\\\\\\\\\\\\\\\\\\\
 class AbsenceDecisionSerializer(serializers.Serializer):
-    request_id = serializers.IntegerField()
     decision = serializers.ChoiceField(choices=["approve", "warn"])
-    
-    
     
  #\\\\\   AttendanceStats\\\\\\\\\
 class AttendanceStatsSerializer(serializers.Serializer):

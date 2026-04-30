@@ -4,19 +4,17 @@ from rest_framework.permissions import IsAuthenticated
 from accounts.models import Role, User
 from core.permissions import IsAdminOrSecretary
 from django.shortcuts import get_object_or_404
-from .serializers import AdminUserSerializer,CreateUserSerializer
-from .selectors import get_users
+from .serializers import AdminUserSerializer,CreateUserSerializer, WorkshopActionSerializer
 from rest_framework import status
-from .services.user_management_service import AdminUserService
-
+from .services.user_management_service import AdminUserService, WorkshopServices
+from .services.query_service import UsersQueryService, WorkshopService,UserProfileService
 
 class AdminUserListView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
-
+    
     def get(self, request):
         role_code = request.query_params.get("role")
 
-        users = get_users(role_code=role_code)
+        users = UsersQueryService.get_users(role_code=role_code)
 
         serializer = AdminUserSerializer(users, many=True)
 
@@ -49,8 +47,8 @@ class CreateUserView(APIView):
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض الادوار\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class RoleListAPIView(APIView):
+    
     permission_classes = [IsAuthenticated, IsAdminOrSecretary]
-
     def get(self, request):
 
         roles = Role.objects.exclude(code="DIRECTOR")
@@ -80,3 +78,68 @@ class UpdateUserRolesAPIView(APIView):
         return Response({
             "message": "تم تحديث الأدوار بنجاح"
         })
+        
+        
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تجميد مستخدم \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class FreezeUserAPIView(APIView):
+    
+
+    def post(self, request, user_id):
+
+        user = get_object_or_404(User, id=user_id)
+
+        AdminUserService.freeze_user(
+            user=user,
+            performed_by=request.user
+        )
+
+        return Response({
+            "message": "تم تجميد الحساب بنجاح"
+        })
+        
+        
+#\\\\\\\\\\\\\\\\\\\\\\\\\\عرض تفاصيل المستخددم حسب الدور \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class UserDetailsAPIView(APIView):
+    
+    def get(self, request, user_id):
+
+        user = get_object_or_404(User, id=user_id)
+
+        data = UserProfileService.get_user_profile(user)
+
+        return Response(data)
+    
+    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض تفاصيل المهمة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+
+class WorkshopDetailsForVolunteerView(APIView):
+
+    def get(self, request, workshop_id):
+
+        data = WorkshopService.get_workshop_details_for_volunteer(
+            workshop_id=workshop_id,
+            
+        )
+
+        return Response(data, status=status.HTTP_200_OK)
+    
+    
+    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\قبول او رفض مهمة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ 
+
+class WorkshopActionView(APIView):
+
+
+    def post(self, request, workshop_id):
+
+        serializer = WorkshopActionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        result = WorkshopServices.change_workshop_status(
+            workshop_id=workshop_id,
+            action=serializer.validated_data["action"]
+        )
+
+        return Response(result, status=status.HTTP_200_OK)

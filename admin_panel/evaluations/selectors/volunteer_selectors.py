@@ -4,7 +4,7 @@ from django.db.models import Q
 
 def get_available_season_evaluators(
     season,
-    volunteer_type=None,
+    specialization=None,
     skills=None,
 ):
     """
@@ -25,16 +25,16 @@ def get_available_season_evaluators(
         )
     )
 
-    if volunteer_type:
+    if specialization:
         queryset = queryset.filter(
-            user__volunteer_profile__volunteer_type__icontains=volunteer_type
+            user__volunteer_profile__specialization__icontains=specialization
         )
 
     if skills:
         queryset = queryset.filter(
             Q(user__volunteer_profile__primary_skills__icontains=skills)
             |
-            Q(user__volunteer_profile__additional_skills__icontains=skills)
+            Q(user__volunteer_profile__additional_skills__contains=[skills])
         )
 
     return queryset

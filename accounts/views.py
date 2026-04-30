@@ -1,6 +1,6 @@
 from django.contrib.auth import logout
 from django.shortcuts import get_object_or_404
-
+from core.permissions import IsAdmin
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import generics, permissions
@@ -206,37 +206,3 @@ class ForgotPasswordAPIView(APIView):
 
 
 
-class AdminLoginAPIView(APIView):
-
-    permission_classes = []   # مهم لأن المستخدم غير مسجل بعد
-
-    def post(self, request):
-
-        email = request.data.get("email")
-        password = request.data.get("password")
-
-        user = authenticate(request, email=email, password=password)
-
-        if not user:
-            return Response(
-                {"detail": "بيانات الدخول غير صحيحة"},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        # السماح فقط للإدارة
-        if not (
-            user.groups.filter(name="incubator directors").exists()
-            or
-            user.groups.filter(name="incubator secretary").exists()
-        ):
-            return Response(
-                {"detail": "هذا الحساب ليس له صلاحية الدخول إلى لوحة الإدارة"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        refresh = RefreshToken.for_user(user)
-
-        return Response({
-            "access": str(refresh.access_token),
-            "refresh": str(refresh)
-        })

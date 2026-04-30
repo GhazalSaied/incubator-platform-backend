@@ -82,9 +82,6 @@ class CanEvaluateIdea(IsEvaluator, IsInPhase):
     required_phase = SeasonPhase.EVALUATION
 
 
-class IsDirector(HasRole):
-    required_role_code = "DIRECTOR"
-
 
 class IsSecretary(HasRole):
     required_role_code = "SECRETARY"
@@ -99,9 +96,11 @@ class IsAdminOrSecretary(BasePermission):
 
         return UserRole.objects.filter(
             user=request.user,
-            role__code__in=["DIRECTOR", "SECRETARY"],
+            role__code__in=["ADMIN", "SECRETARY"],
             is_active=True
         ).exists()
+        
+        
 class IsReadOnly(BasePermission):
     def has_permission(self, request, view):
         return request.method in SAFE_METHODS

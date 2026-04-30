@@ -166,6 +166,12 @@ EVENTS = {
     "action_url": "/incubation"
 },
 
+"evaluation_submitted" : {
+    "target": "ADMIN",
+    "payload": ["evaluation", "idea"],
+    "action_url": ""},
+
+
 # ===============================
 # BOOTCAMP
 # ===============================
@@ -282,4 +288,110 @@ EVENTS = {
     "action_url": "/events"
 },
 
-}
+
+
+#\\\\\\\\\\\\\admin_season_events\\\\\\\\\\\\\\\\\\\\\\\\
+    "season_published": {
+        "target" : "USER",
+        "payload" : ["season"],
+        "action_url" : "/form"
+    },
+    "submission_closed": {
+        "target" : "USER",
+        "payload" : ["season"],
+        "action_url" : "/season-status"},
+    
+    "idea_status_changed": {
+        "target" : "USER",
+        "payload" : ["idea","old_status","new_status"],
+        "action_url" : "/ideas/{id} "}, 
+    
+    
+    "absence_decision_made": {
+        "target": "IDEA_OWNER",
+        "payload": ["absence", "decision"],
+        "action_url": None
+    },
+    
+    "bootcamp_session_created": {
+        "target": "USER", 
+        "payload": ["session"], 
+        "action_url": None
+        },
+    
+    
+    "bootcamp_decision_made" : {
+        "target": "IDEA_OWNER",
+        "payload": ["idea", "decision"],
+        "action_url": "/idea/{id}"
+    },
+    
+    "bootcamp_sessions_ended": {
+        "target": "IDEA_OWNER", 
+        "payload": ["season"], 
+        "action_url": None
+    },
+    
+    "evaluation_meeting_scheduled": {
+        "target": "EVALUATOR",
+        "payload": ["idea", "meeting_datetime"],
+        "action_url": ""
+    },
+    "idea_accepted" : {
+        "target": "IDEA_OWNER",
+        "payload": ["idea"],
+        "action_url": ""},
+    
+    
+    "idea_rejected" : {
+        "target": "IDEA_OWNER",
+        "payload": ["idea"],
+        "action_url": ""},
+    "season_phase_changed" : {
+        "target": "USER",
+        "payload": ["season", "new_phase"],
+        "action_url": ""  },
+    
+    "incubation_meeting_scheduled": {
+        "target": "incubation",
+        "payload": ["review", "idea", "assignments"],
+        "action_url": ""
+}, 
+    "idea_EXhibition_graduated" : {
+        "target": "IDEA_OWNER",
+        "payload": ["idea"],
+        "action_url": " "},
+    
+    "idea_graduated_negative" : {
+        "target": "IDEA_OWNER",
+        "payload": ["idea"],
+        "action_url": " "},
+    "exhibition_scheduled" : {
+        "target": "USER",
+        "payload": ["season", "exhibition_datetime"],
+        "action_url": " "   
+    },
+    "exhibition_form_published" : {
+        "target": "IDEA_OWNER",
+        "payload": ["form_id", "season_id"],
+        "action_url": " "
+    },
+    
+    
+    "exhibition_submission_decided": {
+    "target": "IDEA_OWNER",
+    "payload": [
+        "submission",
+        "decision",
+        "message"
+    ],
+    "action_url": ""
+},}
+        
+          
+        
+    
+
+    
+    
+    

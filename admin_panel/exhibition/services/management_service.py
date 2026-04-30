@@ -1,5 +1,5 @@
 from cmath import phase
-
+from core.events import EventBus
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from datetime import datetime
@@ -9,7 +9,7 @@ from ideas.phases import SeasonPhase as PhaseEnum
 from ideas.services.season_phase_service import SeasonPhaseService
 from ideas.phases import SeasonPhase
 from django.db import transaction
-from ideas.models import ExhibitionForm, ExhibitionQuestion, ExhibitionQuestionOption
+from ideas.models import ExhibitionForm, ExhibitionQuestion, ExhibitionQuestionOption, ExhibitionSubmission
 
 
 class ExhibitionAdminService:
@@ -40,25 +40,7 @@ class ExhibitionAdminService:
 
         return season
 
-    @staticmethod
-    def _validate_phase(season):
-        phase = SeasonPhaseService.get_current_phase(season)
 
-        if not phase:
-            raise ValidationError("لا يوجد مرحلة حالية")
-
-        if phase.phase != PhaseEnum.INCUBATION:
-            raise ValidationError("لا يمكن انشاء المعرض في هذه المرحلة ")
-
-        return phase
-
-    @staticmethod
-    def _get_next_order(season):
-        last_phase = PhaseEnum.objects.filter(
-            season=season
-        ).order_by("-order").first()
-
-        return last_phase.order + 1 if last_phase else 1
     @transaction.atomic
     @staticmethod
     def create_exhibition(*, date, time):
@@ -69,37 +51,14 @@ class ExhibitionAdminService:
         # 🟢 2. get season
         season = ExhibitionAdminService._get_active_season()
 
-        # 🟢 3. validate phase
-        current_phase = ExhibitionAdminService._validate_phase(season)
-
         # 🛑 منع تكرار المعرض
         if season.exhibition_datetime:
             raise ValidationError("تم تحديد المعرض مسبقاً")
 
-        # 🟢 4. حساب order
-        new_order = ExhibitionAdminService._get_next_order(season)
-
         # 🟢 5. حفظ التاريخ
         season.exhibition_datetime = dt
         season.save()
-
-        # 🟢 إنهاء المرحلة الحالية
-        current_phase.end_date = timezone.now()
-        current_phase.save()
-
-# 🟢 جلب مرحلة المعرض
-        exhibition_phase = SeasonPhase.objects.filter(
-            season=season,
-            phase=PhaseEnum.EXHIBITION
-        ).first()
-
-        if not exhibition_phase:
-            raise ValidationError("مرحلة المعرض غير موجودة مسبقاً")
-
-# 🟢 تفعيلها
-        exhibition_phase.start_date = timezone.now()
-        exhibition_phase.end_date = season.end_date
-        exhibition_phase.save()
+        EventBus.emit("exhibition_scheduled", season_id=season.id, exhibition_datetime=season.exhibition_datetime)
 
         return season
 
@@ -306,6 +265,7 @@ class ExhibitionAdminService:
     # =========================
     # 🚀 PUBLISH FORM
     # =========================
+    @transaction.atomic
     @staticmethod
     def publish_form(form):
 
@@ -313,16 +273,7 @@ class ExhibitionAdminService:
         if form.is_active:
             raise ValidationError("الفورم منشور مسبقاً")
 
-        # 🟢 تحقق من الموسم
-        season = SeasonPhaseService.get_current_season()
-        if not season:
-            raise ValidationError("لا يوجد موسم فعال")
-
-        # 🟢 تحقق من المرحلة
-        phase = SeasonPhaseService.get_current_phase(season)
-        if not phase or phase.phase != PhaseEnum.EXHIBITION:
-            raise ValidationError("لا يمكن النشر إلا في مرحلة المعرض")
-
+    
         # 🟢 تحقق انه الفورم فيه أسئلة
         if not form.questions.exists():
             raise ValidationError("لا يمكن نشر فورم فارغ")
@@ -330,39 +281,89 @@ class ExhibitionAdminService:
         # 🟢 نشر
         form.is_active = True
         form.save()
+        EventBus.emit("exhibition_form_published", form_id=form.id, season_id=form.season.id)
 
         return form
     
     
     
 
+
 class ExhibitionSubmissionManagementService:
 
-    @staticmethod
-    def approve(submission, message=None):
-
-        if submission.status != "pending":
-            raise ValidationError("تمت معالجة هذا الطلب مسبقاً")
-
-        submission.status = "approved"
-        submission.message = message
-        submission.reviewed_at = timezone.now()
-        submission.save()
-        project = submission.project
-        project.status = "EXHIBITION"
-        project.save()
-
-        return submission
+    ALLOWED_DECISIONS = [
+        "approved",
+        "rejected"
+    ]
 
     @staticmethod
-    def reject(submission, message=None):
+    @transaction.atomic
+    def process_decision(
+        *,
+        submission_id,
+        decision,
+        admin_message=None,
+        actor=None
+    ):
+
+        # 🔒 row locking
+        submission = (
+            ExhibitionSubmission.objects
+            .select_for_update()
+            .select_related("project", "project__owner")
+            .get(id=submission_id)
+        )
+
+        # =========================
+        # VALIDATION
+        # =========================
 
         if submission.status != "pending":
-            raise ValidationError("تمت معالجة هذا الطلب مسبقاً")
+            raise ValidationError(
+                "تمت معالجة الطلب مسبقاً"
+            )
 
-        submission.status = "rejected"
-        submission.message = message
+        if decision not in (
+            ExhibitionSubmissionManagementService
+            .ALLOWED_DECISIONS
+        ):
+            raise ValidationError(
+                "قرار غير صالح"
+            )
+
+        # تنظيف الرسالة
+        admin_message = (
+            admin_message.strip()
+            if admin_message
+            else None
+        )
+
+        # =========================
+        # APPLY DECISION
+        # =========================
+
+        submission.status = decision
+        submission.message = admin_message
         submission.reviewed_at = timezone.now()
-        submission.save()
+
+        submission.save(
+            update_fields=[
+                "status",
+                "message",
+                "reviewed_at"
+            ]
+        )
+
+        # =========================
+        # EVENT
+        # =========================
+
+        EventBus.emit(
+            "exhibition_submission_decided",
+            submission=submission,
+            decision=decision,
+            message=admin_message,
+            actor=actor
+        )
 
         return submission

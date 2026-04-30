@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ExhibitionFormBuilderAPIView, CreateExhibitionView, CreateFormView,ExhibitionFormPreviewAPIView,PublishExhibitionFormAPIView,SubmissionListAPIView,SubmissionDetailsAPIView,SubmissionDecisionAPIView,ExhibitionHistoryAPIView,ExhibitionProjectsAPIView 
+from .views import ExhibitionFormBuilderAPIView, CreateExhibitionView, CreateFormView,ExhibitionFormPreviewAPIView,PublishExhibitionFormAPIView,SubmissionListAPIView,SubmissionDetailsAPIView,ExhibitionSubmissionDecisionAPIView,ExhibitionHistoryAPIView,ExhibitionProjectsAPIView 
 
 
 urlpatterns = [
@@ -18,7 +18,7 @@ urlpatterns = [
     #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تفاصيل الطلب \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("submissions/<int:submission_id>/", SubmissionDetailsAPIView.as_view()),
     #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\قبول او رفض الطلب \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-    path("submissions/<int:submission_id>/decision/", SubmissionDecisionAPIView.as_view()),
+    path("submissions/<int:submission_id>/decision/", ExhibitionSubmissionDecisionAPIView.as_view()),
     #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\سجل المعارض\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("history/", ExhibitionHistoryAPIView.as_view()),
     #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تفاصيل معرض معين\\\\\\\\\\\\\\\\\\\\\\\\

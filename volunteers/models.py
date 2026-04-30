@@ -50,7 +50,7 @@ class VolunteerProfile(models.Model):
     residence = models.CharField(max_length=255)
     years_of_experience = models.PositiveIntegerField()
     primary_skills = models.TextField()
-    additional_skills = models.TextField(blank=True)
+    additional_skills = models.JSONField(default=list, blank=True)
 
     volunteer_type = models.CharField(
         max_length=100,
@@ -64,6 +64,7 @@ class VolunteerProfile(models.Model):
 
     motivation = models.TextField()
     cv = models.FileField(upload_to="volunteer_cvs/", blank=True, null=True)
+    specialization = models.CharField(max_length=255,null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

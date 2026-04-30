@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 
-from ideas.models import ExhibitionSubmission, Season
+from ideas.models import ExhibitionSubmission, IdeaStatus, Season
 
 
 class ExhibitionQueryService:
@@ -196,13 +196,13 @@ class ExhibitionHistoryQueryService:
 
             # 🔥 عدد المشاريع المشاركة
             projects_count = season.ideas.filter(
-                status="EXHIBITION"
+                status=IdeaStatus.GRADUATED_POSITIVE
             ).count()
 
             data.append({
                 "id": season.id,
                 "title": f"معرض خريجين {season.name}",
-                "date": season.exhibition_datetime,
+                "date": season.exhibition_datetime.strftime("%d/%m/%Y"),
                 "projects_count": projects_count
             })
 
@@ -215,7 +215,7 @@ class ExhibitionHistoryQueryService:
 
         submissions = ExhibitionSubmission.objects.filter(
             project__season=season,
-            project__status="EXHIBITION"
+            project__status="GRADUATED_POSITIVE"
         ).select_related(
             "project__owner"
         ).prefetch_related(

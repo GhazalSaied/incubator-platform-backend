@@ -9,7 +9,7 @@ def get_assignment_dashboard_ideas(
 ):
     queryset = Idea.objects.filter(
         season=season,
-        status=IdeaStatus.PRE_ACCEPTED
+        status=IdeaStatus.EVALUATION
     ).prefetch_related(
         "evaluation_assignments__evaluator"
     )

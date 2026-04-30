@@ -179,7 +179,6 @@ class SeasonDetailsSerializer(serializers.Serializer):
     end_date = serializers.DateField()
     ideas_count = serializers.IntegerField()
     phase = serializers.CharField()
-    can_edit = serializers.BooleanField()
     remaining_days = serializers.IntegerField(allow_null=True)
     evaluation_ideas_count = serializers.IntegerField(allow_null=True)
     
@@ -203,6 +202,7 @@ class QuestionSerializer(serializers.Serializer):
 class FormSerializer(serializers.Serializer):
     title = serializers.CharField()
     questions = QuestionSerializer(many=True)
+    
 
 class SeasonInfoSerializer(serializers.Serializer):
     season_name = serializers.CharField()
@@ -218,6 +218,7 @@ class SeasonFormDesignSerializer(serializers.Serializer):
     season_info = SeasonInfoSerializer()
     form = FormSerializer()
     
+    
 class IdeaRowSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     project_name = serializers.CharField()
@@ -229,10 +230,10 @@ class SeasonReviewSerializer(serializers.Serializer):
     season_info = SeasonInfoSerializer()
     ideas = IdeaRowSerializer(many=True)   
 
+class CreateFormSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    
 
-# serializers.py
-
-from rest_framework import serializers
 
 
 class CreateQuestionSerializer(serializers.Serializer):

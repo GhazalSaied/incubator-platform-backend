@@ -4,20 +4,21 @@ from ideas.models import Season,Idea
 from ideas.serializers import IdeaDetailSerializer,SeasonReviewSerializer
 from core.permissions import IsAdminOrSecretary
 from django.shortcuts import get_object_or_404
-from admin_panel.seasons.services import SeasonAdminService
+from admin_panel.seasons.services.season_admin_service import SeasonAdminService
+from admin_panel.seasons.services.season_query_service import SeasonQueryService
 from rest_framework.response import Response
 
 
 
 class SeasonReviewAPIView(ListAPIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    
 
     def get(self, request, pk):
         ordering = request.query_params.get("ordering")
 
         season = get_object_or_404(Season, pk=pk)
 
-        data = SeasonAdminService.get_review_submissions_data(
+        data = SeasonQueryService.get_review_submissions_data(
             season,
             ordering
         )
@@ -28,7 +29,7 @@ class SeasonReviewAPIView(ListAPIView):
     
 #\\\\IdeaDetail\\\\\
 class IdeaDetailsAPIView(ListAPIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    
 
     def get(self, request, pk):
         idea = get_object_or_404(
@@ -37,11 +38,10 @@ class IdeaDetailsAPIView(ListAPIView):
             pk=pk
         )
 
-        # 🔥 البيانات الأساسية (Serializer تبعك)
         idea_data = IdeaDetailSerializer(idea).data
 
         # 🔥 الفورم (Service)
-        answers = SeasonAdminService.get_idea_details_with_form(idea)
+        answers = SeasonQueryService.get_idea_details_with_form(idea)
 
         return Response({
             "idea": idea_data,

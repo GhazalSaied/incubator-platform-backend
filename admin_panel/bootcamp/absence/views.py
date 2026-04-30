@@ -6,7 +6,7 @@ from rest_framework import status
 from core.permissions import IsAdminOrSecretary
 
 from .services import (
-    get_absence_requests,
+    AbsenceQueryService,
     process_absence_decision
 )
 from bootcamp.serializers import (
@@ -17,25 +17,31 @@ from bootcamp.serializers import (
 #\\\\\\\AbsenceRequestsList\\\\\
 
 class AbsenceRequestsListView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    
 
     def get(self, request):
-        queryset = get_absence_requests()
+        query = request.query_params.get("search")
+
+        queryset = AbsenceQueryService.search(query=query)
         serializer = AbsenceRequestSerializer(queryset, many=True)
         return Response(serializer.data)
     
     
 #\\\\AbsenceDecision\\\\\\\\\\\\\
 class AbsenceDecisionView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
-    def post(self, request):
+    def post(self, request, pk):
         serializer = AbsenceDecisionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        process_absence_decision(
-            serializer.validated_data["request_id"],
-            serializer.validated_data["decision"]
+        absence = process_absence_decision(
+            request_id=pk,  # ✅ من URL
+            decision=serializer.validated_data["decision"],
+            actor=request.user
         )
 
-        return Response({"detail": "تم اتخاذ القرار"}, status=status.HTTP_200_OK)
+        return Response({
+            "status": "success",
+            "absence_id": absence.id,
+            "absence_status": absence.status
+        }, status=status.HTTP_200_OK)

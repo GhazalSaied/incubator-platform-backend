@@ -43,33 +43,32 @@ class SeasonEvaluatorSerializer(serializers.ModelSerializer):
         source="user.full_name"
     )
 
-    volunteer_type = serializers.CharField(
-        source="user.volunteer_profile.volunteer_type"
+    specialization = serializers.CharField(
+        source="user.volunteer_profile.specialization"
     )
 
     primary_skills = serializers.CharField(
         source="user.volunteer_profile.primary_skills"
     )
 
-    additional_skills = serializers.CharField(
-        source="user.volunteer_profile.additional_skills"
-    )
-
+    additional_skills = serializers.ListField(
+    source="user.volunteer_profile.additional_skills",
+    child=serializers.CharField()
+)
 
     class Meta:
         model = EvaluationInvitation
         fields = [
             "id",
+            "season",
             "full_name",
-            "volunteer_type",
+            "specialization",
             "primary_skills",
             "additional_skills",
         ]
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\AssignEvaluatorsSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class AssignEvaluatorsSerializer(serializers.Serializer):
-
-    idea_id = serializers.IntegerField()
 
     evaluators_ids = serializers.ListField(
         child=serializers.IntegerField()
@@ -106,7 +105,6 @@ class EvaluatorInfoSerializer(serializers.Serializer):
     
 #\\\\\\\\\\\\\\\\\\\SetMeetingSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class SetMeetingSerializer(serializers.Serializer):
-    idea_id = serializers.IntegerField()
     date = serializers.DateField()
     time = serializers.TimeField()
     
@@ -119,7 +117,4 @@ class EvaluationCriteriaSerializer(serializers.ModelSerializer):
         fields = ["id", "title", "max_score", "is_active"]
         
         
-        
-#\\\\\\\\\\\\\\\\\\\\\\\\\DecisionSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-class DecisionSerializer(serializers.Serializer):
-    message = serializers.CharField(required=True, allow_blank=False)
+    

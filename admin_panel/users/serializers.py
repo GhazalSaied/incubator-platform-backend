@@ -43,3 +43,10 @@ class CreateUserSerializer(serializers.Serializer):
         if not Role.objects.filter(code=value).exists():
             raise serializers.ValidationError("الدور غير موجود")
         return value
+    
+    
+    
+
+
+class WorkshopActionSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=["accept", "reject"])

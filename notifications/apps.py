@@ -14,3 +14,9 @@ class NotificationsConfig(AppConfig):
         import notifications.handlers.evaluation_handlers
         import notifications.handlers.messaging_handlers
         import notifications.handlers.system_handlers
+        import notifications.handlers.season_handlers
+        import notifications.handlers.bootcamp_handlers
+        import notifications.handlers.admin_evaluation_handlers
+        import notifications.handlers.admin_incubation_handlers
+        import notifications.handlers.admin_exhibition_handlers
+        

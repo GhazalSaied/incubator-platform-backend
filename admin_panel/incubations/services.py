@@ -1,7 +1,7 @@
 
 from datetime import datetime, timedelta
-
-
+from core.events import EventBus
+from evaluations.models import EvaluationInvitation
 from django.utils import timezone
 from ideas.models import Idea, IdeaStatus
 from django.core.exceptions import ValidationError
@@ -9,8 +9,9 @@ from evaluations.models import IncubationAssignment,IncubationReview
 from notifications.services.notification_service import NotificationService
 from volunteers.models import VolunteerProfile
 from django.db import transaction
-
+from django.db.models import Max
 #\\\\\\\\\\\\\\\\\\\\\\\\\\ لوحة تحكم المشاريع المحتضنة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
 class IncubationDashboardService:
 
     @staticmethod
@@ -18,47 +19,88 @@ class IncubationDashboardService:
 
         ideas = Idea.objects.filter(
             status=IdeaStatus.INCUBATION
-        )
+        ).select_related("owner")
 
         data = []
-
         now = timezone.now()
 
         for idea in ideas:
 
-            # 🟢 كل المراجعات
-            reviews = idea.reviews.all()
+            # =========================
+            # 1. LAST MEETING DATE
+            # =========================
 
-            # 🟢 آخر تقييم (للحالة)
-            last_review = reviews.order_by("-meeting_date").first()
+            last_meeting_date = IncubationReview.objects.filter(
+                idea=idea
+            ).aggregate(
+                last_date=Max("submitted_at")
+            )["last_date"]
 
-            # 🟢 التقييم القادم
-            next_review = reviews.filter(
+            # =========================
+            # 2. REVIEWS OF LAST MEETING ONLY
+            # =========================
+
+            last_reviews = IncubationReview.objects.filter(
+                idea=idea,
+                submitted_at=last_meeting_date
+            )
+
+            # =========================
+            # 3. AVERAGE PROGRESS SCORE
+            # =========================
+
+            scores = [
+                r.progress_score
+                for r in last_reviews
+                if r.progress_score is not None
+            ]
+
+            avg_score = (
+                sum(scores) / len(scores)
+                if scores else 0
+            )
+
+            # =========================
+            # 4. STATUS CALCULATION
+            # =========================
+            status = "غير محدد"
+            if avg_score < 25:
+                status = "ضعيف"
+            elif avg_score < 50:
+                status = "متوسط"
+            elif avg_score < 75:
+                status = "جيد"
+            else:
+                status = "ممتاز"
+
+            # =========================
+            # 5. NEXT MEETING
+            # =========================
+
+            next_meeting = IncubationAssignment.objects.filter(
+                idea=idea,
                 meeting_date__gt=now
             ).order_by("meeting_date").first()
 
-            # 🟢 تحديد الحالة
-            status = "غير محدد"
-
-            if last_review and last_review.progress_score is not None:
-                score = last_review.progress_score
-
-                if score < 25.00:
-                    status = "ضعيف"
-                elif score < 50.00:
-                    status = "متوسط"
-                else:
-                    status = "جيد"
+            # =========================
+            # RESULT
+            # =========================
 
             data.append({
                 "idea_id": idea.id,
                 "title": idea.title,
-                "next_meeting": next_review.meeting_date if next_review else None,
-                "status": status,
+
+                # next meeting
+                "next_meeting": (
+                    next_meeting.meeting_date.strftime("%d/%m/%Y")
+                    if next_meeting else "لم يتم تحديد موعد"
+                ),
+
+                # computed status
+                "progress_status": status if scores else "غير مقيم"
             })
 
         return data
-    
  #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض المقيمين للفكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\    
 class IncubationQueryService:
 
@@ -80,51 +122,10 @@ class IncubationQueryService:
                 "id": profile.id,
                 "name": user.full_name,
                 "image": user.avatar.url if user.avatar else None,
-                "specialization": profile.primary_skills,
+                "specialization": profile.specialization,
             })
 
         return data
-    
-
-
-#\\\\\\\\\\\\حذف مقيمين للفكرة \\\\\\\\\\\\\\\\\\\\\\\\\
-
-class IncubationAssignmentService:
-
-    @staticmethod
-    @transaction.atomic
-    def remove_mentors(*, idea, mentor_ids):
-
-        # 🛑 تحقق من الإدخال
-        if not mentor_ids:
-            raise ValidationError("يجب اختيار مقيم واحد على الأقل")
-
-        # 🛑 تحقق من مرحلة الفكرة
-        if idea.status != IdeaStatus.INCUBATION:
-            raise ValidationError("لا يمكن التعديل خارج مرحلة الاحتضان")
-
-        # 🟢 جلب العلاقات الموجودة فقط
-        existing_assignments = IncubationAssignment.objects.filter(
-            idea=idea,
-            mentor_id__in=mentor_ids
-        )
-
-        if not existing_assignments.exists():
-            raise ValidationError("المقيمون غير مرتبطين بهذه الفكرة")
-
-        # 🟢 حذف
-        deleted_count, _ = existing_assignments.delete()
-
-        return {
-            "deleted_count": deleted_count
-        }
-        
-        
-from evaluations.models import EvaluationInvitation
-
-
-
-class IncubationQueryService:
 
     @staticmethod
     def get_available_evaluators(*, season, specialization=None, fields=None):
@@ -137,13 +138,13 @@ class IncubationQueryService:
         # 🟢 فلترة الاختصاص
         if specialization:
             qs = qs.filter(
-                user__volunteer_profile__primary_skills__icontains=specialization
+                user__volunteer_profile__specialization__icontains=specialization
             )
 
         # 🟢 فلترة المجالات
         if fields:
             qs = qs.filter(
-                user__volunteer_profile__additional_skills__icontains=fields
+                user__volunteer_profile__primary_skills__icontains=fields
             )
 
         return qs
@@ -165,16 +166,48 @@ class IncubationQueryService:
             data.append({
                 "user_id": user.id,
                 "name": user.full_name,
-                "specialization": profile.primary_skills,
-                "fields": profile.additional_skills,
+                "specialization": profile.specialization,
+                "fields": profile.primary_skills,
             })
 
         return data
     
     
-#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تعيين مقيمين للفكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+#\\\\\\\\\\\\حذف مقيمين للفكرة \\\\\\\\\\\\\\\\\\\\\\\\\
 
 class IncubationAssignmentService:
+
+    @staticmethod
+    @transaction.atomic
+    def remove_mentors(*, idea, mentor_ids):
+
+        # 🛑 تحقق من الإدخال
+        if not mentor_ids:
+            raise ValidationError("يجب اختيار مقيم واحد على الأقل")
+
+      
+        # 🟢 جلب العلاقات الموجودة فقط
+        existing_assignments = IncubationAssignment.objects.filter(
+            idea=idea,
+            mentor_id__in=mentor_ids
+        )
+
+        if not existing_assignments.exists():
+            raise ValidationError("المقيمون غير مرتبطين بهذه الفكرة")
+
+        # 🟢 حذف
+        deleted_count, _ = existing_assignments.delete()
+
+        return {
+            "deleted_count": deleted_count
+        }
+
+
+
+    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تعيين مقيمين للفكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     @staticmethod
     @transaction.atomic
@@ -183,10 +216,6 @@ class IncubationAssignmentService:
         # 🛑 1. تحقق من الإدخال
         if not mentor_user_ids:
             raise ValidationError("يجب اختيار مقيم واحد على الأقل")
-
-        # 🛑 2. تحقق من المرحلة
-        if idea.status != IdeaStatus.INCUBATION:
-            raise ValidationError("لا يمكن التعيين خارج مرحلة الاحتضان")
 
         # 🟢 3. جلب الدعوات المقبولة فقط
         invitations = EvaluationInvitation.objects.filter(
@@ -252,10 +281,6 @@ class IncubationAssignmentService:
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\جدولة جلسة متابعة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-from datetime import datetime, timedelta
-from django.utils import timezone
-from django.core.exceptions import ValidationError
-from django.db import transaction
 
 
 class IncubationMeetingService:
@@ -266,77 +291,103 @@ class IncubationMeetingService:
     @transaction.atomic
     def schedule_meeting(*, idea, date, time, created_by):
 
-        # 🟢 Validation
+        # =========================
+        # VALIDATION
+        # =========================
+
         if not date or not time:
-            raise ValidationError("التاريخ والوقت مطلوبان")
+            raise ValidationError(
+                "التاريخ والوقت مطلوبان"
+            )
 
         try:
             meeting_datetime = datetime.strptime(
                 f"{date} {time}",
                 "%Y-%m-%d %H:%M"
             )
+
         except ValueError:
-            raise ValidationError("تنسيق غير صحيح")
+            raise ValidationError(
+                "تنسيق التاريخ غير صحيح"
+            )
 
-        # 🟢 تحويل لـ timezone aware
-        meeting_datetime = timezone.make_aware(meeting_datetime)
+        meeting_datetime = timezone.make_aware(
+            meeting_datetime
+        )
 
-        # 🟢 منع الماضي
         if meeting_datetime <= timezone.now():
-            raise ValidationError("لا يمكن تحديد موعد في الماضي")
+            raise ValidationError(
+                "لا يمكن تحديد موعد في الماضي"
+            )
 
-        duration = IncubationMeetingService.DEFAULT_DURATION
+        # =========================
+        # ASSIGNMENTS
+        # =========================
+
+        assignments = (
+            IncubationAssignment.objects
+            .select_related("mentor")
+            .filter(idea=idea)
+        )
+
+        if not assignments.exists():
+            raise ValidationError(
+                "لا يوجد mentors مرتبطون"
+            )
+
+        # =========================
+        # CONFLICT CHECK
+        # =========================
+
+        duration = (
+            IncubationMeetingService.DEFAULT_DURATION
+        )
 
         new_start = meeting_datetime
         new_end = meeting_datetime + duration
 
-        # 🟢 تحقق التداخل (مهم جداً: حسب نفس الفكرة فقط)
-        conflict = IncubationReview.objects.filter(
-            idea=idea,
-            meeting_date__lt=new_end,
-            meeting_date__gte=new_start
-        ).exists()
+        conflict = (
+            IncubationAssignment.objects.filter(
+                meeting_date__lt=new_end,
+                meeting_date__gte=new_start
+            )
+            .exclude(idea=idea)
+            .exists()
+        )
 
         if conflict:
-            raise ValidationError("يوجد جلسة متداخلة خلال هذه الساعة")
-
-        # 🟢 تحقق وجود mentors
-        assignments = IncubationAssignment.objects.filter(idea=idea)
-
-        if not assignments.exists():
-            raise ValidationError("لا يوجد مقيمون مرتبطون")
-
-        # 🟢 إنشاء Review
-        review = IncubationReview.objects.create(
-            idea=idea,
-            meeting_date=meeting_datetime,
-            created_by=created_by
-        )
-
-        # 🟢 إشعار صاحب الفكرة
-        NotificationService.send(
-            user=idea.owner,
-            title="تم تحديد جلسة متابعة 📅",
-            message=f"موعد الجلسة: {meeting_datetime}",
-            action_type="VIEW_IDEA",
-            action_url="/ideas/my/",
-            related_object=idea
-        )
-
-        # 🟢 إشعار المقيمين (optimized query)
-        assignments = assignments.select_related("mentor__user")
-
-        for a in assignments:
-            NotificationService.send(
-                user=a.mentor.user,
-                title="جلسة متابعة جديدة",
-                message=f"جلسة لفكرة {idea.title} بتاريخ {meeting_datetime}",
-                action_type="VIEW_IDEA",
-                action_url="/ideas/assigned/",
-                related_object=idea
+            raise ValidationError(
+                "يوجد لجنة أخرى بنفس الساعة"
             )
 
-        return review
+        # =========================
+        # UPDATE MEETING DATE
+        # =========================
+
+        assignments.update(
+            meeting_date=meeting_datetime
+        )
+
+        # refresh objects
+        assignments = list(
+            IncubationAssignment.objects.select_related(
+                "mentor"
+            ).filter(idea=idea)
+        )
+
+        # =========================
+        # EVENT
+        # =========================
+
+        EventBus.emit(
+            "incubation_meeting_scheduled",
+            idea=idea,
+            meeting_date=meeting_datetime,
+            assignments=assignments,
+            actor=created_by
+        )
+
+        return assignments
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض ملاحظات ىاخر جلسة\\\\\\\\\\\\\\\\\\\\\\\\\
 
@@ -348,77 +399,219 @@ class IncubationNotesService:
 
         now = timezone.now()
 
-        review = IncubationReview.objects.filter(
-            idea=idea,
-            meeting_date__lte=now
-        ).order_by("-meeting_date").first()
+        # =====================================
+        # أحدث مراجعة
+        # =====================================
 
-        if not review:
+        latest_review = (
+            IncubationReview.objects.filter(
+                idea=idea,
+                is_submitted=True,
+                submitted_at__lte=now
+            )
+            .order_by("-submitted_at")
+            .first()
+        )
+
+        if not latest_review:
             return {
-                "review": None,
-                "mentors": []
+                "meeting_date": None,
+                "reviews": []
             }
 
-        assignments = IncubationAssignment.objects.select_related(
-            "mentor__user"
-        ).filter(idea=idea)
+        latest_date = latest_review.submitted_at.date()
 
-        mentors = []
+        # =====================================
+        # كل مراجعات نفس اليوم
+        # =====================================
 
-        for a in assignments:
-            user = a.mentor.user
-            profile = a.mentor
+        reviews = (
+            IncubationReview.objects
+            .select_related("created_by", "idea")
+            .filter(
+                idea=idea,
+                is_submitted=True,
+                submitted_at__date=latest_date
+            )
+            .order_by("submitted_at")
+        )
+
+        data = []
+
+        for review in reviews:
+
+            mentor = review.created_by.volunteer_profile
+            user = review.created_by
 
             avatar = None
+
             if hasattr(user, "avatar") and user.avatar:
                 try:
                     avatar = user.avatar.url
                 except Exception:
                     avatar = None
 
-            mentors.append({
-                "id": user.id,
-                "name": user.full_name,
-                "specialization": profile.primary_skills,
-                "avatar": avatar
+            data.append({
+                "mentor_id": mentor.id,
+
+                "mentor_name": (
+                    getattr(user, "full_name", None)
+                    or getattr(user, "username", "")
+                ),
+
+                "specialization": getattr(
+                    mentor,
+                    "specialization",
+                    None
+                ),
+
+                "avatar": avatar,
+
+                "notes": review.notes,
             })
 
         return {
-            "review": {
-                "meeting_date": review.meeting_date,
-                "notes": review.notes,
-                "progress_score": review.progress_score
-            },
-            "mentors": mentors
+            "meeting_date": latest_date.strftime("%d/%m/%Y"),
+            "reviews": data
         }
-        
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تخريج الفكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+from django.db import transaction
+from rest_framework.exceptions import ValidationError
+
+from ideas.models import IdeaStatus
+from ideas.services.state.idea_state_service import (
+    IdeaStateService
+)
+
+from core.events import EventBus
+
+
 class GraduationService:
 
+    # ==========================================
+    # POSITIVE GRADUATION
+    # ==========================================
+
     @staticmethod
-    def graduate_positive(*, idea):
-        
+    @transaction.atomic
+    def graduate_positive(*, idea, actor=None):
 
-        # ❗ لازم تكون ضمن الاحتضان
-        if idea.status != IdeaStatus.INCUBATION:
-            raise ValidationError("لا يمكن تخريج الفكرة")
+        # ----------------------------------
+        # VALIDATION
+        # ---------------------------------
+            
 
-        # ❗ لازم يكون في تقييمات
+        # لازم يكون في مراجعات احتضان
         if not idea.reviews.exists():
-            raise ValidationError("لا يمكن التخريج الإيجابي بدون تقييمات")
+            raise ValidationError(
+                "لا يمكن التخريج الإيجابي بدون مراجعات"
+            )
 
-        idea.status = IdeaStatus.GRADUATED_POSITIVE
-        idea.save(update_fields=["status"])
+        # ----------------------------------
+        # STATE TRANSITION
+        # ----------------------------------
+
+        IdeaStateService.change_status(
+            idea=idea,
+            to_status=IdeaStatus.EXHIBITION,
+            user=actor,
+            source="EXHIBITION_GRADUATION"
+        )
+
+        # ----------------------------------
+        # EVENT
+        # ----------------------------------
+
+        EventBus.emit(
+            "idea_EXhibition_graduated",
+            idea=idea,
+            actor=actor
+        )
+
+        return idea
+
+    # ==========================================
+    # NEGATIVE GRADUATION
+    # ==========================================
+
+    @staticmethod
+    @transaction.atomic
+    def graduate_negative(*, idea, actor=None):
+
+        # ----------------------------------
+        # STATE TRANSITION
+        # ----------------------------------
+
+        IdeaStateService.change_status(
+            idea=idea,
+            to_status=IdeaStatus.GRADUATED_NEGATIVE,
+            user=actor,
+            source="graduation_negative"
+        )
+
+        # ----------------------------------
+        # EVENT
+        # ----------------------------------
+
+        EventBus.emit(
+            "idea_graduated_negative",
+            idea=idea,
+            actor=actor
+        )
 
         return idea
     
+
+from ideas.models import Idea, IdeaStatus
+
+
+class GraduationQueryService:
+
     @staticmethod
-    def graduate_negative(*, idea):
+    def list_negative_graduated_projects(
+        search=None,
+        category=None
+    ):
 
-        if idea.status != IdeaStatus.INCUBATION:
-            raise ValidationError("لا يمكن تخريج الفكرة")
+        ideas = (
+            Idea.objects
+            .filter(
+                status=IdeaStatus.GRADUATED_NEGATIVE
+            )
+            .select_related("owner")
+            .prefetch_related("team_members")
+        )
 
-        idea.status = IdeaStatus.GRADUATED_NEGATIVE
-        idea.save(update_fields=["status"])
+        # SEARCH
+        if search:
+            ideas = ideas.filter(
+                title__icontains=search
+            )
 
-        return idea
+        # FILTER
+        if category:
+            ideas = ideas.filter(
+                sector__iexact=category
+            )
+
+        data = []
+
+        for idea in ideas:
+
+            members = [
+                member.user.full_name
+                for member in idea.team_members.all()
+            ]
+
+            data.append({
+                "id": idea.id,
+                "title": idea.title,
+
+                "team_members": members,
+
+                "category": idea.sector,
+
+                "status": idea.status,
+            })
+
+        return data

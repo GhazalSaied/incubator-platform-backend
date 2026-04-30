@@ -25,6 +25,13 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     REQUIRED_FIELDS = ['full_name']
 
     objects = UserManager()
+    @property
+    def role_codes(self):
+        return list(
+            self.userrole_set.filter(is_active=True)
+            .select_related("role")
+            .values_list("role__code", flat=True)
+        )
 
     def __str__(self):
         return self.email

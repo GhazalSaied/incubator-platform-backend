@@ -29,6 +29,7 @@ class NotificationService:
         related_object=None,
         target_role=None,
     ):
+    
 
         #  CHECK USER PREFERENCES
         if event_name and target_role:
@@ -73,7 +74,7 @@ class NotificationService:
         #  DEFAULT action_url 
         if action_url is None:
             action_url = ""
-
+        
         # CREATE
         notification = Notification.objects.create(
             user=user,
