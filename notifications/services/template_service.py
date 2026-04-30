@@ -112,5 +112,135 @@ TEMPLATES = {
         "message": lambda obj, actor=None, extra=None:
             f"تم تغيير حالة فكرتك إلى {extra}",
     },
+    
+    
+    "season_published": {
+        "title": "فتح موسم جديد",
+        "message": lambda season: f"تم فتح موسم {season.name} للتقديم، يمكنك الآن تقديم فكرتك."
+    },
+    
+    "submission_closed": {
+        "title": "تم إغلاق التقديم",
+        "message": lambda season: f"تم إغلاق التقديم لموسم {season.name}، سيتم الانتقال إلى المرحلة التالية."
+    },
+    
+    
+    "absence_approved": {
+        "title": "طلب الغياب",
+        "message": lambda obj: "تم قبول طلب الغياب الخاص بك ✅"
+    },
+    "absence_warned": {
+        "title": "تحذير",
+        "message": lambda obj: "تم رفض طلب الغياب ⚠️ يرجى الالتزام بالحضور"
+    },
+    
+    "bootcamp_session_scheduled": {
+        "title": "جلسة جديدة في المعسكر",
+        "message": lambda session, extra=None: f"تم جدولة جلسة جديدة في المعسكر بتاريخ {session.date}"
+    },
+    "bootcamp_session_assigned": {
+        "title": "تم تعيينك كمدرب",
+        "message": lambda session, extra=None: f"تم تعيينك كمدرب للجلسة بتاريخ {session.date}"
+    },
+    "idea_approved": {
+        "title": "تم قبول فكرتك 🎉",
+    "message": lambda idea, actor: f"مبروك! تم قبول فكرتك '{idea.title}' والانتقال للمرحلة التالية 🚀"
 
+},
+
+    "idea_rejected": {
+        "title": "تم رفض الفكرة",
+    "message": lambda idea, actor: f"نأسف! تم رفض فكرتك لعدم التزامك بحضور المعسكر يمكنك المحاولة مرة اخرى'{idea.title}'"
+},
+    "bootcamp_sessions_ended": {
+    "title": "انتهاء جلسات المعسكر",
+    "message": lambda season: f"تم انتهاء جلسات المعسكر لهذا الموسم ، انتظر قرار الادارة  بشأن الانتقال للمرحلة التالية."
+},
+    
+    "evaluation_meeting_scheduled_owner": {
+        "title": "تم تحديد موعد اللجنة",
+        "message": lambda data: (
+            f"تم تحديد موعد لجنة التقييم لفكرتك "
+            f"({data['idea'].title}) "
+            f"بتاريخ "
+            f"{data['meeting_datetime'].strftime('%Y-%m-%d %H:%M')}"
+        )
+    },
+    
+    "evaluation_meeting_scheduled_evaluator": {
+        "title": "جلسة تقييم جديدة",
+        "message": lambda data: (
+            f"لديك جلسة تقييم لفكرة "
+            f"({data['idea'].title}) "
+            f"بتاريخ "
+            f"{data['meeting_datetime'].strftime('%Y-%m-%d %H:%M')}"
+        )
+    },
+    "idea_accepted": {
+        "title": "تم قبول فكرتك 🎉",
+        "message": lambda idea, actor=None, extra=None: f"مبروك! تم قبول فكرتك '{idea.title}' اهلا بك في مرحلة الاحتضان 🚀"
+    },
+    "idea_rejected": {
+        "title": "تم رفض الفكرة",
+        "message": lambda idea, actor=None, extra=None: f"نأسف! تم رفض فكرتك....لا تيأس يمكنك المحاولة في موسم أخر"
+    },
+    
+    "incubation_meeting_scheduled_owner": {
+    "title": "موعد لجنة الاحتضان",
+
+    "message": lambda data: (
+        f"تم تحديد موعد لجنة الاحتضان "
+        f"لفكرتك بتاريخ "
+        f"{data['meeting_date']}"
+    )
+},
+    "incubation_meeting_scheduled_mentor": {
+    "title": "جلسة احتضان جديدة",
+
+    "message": lambda data: (
+        f"تمت إضافتك إلى جلسة احتضان "
+        f"بتاريخ {data['meeting_date']}"
+    )
+},
+    "idea_Exhibition_graduated": {
+    "title": "مبروك التخرج 🎉",
+
+    "message": lambda idea: (
+        f"مبروك! تم تخريج فكرتك "
+        f"({idea.title}) بنجاح من الحاضنة， "
+        f"يرجى البدء بتجهيز بطاقة المعرض الخاصة بمشروعك."
+    )
+},
+    "idea_graduated_negative": {
+    "title": "إشعار تخريج",
+
+    "message": lambda idea: (
+        f"مع الأسف تم تخريج فكرتك "
+        f"({idea.title}) من الحاضنة بشكل سلبي "
+        f"نظراً لعدم الالتزام بمتطلبات البرنامج."
+    )
+},
+    "exhibition_scheduled": {
+    "title": "تم تحديد موعد المعرض",
+    "message": lambda data: (
+        f"تم تحديد موعد معرض الموسم {data['season_id']} "
+        f"بتاريخ {data['exhibition_datetime']}"
+    )
+    },
+    
+    
+    "exhibition_form_published": {
+
+    "title": "تم نشر فورم المعرض 🎉",
+
+    "message": lambda idea: (
+        f"تم نشر فورم المعرض الخاص بمشروعك "
+        f"({idea.title})، "
+        f"يرجى تعبئة بيانات بطاقة المعرض."
+    )
+},
 }
+
+
+
+  

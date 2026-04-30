@@ -1,5 +1,7 @@
-from bootcamp.models import BootcampAttendance
+from bootcamp.models import BootcampAttendance,BootcampDecision
 from ideas.models import Idea, IdeaStatus
+from django.db.models import Q
+
 
 #\\\\\\\\حساب الغياب\\\\\\\\
 def calculate_absence(idea):
@@ -30,36 +32,41 @@ def get_idea_stats(idea_id):
     }
     
 #\\\\\\\\participants\\\\\
-def get_bootcamp_participants():
-    ideas = Idea.objects.filter(
-        status__in=[
-            IdeaStatus.PRE_ACCEPTED,
-            IdeaStatus.BOOTCAMP_FAILED
-        ]
-    ).select_related("owner")
-    
-    result = []
-    
 
-    for idea in ideas:
-        total, absent, percentage = calculate_absence(idea)
-        commitment = 100 - percentage
-        if idea.status == IdeaStatus.PRE_ACCEPTED:
-            bootcamp_status = "مقبول"
-        elif idea.status == IdeaStatus.BOOTCAMP_FAILED:
-            bootcamp_status = "مرفوض"
-        else:
-            bootcamp_status = "غير معروف"
-        
-            
+class BootcampDecisionQueryService:
 
-        result.append({
-            "idea_id": idea.id,
-            "idea_title": idea.title,
-            "owner": idea.owner.full_name,
-            "commitment_percentage": round(commitment, 2),
-            "bootcamp_status": bootcamp_status
-            
-        })
+    @staticmethod
+    def list_decisions(search=None):
+        qs = BootcampDecision.objects.select_related(
+            "idea",
+            "idea__owner"
+        )
 
-    return result
+        # 🔍 search
+        if search:
+            qs = qs.filter(
+                Q(idea__title__icontains=search) |
+                Q(idea__owner__full_name__icontains=search)
+            )
+
+        results = []
+
+        for decision in qs:
+            idea = decision.idea
+            owner = idea.owner
+
+            results.append({
+                "idea_id": idea.id,
+                "idea_title": idea.title,
+                "owner_name": getattr(owner, "full_name", None),
+                "decision": "مقبول" if decision.decision == "accepted" else "مرفوض",
+                "attendance_rate": decision.attendance_rate
+            })
+
+        # 📊 count المقبولين
+        accepted_count = qs.filter(decision="accepted").count()
+
+        return {
+            "results": results,
+            "accepted_count": accepted_count
+        }

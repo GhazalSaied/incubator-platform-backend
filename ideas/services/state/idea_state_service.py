@@ -23,10 +23,10 @@ class IdeaStateService:
             IdeaStatus.PRE_ACCEPTED,
             IdeaStatus.BOOTCAMP,
             IdeaStatus.BOOTCAMP_FAILED,
+            IdeaStatus.EVALUATION,
         ],
 
         SeasonPhase.EVALUATION: [
-            IdeaStatus.EVALUATION,
             IdeaStatus.EVALUATED,
             IdeaStatus.ACCEPTED,
             IdeaStatus.REJECTED,
@@ -34,10 +34,11 @@ class IdeaStateService:
 
         SeasonPhase.INCUBATION: [
             IdeaStatus.INCUBATION,
+            IdeaStatus.EXHIBITION,
+            IdeaStatus.GRADUATED_NEGATIVE,
         ],
 
         SeasonPhase.EXHIBITION: [
-            IdeaStatus.EXHIBITION,
             IdeaStatus.GRADUATED_POSITIVE,
             IdeaStatus.GRADUATED_NEGATIVE,
         ],
@@ -71,15 +72,11 @@ class IdeaStateService:
                 raise Exception("Idea must be evaluated before acceptance")
 
         #  2. لا يمكن دخول الاحتضان بدون فريق
-        if to_status == IdeaStatus.INCUBATION:
+        """if to_status == IdeaStatus.INCUBATION:
             if not hasattr(idea, "team_members") or idea.team_members.count() == 0:
-                raise Exception("Idea must have a team before incubation")
+                raise Exception("Idea must have a team before incubation")"""
 
-        #  3. لا يمكن عرض فكرة بدون بيانات معرض
-        if to_status == IdeaStatus.EXHIBITION:
-            if not idea.exhibition_date:
-                raise Exception("Exhibition date is required")
-
+    
         #  4. التخرج الإيجابي يحتاج يكون من exhibition فقط
         if to_status == IdeaStatus.GRADUATED_POSITIVE:
             if idea.status != IdeaStatus.EXHIBITION:
@@ -158,14 +155,6 @@ class IdeaStateService:
         )
 
         # 6. event
-        EventBus.emit(
-            "idea_status_changed",
-            payload={
-                "idea": idea,
-                "new_status": to_status,
-            },
-            actor=user,
-        )
-
+        EventBus.emit("idea_status_changed",idea=idea,old_status=old_status,new_status=to_status,actor=user)
         return idea
     

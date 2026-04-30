@@ -1,22 +1,21 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from admin_panel.seasons.services import SeasonAdminService
-from core.permissions import IsAdminOrSecretary,IsDirector
+from admin_panel.seasons.services.season_admin_service import SeasonAdminService
+from core.permissions import IsAdminOrSecretary,IsAdmin
 from ideas.serializers import IdeaDetailSerializer
-from .services import GraduationService, IncubationDashboardService, IncubationNotesService, IncubationQueryService,IncubationAssignmentService,IncubationMeetingService
+from .services import GraduationQueryService, GraduationService, IncubationDashboardService, IncubationNotesService, IncubationQueryService,IncubationAssignmentService,IncubationMeetingService
 from rest_framework.permissions import IsAuthenticated
 from ideas.models import Idea
 from rest_framework import status
 from django.core.exceptions import ValidationError
 from ideas.services import season_phase_service
 from rest_framework.generics import ListAPIView
-
+from ideas.services.season_phase_service import SeasonPhaseService
 
 
 #\\\\\\\\\\\\\\\\\\عرض المشاريع المحتضنة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class IncubationProjectsView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
     def get(self, request):
         data = IncubationDashboardService.get_projects()
@@ -27,7 +26,6 @@ class IncubationProjectsView(APIView):
 
 
 class IdeaMentorsView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
     def get(self, request, idea_id):
 
@@ -41,12 +39,17 @@ class IdeaMentorsView(APIView):
         return Response(data)
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\حذف مقيمين \\\\\\\\\\\\\\\
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    
 
 class RemoveMentorsView(APIView):
 
     def post(self, request, idea_id):
-
+        permissions = SeasonPhaseService.get_phase_permissions()
+        if not permissions["can_remove_mentors"]:
+            return Response(
+                {"error": "لا يمكن حذف المقيمين في هذه المرحلة"},
+                status=status.HTTP_403_FORBIDDEN
+            )
         mentor_ids = request.data.get("mentor_ids", [])
 
         try:
@@ -78,7 +81,6 @@ class RemoveMentorsView(APIView):
 
 
 class AvailableEvaluatorsView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
     def get(self, request):
 
@@ -104,9 +106,15 @@ class AvailableEvaluatorsView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\تعيين مقيمين للفكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class AssignMentorsView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    
 
     def post(self, request, idea_id):
+        permissions = SeasonPhaseService.get_phase_permissions()
+        if not permissions["can_assign_mentors"]:
+            return Response(
+                {"error": "لا يمكن تعيين مقيمين في هذه المرحلة"},
+            status=status.HTTP_403_FORBIDDEN
+        )
 
         mentor_user_ids = request.data.get("mentor_user_ids", [])
 
@@ -148,72 +156,46 @@ class AssignMentorsView(APIView):
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\جدولة جلسة متابعة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-class ScheduleMeetingView(APIView):
+class  ScheduleMeetingView(APIView):
+
     permission_classes = [IsAuthenticated, IsAdminOrSecretary]
-
-
     def post(self, request, idea_id):
+        permissions = SeasonPhaseService.get_phase_permissions()
+        if not permissions["can_schedule_incubation_meetings"]:
+            return Response(
+                {"error": "لا يمكن جدولة جلسات متابعة في هذه المرحلة"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        idea = get_object_or_404(
+            Idea,
+            id=idea_id
+        )
 
         date = request.data.get("date")
         time = request.data.get("time")
 
-        try:
-            idea = Idea.objects.get(id=idea_id)
-        except Idea.DoesNotExist:
-            return Response(
-                {"error": "الفكرة غير موجودة"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        try:
-            result = IncubationMeetingService.schedule_meeting(
-                idea=idea,
-                date=date,
-                time=time,
-                created_by=request.user)
-                        
-               
-
-        except ValidationError as e:
-            return Response(
-                {"error": e.message},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        return Response({
-            "message": "تم تحديد الموعد وإرسال الإشعارات",
-            "meeting_date":  result.meeting_date
-        })
-        
-        
-#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  عرض تفاصيل الفكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-
-class IdeaDetailsAPIView(ListAPIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
-    
-
-    def get(self, request, pk):
-        idea = get_object_or_404(
-            Idea.objects.select_related("owner", "season")
-            .prefetch_related("season__form__questions__choices"),
-            pk=pk
+        review = IncubationMeetingService.schedule_meeting(
+            idea=idea,
+            date=date,
+            time=time,
+            created_by=request.user
         )
 
-        # 🔥 البيانات الأساسية (Serializer تبعك)
-        idea_data = IdeaDetailSerializer(idea).data
+        return Response(
+            {
+                "detail": "تم تحديد موعد لجنة الاحتضان بنجاح",
+                "idea_id": idea.id,
+                "meeting_date": review[0].meeting_date if review else None
+            },
+            status=status.HTTP_200_OK
+        )
+        
 
-        # 🔥 الفورم (Service)
-        answers = SeasonAdminService.get_idea_details_with_form(idea)
-
-        return Response({
-            "idea": idea_data,
-            "form_answers": answers
-        })
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض ملاحظات اخر جلسة\\\\\\\\\\\\\\\\\\\\\\
 
 class IdeaLatestReviewView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
-
+    
     def get(self, request, idea_id):
 
         try:
@@ -232,8 +214,15 @@ class IdeaLatestReviewView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تخريج فكرة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class GraduateIdeaView(APIView):
     
-
+    
     def post(self, request, idea_id):
+        permissions = SeasonPhaseService.get_phase_permissions()
+        if not permissions["can_graduate_from_incubation"]:
+            return Response(
+                {"error": "لا يمكن تخريج الفكرة في هذه المرحلة"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         action = request.data.get("action")  # positive / negative
 
         idea = get_object_or_404(Idea, id=idea_id)
@@ -261,3 +250,22 @@ class GraduateIdeaView(APIView):
             "message": "تم تحديث حالة الفكرة بنجاح",
             "status": idea.status
         }, status=status.HTTP_200_OK)
+        
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class NegativeGraduatedProjectsView(APIView):
+
+
+    def get(self, request):
+
+        search = request.query_params.get("search")
+        category = request.query_params.get("category")
+
+        data = (
+            GraduationQueryService
+            .list_negative_graduated_projects(
+                search=search,
+                category=category
+            )
+        )
+
+        return Response(data)

@@ -1,6 +1,6 @@
 from django.urls import path
-from .views import (AssignmentDashboardAPIView,AvailableEvaluatorsView,AssignEvaluatorsToIdeaView,MeetingDashboardAPIView,IdeaEvaluatorsAPIView, PublishCriteriaView,SetMeetingAPIView,CriteriaListCreateView,
-                    CriteriaUpdateView,CriteriaToggleActiveView,CriteriaPreviewView,PublishCriteriaView,EvaluationResultsView,EvaluationDetailsView,AcceptIdeaView,RejectIdeaView)
+from .views import (AssignmentDashboardAPIView,AvailableEvaluatorsView,AssignEvaluatorsToIdeaView, EvaluationCriteriaDeleteView,MeetingDashboardAPIView,IdeaEvaluatorsAPIView, PublishCriteriaView,SetMeetingAPIView,CriteriaListCreateView,
+                    CriteriaUpdateView,CriteriaPreviewView,PublishCriteriaView,EvaluationResultsView,EvaluationDetailsView,AcceptIdeaView,RejectIdeaView)
 
 urlpatterns = [
     #\\\عرض المشاريع المقبولة بالمعسكر لتعيين مقيمين\\\\\\\\\\
@@ -8,19 +8,19 @@ urlpatterns = [
     #\\\\\\\\\\\\\\\\\\\\\\\عرض المقيمين المتاحين لتعيينهم على الافكار\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("available-evaluators/",AvailableEvaluatorsView.as_view(),name="available-evaluators"),
     #\\\\\\\\\\\\\\\\\\\\\\\تعيين مقيمين على فكرة معينة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-    path("assign-evaluators/",AssignEvaluatorsToIdeaView.as_view(),name="assign-evaluators"),
+    path("<int:idea_id>/assign-evaluators/",AssignEvaluatorsToIdeaView.as_view(),name="assign-evaluators"),
     #\\\\\\\\\\\\\\\\\\\\\\\عرض المشاريع مع المقيمين المعينين لها في جدول تحديد موعد اللجنة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("meeting-dashboard/",MeetingDashboardAPIView.as_view(),name="meeting-dashboard"),
     #\\\\\\\\\\\\\\\\\\\\\\\عرض المقيمين المعينين على فكرة معينة في جدول تحديد موعد اللجنة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("idea-evaluators/<int:idea_id>/",IdeaEvaluatorsAPIView.as_view(),name="idea-evaluators"),
     #\\\\\\\\\\\\\\\\\\\\\\\تحديد موعد اللجنة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-    path("set-meeting/",SetMeetingAPIView.as_view(),name="set-meeting"),
+    path("ideas/<int:idea_id>/set-meeting/",SetMeetingAPIView.as_view(),name="set-meeting"),
     #\\\\\\\\\\\\\\\\\\\\\\\انشاء معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
     path("criteria/",CriteriaListCreateView.as_view(),name="criteria-list-create"),
     #\\\\\\\\\\\\\\\\\\\\\\\تعديل معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
     path("criteria/<int:pk>/",CriteriaUpdateView.as_view(),name="criteria-update"),
-    #\\\\\\\\\\\\\\\\\\\\\\\تفعيل/تعطيل معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
-    path("criteria/<int:pk>/toggle-active/",CriteriaToggleActiveView.as_view(),name="criteria-toggle-active"),
+    #\\\\\\\\\\\\\\\\\\\\\\\حذف معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
+    path("criteria/<int:pk>/delete/",EvaluationCriteriaDeleteView.as_view(),name="criteria-delete"),
     #\\\\\\\\\\\\\\\\\\\\\\\\\\\معاينة معايير التقييم\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("criteria/preview/",CriteriaPreviewView.as_view(),name="criteria-preview"),
     #\\\\\\\\\\\\\\\\\\\\\نشر نموذج التقييم\\\\\\\\\\\\\\\\\\\\\\\\\\\

@@ -6,5 +6,5 @@ urlpatterns = [
     path("", AbsenceRequestsListView.as_view(), name="absence-requests"),
 
     # 🔹 اتخاذ قرار على طلب غياب
-    path("decide/", AbsenceDecisionView.as_view(), name="absence-decision"),
+    path("<int:pk>/decide/", AbsenceDecisionView.as_view(), name="absence-decision"),
 ]

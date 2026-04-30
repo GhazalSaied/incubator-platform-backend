@@ -37,13 +37,20 @@ class TeamStatus(models.TextChoices):
     TEAM_FULL = "team_full", "Team Complete"
     IN_PROGRESS = "in_progress", "In Progress"
 
-
+#\\\\\\\\\\\\\\\\\\season status\\\\\\\\\\\\\\\\\\
+class SeasonStatus(models.TextChoices):
+    DRAFT = "DRAFT", "Draft"
+    PUBLISHED = "PUBLISHED", "Published"
+    CLOSED = "CLOSED", "Closed"
 # ////////////////////// SEASONS /////////////////////////
 
 class Season(models.Model):
     name = models.CharField(max_length=100)
     is_open = models.BooleanField(default=False)
     description = models.TextField()
+    status = models.CharField(
+        max_length=20, choices=SeasonStatus.choices, default=SeasonStatus.DRAFT
+    )
 
     start_date = models.DateField()
     end_date = models.DateField()
@@ -365,3 +372,27 @@ class ExhibitionQuestionOption(models.Model):
 
     def __str__(self):
         return self.label
+    
+    
+    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ExhibitionSubmission\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    
+class ExhibitionSubmission(models.Model):
+
+    project = models.ForeignKey(Idea, on_delete=models.CASCADE)
+    form = models.ForeignKey(ExhibitionForm, on_delete=models.CASCADE)
+
+    data = models.JSONField()  # إجابات الفورم
+
+    status = models.CharField(
+        choices=[
+            ("pending", "Pending"),
+            ("approved", "Approved"),
+            ("rejected", "Rejected"),
+        ],
+        default="pending"
+    )
+    message = models.TextField(null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)

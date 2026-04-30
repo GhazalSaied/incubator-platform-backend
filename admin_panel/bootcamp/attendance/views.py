@@ -13,7 +13,7 @@ from bootcamp.serializers import (
 from admin_panel.bootcamp.attendance.services import (
     get_session_attendance,
     get_idea_stats,
-    get_bootcamp_participants
+    BootcampDecisionQueryService
 )
 
 
@@ -29,16 +29,20 @@ class SessionAttendanceListView(APIView):
     
 #\\\\\\\\idea stats\\\\\\\\\\\
 class IdeaAttendanceStatsView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    
 
     def get(self, request, idea_id):
         data = get_idea_stats(idea_id)
         return Response(data)
     
 #\\\\\\\participants\\\\\
-class BootcampParticipantsView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+
+class BootcampDecisionListView(APIView):
+    
 
     def get(self, request):
-        data = get_bootcamp_participants()
+        search = request.query_params.get("search")
+
+        data = BootcampDecisionQueryService.list_decisions(search=search)
+
         return Response(data)

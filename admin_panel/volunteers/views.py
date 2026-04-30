@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from core.permissions import IsAdminOrSecretary, IsDirector
+from core.permissions import IsAdminOrSecretary, IsAdmin
 from .services.management_service import VolunteerManagementService
 from django.core.exceptions import ValidationError
 from ideas.services.season_phase_service import SeasonPhaseService
@@ -51,7 +51,7 @@ class VolunteerDetailsView(APIView):
 #\\\\\\\\\\\\\\\\\\\قبول طلب التطوع \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class ApproveVolunteerView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
     def post(self, request, volunteer_id):
 
@@ -72,7 +72,7 @@ class ApproveVolunteerView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\رفض طلب التطوع \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class RejectVolunteerView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
     def post(self, request, volunteer_id):
 
@@ -105,7 +105,7 @@ class ApprovedVolunteersView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\إرسال دعوة تقييم \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class SendInvitationToVolunteerView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
     def post(self, request, volunteer_id):
 

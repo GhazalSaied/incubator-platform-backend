@@ -2,68 +2,87 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-
+from rest_framework.exceptions import ValidationError
 from admin_panel.bootcamp.services import SeasonManagementService
-from core.permissions import IsAdminOrSecretary, IsDirector
-
+from core.permissions import IsAdminOrSecretary, IsAdmin
+from rest_framework import status
 from bootcamp.serializers import (
     BootcampIdeaListSerializer,
     BootcampDecisionSerializer
 )
-
+from django.db import transaction
 from admin_panel.bootcamp.decisions.services import (
-    get_bootcamp_ideas,
+    BootcampIdeaQueryService,
+    end_bootcamp_sessions,
     process_bootcamp_decision
 )
 from ideas.models import Season
+from ideas.services.season_phase_service import SeasonPhaseService
 
 #\\\\\\\\\BootcampIdeasList\\\\\
 class BootcampIdeasListView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
     
+
     def get(self, request):
         search = request.query_params.get("search")
 
-        data = get_bootcamp_ideas(search)
+        data = BootcampIdeaQueryService.list_bootcamp_ideas(search)
 
-        serializer = BootcampIdeaListSerializer(data, many=True)
-        return Response(serializer.data)
+        return Response(data)
     
 #\\\\\\\BootcampDecision\\\\\\\\\
-class BootcampDecisionView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
-    
 
-    def post(self, request):
+class BootcampDecisionView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    def post(self, request, idea_id):
+        permissions = SeasonPhaseService.get_phase_permissions()
+        if not permissions["can_make_bootcamp_decisions"]:
+            raise ValidationError("لا يمكن اتخاذ قرارات في هذه المرحلة")
+
+
         serializer = BootcampDecisionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         idea = process_bootcamp_decision(
-            serializer.validated_data["idea_id"],
-            serializer.validated_data["decision"],
-            serializer.validated_data["message"]
+            idea_id=idea_id,
+            decision=serializer.validated_data["decision"],
+            actor=request.user
         )
 
-        return Response({
-            "idea_id": idea.id,
-            "status": idea.status
-        })
+        return Response(
+            {
+                "detail": "تم اتخاذ القرار بنجاح",
+                "idea_id": idea.id,
+                "status": idea.status
+            },
+            status=status.HTTP_200_OK
+        )
         
-
-
-#\\\\\\\\\\\\\\\\\\\\\اعلان انتهاء مرحلة المعسكر وبداية مرحلة التقييم\\\\\\\\\\\\\\\\\\\\\\\\\\\
-class EndCampView(APIView):
-    
-
+        
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\اعلان انتهاء جلسات المعسكر\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  
+class EndBootcampSessionsView(APIView):
+    @transaction.atomic
     def post(self, request, season_id):
-        
+        permissions=SeasonPhaseService.get_phase_permissions()
+        if not permissions["can_decide_end_of_bootcamp_sessions"]:
+            raise ValidationError("لا يمكن اتخاذ هذا القرار في هذه المرحلة")
 
-        season = get_object_or_404(Season, id=season_id)
+        try:
+            season = Season.objects.get(id=season_id)
+        except Season.DoesNotExist:
+            raise ValidationError("الموسم غير موجود")
 
-        SeasonManagementService.end_camp_and_start_evaluation(
-            season=season
+    
+        result = end_bootcamp_sessions(
+            season=season,
+            actor=request.user
         )
 
-        return Response({
-            "message": "تم إنهاء المعسكر وبدء مرحلة التقييم"
-        })
+        
+        return Response(
+            {
+                "detail": "تم إنهاء جلسات البوتكامب بنجاح",
+                "season_id": season.id
+            },
+            status=status.HTTP_200_OK
+        )

@@ -1,5 +1,7 @@
 from django.core.exceptions import ValidationError
 
+from ideas.models import ExhibitionSubmission, IdeaStatus, Season
+
 
 class ExhibitionQueryService:
 
@@ -87,3 +89,164 @@ class ExhibitionQueryService:
         }
 
         return mapping.get(q_type, "TextInput")
+    
+    
+    
+class ExhibitionSubmissionQueryService:
+
+    @staticmethod
+    def list_submissions():
+
+        submissions = ExhibitionSubmission.objects.select_related(
+            "project__owner"
+        ).all().order_by("-created_at")
+
+        return [
+            {
+                "id": s.id,
+                "project_name": s.project.title,
+
+                "owner_name": s.project.owner.full_name,
+
+                "owner_image": (
+                    s.project.owner.avatar.url
+                    if s.project.owner.avatar else None
+                ),
+
+                "status": s.status
+            }
+            for s in submissions
+        ]
+        
+        
+    
+
+    @staticmethod
+    def get_submission_details(submission):
+
+        project = submission.project
+        form = submission.form
+
+        questions = form.questions.all().order_by("order")
+
+        answers = submission.data or {}
+
+        return {
+            # =========================
+            # PROJECT INFO
+            # =========================
+            "project": {
+                "name": project.title,
+                "image": project.exhibition_image.url if project.exhibition_image else None,
+                "owner_name": project.owner.full_name,
+            },
+
+            # =========================
+            # FORM + ANSWERS
+            # =========================
+            "fields": [
+                {
+                    "label": q.label,
+                    "type": q.type,
+                    "answer": ExhibitionSubmissionQueryService._format_answer(
+                        q,
+                        answers.get(q.key)
+                    )
+                }
+                for q in questions
+            ],
+
+            "status": submission.status
+        }
+
+    # =========================
+    # FORMAT ANSWER (🔥 مهم)
+    # =========================
+    @staticmethod
+    def _format_answer(question, value):
+
+        if value is None:
+            return None
+
+        # select → رجع label بدل value
+        if question.type in ["select", "radio"]:
+            option = question.options.filter(value=value).first()
+            return option.label if option else value
+
+        # multiple select
+        if question.type == "select_multiple":
+            options = question.options.filter(value__in=value)
+            return [opt.label for opt in options]
+
+        return value
+    
+    
+class ExhibitionHistoryQueryService:
+
+    @staticmethod
+    def list_exhibitions():
+
+        seasons = Season.objects.exclude(
+            exhibition_datetime=None
+        ).order_by("-exhibition_datetime")
+
+        data = []
+
+        for season in seasons:
+
+            # 🔥 عدد المشاريع المشاركة
+            projects_count = season.ideas.filter(
+                status=IdeaStatus.GRADUATED_POSITIVE
+            ).count()
+
+            data.append({
+                "id": season.id,
+                "title": f"معرض خريجين {season.name}",
+                "date": season.exhibition_datetime.strftime("%d/%m/%Y"),
+                "projects_count": projects_count
+            })
+
+        return data
+    
+
+
+    @staticmethod
+    def get_exhibition_projects(season, search=None, sector=None):
+
+        submissions = ExhibitionSubmission.objects.filter(
+            project__season=season,
+            project__status="GRADUATED_POSITIVE"
+        ).select_related(
+            "project__owner"
+        ).prefetch_related(
+            "project__team_members__user"
+        )
+
+        # 🔍 search
+        if search:
+            submissions = submissions.filter(
+                project__title__icontains=search
+            )
+
+        # 🎯 filter
+        if sector:
+            submissions = submissions.filter(
+                project__sector__iexact=sector
+            )
+
+        return [
+            {
+                "submission_id": s.id,  # 🔥 المهم
+
+                "project_name": s.project.title,
+                "sector": s.project.sector,
+
+                "owner_name": s.project.owner.full_name,
+
+                "team": [
+                    member.user.full_name
+                    for member in s.project.team_members.all()
+                ]
+            }
+            for s in submissions
+        ]

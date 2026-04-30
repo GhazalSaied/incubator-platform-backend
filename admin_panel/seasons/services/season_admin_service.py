@@ -1,0 +1,131 @@
+from datetime import date
+from django.db.models import Count
+from core.events import EventBus
+from ideas import phases
+import ideas
+from ideas.models import Season, Idea, IdeaStatus, IdeaForm, FormQuestion, FormQuestionChoice,SeasonStatus
+from ideas.services.season_phase_service import SeasonPhaseService
+from django.utils.timezone import now
+from ideas.phases import SeasonPhase
+from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.contrib.auth import get_user_model
+from accounts.models import User
+from django.db import transaction
+from ideas.phases import SeasonPhase
+from ideas.phases import SeasonPhase as PhaseEnum
+from datetime import timedelta
+from ideas.services.idea_transition_orchestrator import IdeaTransitionOrchestrator
+from ideas.services.state.idea_state_service import IdeaStateService
+
+
+
+class SeasonAdminService:
+
+    @staticmethod
+    @transaction.atomic
+    def create_season(data):
+
+        # validation
+        if data["start_date"] >= data["end_date"]:
+            raise Exception("تاريخ النهاية يجب أن يكون بعد البداية")
+
+        # 1. create season
+        season = Season.objects.create(
+            name=data["name"],
+            description=data.get("description"),
+            start_date=data["start_date"],
+            end_date=data["end_date"]
+        )
+
+        
+
+        return season
+    
+
+
+
+    @transaction.atomic
+    def _create_phases(season):
+
+    # ❗ تأكد ما في مرحلة مسبقاً
+        if SeasonPhase.objects.filter(season=season).exists():
+            return
+
+        SeasonPhase.objects.create(
+            season=season,
+            phase=SeasonPhase.SUBMISSION,
+            start_date=season.start_date,
+            end_date=season.end_date,
+            order=1
+        )
+    
+    
+    @transaction.atomic 
+    @staticmethod
+    def publish_season(season):
+
+        # 1️⃣ لازم يكون في فورم
+        if not hasattr(season, "form"):
+            raise Exception("لا يمكن نشر الموسم بدون نموذج")
+
+        # 2️⃣ الفورم لازم فيه أسئلة
+        if season.form.questions.count() == 0:
+            raise Exception("النموذج فارغ")
+
+        # 3️⃣ ما يكون منشور قبل
+        if season.status != SeasonStatus.DRAFT:
+            raise Exception("الموسم منشور مسبقاً")
+
+        
+        current_phase = SeasonPhaseService.get_current_phase()
+
+        if current_phase and current_phase.phase != SeasonPhase.EXHIBITION:
+            raise Exception("لا يمكن نشر موسم جديد قبل وصول الموسم الحالي إلى مرحلة المعرض")
+        
+        season.is_open = True
+        season.status = SeasonStatus.PUBLISHED
+        season.save()
+
+        # 2. bootstrap phases
+        SeasonAdminService._create_phases(season)
+        
+
+        EventBus.emit("season_published",season=season)
+
+        
+    
+
+        return season
+    
+    
+   
+    @transaction.atomic
+    @staticmethod
+    def close_submissions(season):
+        if season.status != SeasonStatus.PUBLISHED:
+            raise Exception("الموسم غير منشور")
+        if not season.is_open:
+            raise Exception("الموسم مغلق بالفعل")
+        if season.ideas.filter(status=IdeaStatus.SUBMITTED).count() == 0:
+            raise Exception("لا يمكن إغلاق الموسم بدون أفكار مقدمة")
+        if SeasonPhaseService.get_current_phase(season).phase != SeasonPhase.SUBMISSION:
+            raise Exception("المرحلة الحالية ليست مرحلة التقديم")
+        
+        season.is_open = False
+        season.status = SeasonStatus.CLOSED
+        season.save(update_fields=["is_open", "status"])
+        ideas = Idea.objects.filter(season=season,status=IdeaStatus.SUBMITTED)
+        
+        
+        if ideas.exists():
+            IdeaTransitionOrchestrator.change_status(idea=ideas.first(),to_status=IdeaStatus.PRE_ACCEPTED,user=None)
+        ideas = Idea.objects.filter(season=season,status=IdeaStatus.SUBMITTED)
+        for idea in ideas:
+            IdeaStateService.change_status(idea=idea,to_status=IdeaStatus.PRE_ACCEPTED,user=None)
+               # 🧠 7. EVENTS
+        EventBus.emit("submission_closed",season=season)
+
+        
+        return season
+

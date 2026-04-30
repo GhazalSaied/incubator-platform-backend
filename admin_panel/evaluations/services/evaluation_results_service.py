@@ -1,16 +1,24 @@
 from django.db.models import Avg, Sum
+from core.events import EventBus
 from evaluations.models import Evaluation
 import ideas
 from ideas.models import Idea,IdeaStatus
 from django.core.exceptions import ValidationError
+from ideas.services.state.idea_state_service import IdeaStateService
 from notifications.services.notification_service import NotificationService
 from evaluations.models import EvaluationAssignment
-from .phase_transition_service import PhaseTransitionService
+from django.db import transaction
 
 from django.db.models import Prefetch
 from evaluations.models import Evaluation, EvaluationAssignment, EvaluationScore
 from ideas.models import Idea
 from evaluations.models import EvaluationAssignment, Evaluation
+
+
+from evaluations.models import (
+    Evaluation,
+    EvaluationAssignment,
+)
 
 
 class EvaluationStatusService:
@@ -21,21 +29,32 @@ class EvaluationStatusService:
         assignments = EvaluationAssignment.objects.filter(
             idea=idea
         )
+        
 
         if not assignments.exists():
             return False
 
-        evaluators_ids = assignments.values_list(
-            "evaluator_id", flat=True
+        evaluator_ids = list(
+            assignments.values_list(
+                "evaluator_id",
+                flat=True
+            ).distinct()
         )
 
         submitted_count = Evaluation.objects.filter(
             idea=idea,
-            evaluator_id__in=evaluators_ids,
+            evaluator_id__in=evaluator_ids,
             is_submitted=True
-        ).values("evaluator_id").distinct().count()
+        ).values(
+            "evaluator_id"
+        ).distinct().count()
 
-        return submitted_count == len(evaluators_ids)
+        return submitted_count == len(evaluator_ids)
+
+from django.db.models import Prefetch
+
+from evaluations.models import Evaluation
+from ideas.models import Idea
 
 
 class EvaluationResultsService:
@@ -43,18 +62,26 @@ class EvaluationResultsService:
     @staticmethod
     def get_results(*, sector=None, status=None):
 
-        ideas = Idea.objects.select_related("owner")
+        ideas = Idea.objects.select_related(
+            "owner"
+        )
 
+        # ✅ فلترة قطاع
         if sector:
-            ideas = ideas.filter(sector=sector)
+            ideas = ideas.filter(
+                sector=sector
+            )
 
-        # 🟢 preload كل التقييمات
+        # ✅ preload evaluations
         evaluations_qs = Evaluation.objects.filter(
             is_submitted=True
         ).prefetch_related("scores")
 
         ideas = ideas.prefetch_related(
-            Prefetch("evaluations", queryset=evaluations_qs)
+            Prefetch(
+                "evaluations",
+                queryset=evaluations_qs
+            )
         )
 
         data = []
@@ -63,14 +90,18 @@ class EvaluationResultsService:
 
             evaluations = idea.evaluations.all()
 
-            # 🔥 الحالة الصح
-            is_fully_evaluated = EvaluationStatusService.is_fully_evaluated(idea)
-
-            evaluation_status = (
-                "تم التقييم" if is_fully_evaluated else "قيد التقييم"
+            # ✅ حالة التقييم
+            is_fully_evaluated = (
+                EvaluationStatusService.is_fully_evaluated(idea)
             )
 
-            # 🟢 حساب السكور
+            evaluation_status = (
+                "تم التقييم"
+                if is_fully_evaluated
+                else "قيد التقييم"
+            )
+
+            # ✅ حساب النتيجة
             total_scores = [
                 sum(score.score for score in ev.scores.all())
                 for ev in evaluations
@@ -81,17 +112,29 @@ class EvaluationResultsService:
                 if total_scores else 0
             )
 
-            # 🟢 فلترة
+            # ✅ فلترة حسب الحالة
             if status and status != evaluation_status:
                 continue
 
             data.append({
                 "idea_id": idea.id,
-                "title": idea.title,
+
+                "project_name": idea.title,
+
                 "owner_email": idea.owner.email,
+
                 "sector": idea.sector,
+
+                "target_audience": idea.target_audience,
+
                 "evaluation_status": evaluation_status,
-                "average_score": round(average_score, 2)
+
+                # ✅ فقط إذا اكتمل التقييم
+                "evaluation_result": (
+                    round(average_score, 2)
+                    if is_fully_evaluated
+                    else None
+                )
             })
 
         return data
@@ -121,7 +164,7 @@ class EvaluationDetailsService:
 
             evaluator = evaluation.evaluator
             profile = getattr(evaluator, "volunteer_profile", None)
-
+            meeting_date = assignments_map.get(evaluator.id)
             results.append({
                 "evaluator_name": evaluator.full_name,
 
@@ -132,7 +175,11 @@ class EvaluationDetailsService:
                 "specialization": profile.primary_skills if profile else None,
 
                 # 🟢 تاريخ الجلسة
-                "meeting_date": assignments_map.get(evaluator.id),
+
+                "meeting_date": (
+                meeting_date.strftime("%d/%m/%Y")
+                if meeting_date else None
+                ),
 
                 # 🟢 الملاحظات
                 "notes": evaluation.notes,
@@ -147,81 +194,51 @@ class EvaluationDetailsService:
 
 class EvaluationDecisionService:
 
+    @transaction.atomic
     @staticmethod
-    def _try_finish_evaluation_phase(season):
+    def _validate_decision(idea):
 
-        remaining = season.ideas.filter(
-            status=IdeaStatus.EVALUATION
-        ).count()
-
-        print("Remaining ideas:", remaining)  # debug مؤقت
-
-        if remaining == 0:
-
-            PhaseTransitionService._move_to_incubation(season)
-
-    @staticmethod
-    def _validate_decision(idea, message):
-
-        # 🟢 تحقق من المرحلة
-        if idea.status != IdeaStatus.EVALUATION:
-            raise ValidationError("لا يمكن اتخاذ قرار خارج مرحلة التقييم")
-        # 🟢 لازم التقييم يكون مكتمل
-        if not EvaluationStatusService.is_fully_evaluated(idea):
+        
+        if not idea.status == IdeaStatus.EVALUATED:
             raise ValidationError("لا يمكن اتخاذ قرار قبل اكتمال جميع التقييمات")
-
-        
-        
 
         # 🟢 منع التكرار
         if idea.status in [IdeaStatus.ACCEPTED, IdeaStatus.REJECTED]:
             raise ValidationError("تم اتخاذ قرار مسبقاً لهذه الفكرة")
 
-        # 🟢 الرسالة إجبارية
-        if not message or not message.strip():
-            raise ValidationError("الرسالة مطلوبة")
-
     # ----------------------------------------
-
+    @transaction.atomic
     @staticmethod
-    def accept_idea(*, idea, message):
+    def accept_idea(*, idea):
 
-        EvaluationDecisionService._validate_decision(idea, message)
+        EvaluationDecisionService._validate_decision(idea)
+        new_status = IdeaStatus.ACCEPTED
+        IdeaStateService.change_status(
+        idea=idea,
+        to_status=new_status,
+        source="evaluation_decision"
+    )
+        EventBus.emit(
+            "idea_accepted",idea=idea,actor=None )
 
-        idea.status = IdeaStatus.ACCEPTED
-        idea.save(update_fields=["status"])
-        EvaluationDecisionService._try_finish_evaluation_phase(idea.season)
-        NotificationService.send(
-            user=idea.owner,
-            title="تم قبول فكرتك 🎉",
-            message=message,
-            action_type="VIEW_IDEA",
-            action_url=f"api/ideas/my/",
-            related_object=idea
-        )
 
         return idea
 
     # ----------------------------------------
-
+    @transaction.atomic
     @staticmethod
-    def reject_idea(*, idea, message):
+    def reject_idea(*, idea):
 
-        EvaluationDecisionService._validate_decision(idea, message)
+        EvaluationDecisionService._validate_decision(idea)
 
-        idea.status = IdeaStatus.REJECTED
-        idea.save(update_fields=["status"])
-        EvaluationDecisionService._try_finish_evaluation_phase(idea.season)
-
-        NotificationService.send(
-            user=idea.owner,
-            title="تم رفض فكرتك",
-            message=message,
-            action_type="VIEW_IDEA",
-            action_url=f"api/ideas/my/",
-            related_object=idea
-        )
-
+        new_status = IdeaStatus.REJECTED
+        IdeaStateService.change_status(
+        idea=idea,
+        to_status=new_status,
+        source="evaluation_decision"
+    )
+        EventBus.emit(
+            "idea_rejected",idea=idea,actor=None )
         return idea
     
     

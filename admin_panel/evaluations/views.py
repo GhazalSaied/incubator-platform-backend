@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from .services.evaluation_results_service import EvaluationDecisionService, EvaluationDetailsService, EvaluationResultsService
 from .services.EvaluationCriteriaService import EvaluationCriteriaService
 from .services.meeting_service import schedule_meeting
-from core.permissions import IsAdminOrSecretary, IsDirector
+from core.permissions import IsAdminOrSecretary, IsAdmin
 from rest_framework import status
 from evaluations.models import EvaluationCriterion
 from ideas.models import Idea
@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404
 from ideas.services.season_phase_service import SeasonPhaseService
 from rest_framework.permissions import IsAuthenticated
 from .selectors.assignment_dashboard_selectors import (get_assignment_dashboard_ideas)
-from .serializers import (AssignmentDashboardSerializer, DecisionSerializer, EvaluatorInfoSerializer, MeetingDashboardSerializer,SeasonEvaluatorSerializer,AssignEvaluatorsSerializer,SetMeetingSerializer,EvaluationCriteriaSerializer)
+from .serializers import (AssignmentDashboardSerializer, EvaluatorInfoSerializer, MeetingDashboardSerializer,SeasonEvaluatorSerializer,AssignEvaluatorsSerializer,SetMeetingSerializer,EvaluationCriteriaSerializer)
 from .selectors.volunteer_selectors import (get_available_season_evaluators)
 from ideas.services.season_phase_service import SeasonPhaseService
 from rest_framework import status
@@ -22,10 +22,7 @@ from .services.evaluation_assignment_service import (EvaluationAssignmentService
 
 #\\\\\\عرض المشاريع القبولة بالمعسكر لتعيين مقيمين لها\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class AssignmentDashboardAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
-
     
-
     def get(self, request):
 
         season = SeasonPhaseService.get_current_season()
@@ -59,13 +56,12 @@ class AvailableEvaluatorsView(APIView):
 
         season = SeasonPhaseService.get_current_season()
 
-        volunteer_type = request.query_params.get("volunteer_type")
-
+        specialization = request.query_params.get("specialization")
         skills = request.query_params.get("skills")
 
         evaluators = get_available_season_evaluators(
             season=season,
-            volunteer_type=volunteer_type,
+            specialization=specialization,
             skills=skills,
         )
 
@@ -80,21 +76,26 @@ class AvailableEvaluatorsView(APIView):
 #\\\\\\\\\\\\\\\\\\\تعيين مقيمين على فكرة معينة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class AssignEvaluatorsToIdeaView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
-
-    def post(self, request):
-
+    
+    def post(self, request, idea_id):
+        permissions = SeasonPhaseService.get_phase_permissions()
+        if not permissions["can_assign_evaluators"]:
+            return Response(
+                {"message": "لا يمكنك تعيين مقيمين في المرحلة الحالية"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            idea = Idea.objects.get(id=idea_id)
+        except Idea.DoesNotExist:
+            return Response({"error": "الفكرة غير موجودة"}, status=404)
         serializer = AssignEvaluatorsSerializer(data=request.data)
 
         serializer.is_valid(raise_exception=True)
 
-        idea_id = serializer.validated_data["idea_id"]
-
         evaluators_ids = serializer.validated_data["evaluators_ids"]
 
         season = SeasonPhaseService.get_current_season()
-
-        idea = Idea.objects.get(id=idea_id)
 
         EvaluationAssignmentService.assign_evaluators_to_idea(
             idea=idea,
@@ -110,8 +111,6 @@ class AssignEvaluatorsToIdeaView(APIView):
         
 #\\\\\\\\\\\\\\\\\\\\\\عرض جدول المشاريع لتحديد موعد اللجنة \\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class MeetingDashboardAPIView(APIView):
-
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
     def get(self, request):
 
@@ -138,7 +137,6 @@ class MeetingDashboardAPIView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض المقيمين المعينين على فكرة معينة في جدول تحديد موعد اللجنة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class IdeaEvaluatorsAPIView(APIView):
 
-    permission_classes = [IsAuthenticated, IsDirector]
     def get(self, request, idea_id):
 
         idea = get_object_or_404(Idea, id=idea_id)
@@ -155,20 +153,22 @@ class IdeaEvaluatorsAPIView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\\\تحديد موعد اللجنة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class SetMeetingAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
 
-   
-
-    def post(self, request):
+    def post(self, request,idea_id):
+        permissions = SeasonPhaseService.get_phase_permissions()
+        if not permissions["can_schedule_meetings"]:
+            return Response(
+                {"message": "لا يمكنك تحديد مواعيد في المرحلة الحالية"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         serializer = SetMeetingSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        idea_id = serializer.validated_data["idea_id"]
         date = serializer.validated_data["date"]
         time = serializer.validated_data["time"]
-
+        
         idea = get_object_or_404(Idea, id=idea_id)
+
 
         schedule_meeting(
             idea=idea,
@@ -178,9 +178,9 @@ class SetMeetingAPIView(APIView):
 
         return Response({"message": "Meeting scheduled"})
 
-#\\\\\\\\\\\\\\\\\\\\\\\انشاء معيار تقييم\\\\\\\\\\\\\\\\\\\\\\from rest_framework.views import APIView
+#\\\\\\\\\\\\\\\\\\\\\\\انشاء معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
 class CriteriaListCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    
 
     def get(self, request):
         criteria = EvaluationCriterion.objects.all()
@@ -205,7 +205,6 @@ class CriteriaListCreateView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\تعديل معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
 
 class CriteriaUpdateView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
 
     def put(self, request, pk):
         criteria = get_object_or_404(EvaluationCriterion, pk=pk)
@@ -221,21 +220,27 @@ class CriteriaUpdateView(APIView):
 
         return Response(EvaluationCriteriaSerializer(criteria).data)
 
-#\\\\\\\\\\\\\\\\\\\\\\\\تفعيل/تعطيل معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
-class CriteriaToggleActiveView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+#\\\\\\\\\\\\\\\\\\\\\\\\ حذف معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
+class EvaluationCriteriaDeleteView(APIView):
 
-    def post(self, request, pk):
-        criteria = get_object_or_404(EvaluationCriterion, pk=pk)
+    def delete(self, request, pk):
 
-        criteria = EvaluationCriteriaService.toggle_active(criteria=criteria)
+        criteria = get_object_or_404(
+            EvaluationCriterion,
+            id=pk
+        )
 
-        return Response(EvaluationCriteriaSerializer(criteria).data)
+        EvaluationCriteriaService.delete_criteria(
+            criteria=criteria
+        )
+
+        return Response(
+            {"detail": "تم حذف المعيار بنجاح"},
+            status=status.HTTP_200_OK
+        )
     
 #\\\\\\\\\\\\\\\\\\\\\معاينة نموذج التقييم\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class CriteriaPreviewView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
-
 
     def get(self, request):
 
@@ -247,7 +252,7 @@ class CriteriaPreviewView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\نشر معايير التقييم\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class PublishCriteriaView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    
 
     def post(self, request):
 
@@ -278,7 +283,7 @@ class EvaluationResultsView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\عرض المقيمين مع ملاحظاتن\\\\\\\\\\\\\\\\\\\
 class EvaluationDetailsView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
+    
 
     def get(self, request, idea_id):
 
@@ -296,15 +301,17 @@ class AcceptIdeaView(APIView):
     
 
     def post(self, request, idea_id):
+        permissions = SeasonPhaseService.get_phase_permissions()
+        if not permissions["can_decide_final_results"]:
+            return Response(
+                {"message": "لا يمكنك اتخاذ قرار في المرحلة الحالية"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         idea = get_object_or_404(Idea, id=idea_id)
 
-        serializer = DecisionSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
         EvaluationDecisionService.accept_idea(
-            idea=idea,
-            message=serializer.validated_data["message"]
+            idea=idea
         )
 
         return Response({"message": "تم قبول الفكرة"})
@@ -312,18 +319,20 @@ class AcceptIdeaView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\رفض فكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class RejectIdeaView(APIView):
-    permission_classes = [IsAuthenticated, IsDirector]
+    
 
     def post(self, request, idea_id):
-
+        permissions = SeasonPhaseService.get_phase_permissions()
+        if not permissions["can_decide_final_results"]:
+            return Response(
+                {"message": "لا يمكنك اتخاذ قرار في المرحلة الحالية"},
+                status=status.HTTP_403_FORBIDDEN
+            )
         idea = get_object_or_404(Idea, id=idea_id)
 
-        serializer = DecisionSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
 
         EvaluationDecisionService.reject_idea(
             idea=idea,
-            message=serializer.validated_data["message"]
         )
 
         return Response({"message": "تم رفض الفكرة"})

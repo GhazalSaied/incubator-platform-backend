@@ -45,12 +45,12 @@ class FormBuilderService:
                     raise ValidationError(
                         f"السؤال '{q.get('label')}' لا يجب أن يحتوي خيارات"
                     )
-
+    
     @staticmethod
     def save_form_builder(form, questions_data):
 
-        if form.season.phases.exists():
-            raise ValidationError("لا يمكن التعديل بعد نشر الموسم")
+        if form.season.status != "DRAFT":
+            raise ValidationError("لا يمكن تعديل النموذج بعد نشر الموسم")
         # 🔥 VALIDATION
         FormBuilderService._validate_questions(questions_data)
 
@@ -60,6 +60,8 @@ class FormBuilderService:
         for q_data in questions_data:
 
             q_id = q_data.get("id")
+            if q_id:
+                q_id = int(q_id)
 
             # 🟩 UPDATE
             if q_id and q_id in existing_questions:
@@ -94,9 +96,11 @@ class FormBuilderService:
             )
 
         # 🟥 DELETE QUESTIONS
+        
         for q_id, question in existing_questions.items():
             if q_id not in sent_ids:
                 question.delete()
+                
 
     # -------------------------
 

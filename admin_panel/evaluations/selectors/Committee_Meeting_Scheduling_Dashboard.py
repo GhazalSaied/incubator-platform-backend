@@ -11,7 +11,7 @@ def get_ideas_with_evaluators(
 ):
     queryset = Idea.objects.filter(
         season=season,
-        status=IdeaStatus.PRE_ACCEPTED,
+        status=IdeaStatus.EVALUATION,
         evaluation_assignments__isnull=False
     ).distinct().prefetch_related(
         "evaluation_assignments__evaluator"

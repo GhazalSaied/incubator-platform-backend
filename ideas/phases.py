@@ -31,8 +31,8 @@ class SeasonPhase(models.Model):
         choices=PHASE_CHOICES
     )
 
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
+    start_date = models.DateTimeField(null=True, blank=True)
+    end_date = models.DateTimeField(null=True, blank=True)
 
     order = models.PositiveIntegerField()
     

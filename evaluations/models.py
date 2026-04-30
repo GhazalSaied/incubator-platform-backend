@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-
+from django.core.validators import MinValueValidator, MaxValueValidator
 from common.models import BaseModel
 from ideas.models import Idea, Season
 
@@ -104,9 +104,7 @@ class IncubationReview(BaseModel):
         related_name="reviews"
     )
 
-    meeting_date = models.DateTimeField()
-
-    progress_score = models.FloatField(null=True, blank=True)
+    progress_score = models.FloatField(null=True, blank=True,validators=[MinValueValidator(0),MaxValueValidator(100)])
 
     notes = models.TextField()
 
@@ -115,9 +113,10 @@ class IncubationReview(BaseModel):
         on_delete=models.SET_NULL,
         null=True
     )
-
+    is_submitted = models.BooleanField(default=False)
+    submitted_at = models.DateTimeField(null=True, blank=True)
     def __str__(self):
-        return f"{self.idea} - {self.meeting_date}"
+        return f"{self.idea} - {self.submitted_at}"
 
 
 #///////////////////////// EVALUATION INVITATION /////////////////////////
@@ -149,7 +148,7 @@ class EvaluationInvitation(BaseModel):
     expertise_field = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
 
-    meeting_date = models.DateTimeField()
+    meeting_date = models.DateTimeField(null=True, blank=True)
 
     expected_duration = models.CharField(max_length=255)
     task = models.TextField(null=True, blank=True)
@@ -233,6 +232,7 @@ class IncubationAssignment(models.Model):
         "volunteers.VolunteerProfile",
         on_delete=models.CASCADE
     )
+    meeting_date = models.DateTimeField(null=True, blank=True)
 
     assigned_at = models.DateTimeField(auto_now_add=True)
 

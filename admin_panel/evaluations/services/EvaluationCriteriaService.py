@@ -1,13 +1,22 @@
 from django.core.exceptions import ValidationError
-from .criteria_validation_service import CriteriaValidationService
 from evaluations.models import EvaluationCriterion
 from .settings_service import SettingsService
 
 class EvaluationCriteriaService:
 
+
+    @staticmethod
+    def ensure_not_published():
+        settings = SettingsService.get()
+
+        if settings.is_published:
+            raise ValidationError(
+                "لا يمكن تعديل المعايير بعد نشر النموذج"
+            )
+            
     @staticmethod
     def create(*, title, max_score):
-        CriteriaValidationService.ensure_not_published()
+        EvaluationCriteriaService.ensure_not_published()
         if EvaluationCriterion.objects.filter(title=title).exists():
             raise ValidationError("هذا المعيار موجود مسبقًا")
 
@@ -21,7 +30,7 @@ class EvaluationCriteriaService:
     @staticmethod
     def update(*, criteria, title=None, max_score=None):
 
-        CriteriaValidationService.ensure_not_published()
+        EvaluationCriteriaService.ensure_not_published()
         if title:
             if EvaluationCriterion.objects.exclude(id=criteria.id).filter(title=title).exists():
                 raise ValidationError("اسم المعيار مستخدم")
@@ -40,13 +49,14 @@ class EvaluationCriteriaService:
     # --------------------------------------
 
     @staticmethod
-    def toggle_active(*, criteria):
-        CriteriaValidationService.ensure_not_published()
+    def delete_criteria(*, criteria):
 
-        criteria.is_active = not criteria.is_active
-        criteria.save(update_fields=["is_active"])
+        # منع الحذف بعد النشر
+        EvaluationCriteriaService.ensure_not_published()
 
-        return criteria
+        criteria.delete()
+
+        return True
 
 
     @staticmethod

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import EvaluationCriterion,Evaluation,EvaluationScore,EvaluationInvitation, IncubationReview,EvaluationAssignment,IncubationAssignment
+from .models import EvaluationCriterion,Evaluation,EvaluationScore,EvaluationInvitation, IncubationReview,EvaluationAssignment,IncubationAssignment,EvaluationSettings
 
 admin.site.register(EvaluationCriterion)
 admin.site.register(Evaluation)
@@ -8,3 +8,4 @@ admin.site.register(EvaluationInvitation)
 admin.site.register(IncubationReview)
 admin.site.register(EvaluationAssignment)
 admin.site.register(IncubationAssignment)
+admin.site.register(EvaluationSettings)

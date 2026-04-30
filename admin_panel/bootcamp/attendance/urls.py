@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     SessionAttendanceListView,
     IdeaAttendanceStatsView,
-    BootcampParticipantsView,
+    BootcampDecisionListView,
 )
 
 urlpatterns = [
@@ -11,5 +11,5 @@ urlpatterns = [
     #\\\\\\\\مراجعة احصائيات الحضور لكل فكرة\\\\\\\\
     path("idea/<int:idea_id>/stats/", IdeaAttendanceStatsView.as_view(), name="idea-attendance-stats"),
     #\\\\\\\\مراجعة المقبولين في المعسكر\\\\\\\\
-    path("participants/", BootcampParticipantsView.as_view(), name="bootcamp-participants"),
+    path("decisions/", BootcampDecisionListView.as_view(), name="bootcamp-decisions"),
 ]
