@@ -67,7 +67,6 @@ EVENTS = {
         "action_url": "/consultations/{consultation}"
     },
 
-
     "consultation_accepted": {
         "target": "IDEA_OWNER",
         "payload": ["consultation", "action"],
@@ -170,11 +169,7 @@ EVENTS = {
         "action_url": "/idea-feedback"
     },
 
-    "idea_status_changed": {
-    "target": "USER",
-    "payload": ["idea", "old_status", "new_status"],
-    "action_url": "/ideas/{id}"
-    },
+    "idea_status_changed": {},
 
     # ===============================
     # EVALUATION RESULTS
