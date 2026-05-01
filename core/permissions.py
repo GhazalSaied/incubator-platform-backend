@@ -4,103 +4,89 @@ from django.db import models
 from ideas.phases import SeasonPhase
 from ideas.services.season_phase_service import SeasonPhaseService
 from accounts.models import UserRole
-
-#//////////////////////// PUBLIC PERMISSION ///////////////////////////////
-
-class IsInPhase(BasePermission):
-    required_phase = None
-
-    def has_permission(self, request, view):
-        if not self.required_phase:
-            return False
-        return SeasonPhaseService.is_phase(self.required_phase)
+from accounts.models import Permission
+from rest_framework.permissions import BasePermission
 
 
-#//////////////////////// ROLE SYSTEM ///////////////////////////////
+PERMISSIONS = {
+    "idea.submit": "Submit Idea",
+    "idea.view": "View Idea",
 
-class HasRole(BasePermission):
-    required_role_code = None
+    "evaluation.submit": "Submit Evaluation",
+
+    "user.manage": "Manage Users",
+    "season.manage": "Manage Season",
+}
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+PHASE_GATED_PERMISSIONS = {
+    "idea.submit": SeasonPhase.SUBMISSION,
+    "evaluation.submit": SeasonPhase.EVALUATION,
+    "bootcamp.session.create": SeasonPhase.BOOTCAMP,
+    "incubation.assign_mentor": SeasonPhase.INCUBATION,
+}
+
+
+
+
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\Permission check\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+def has_permission(user, permission_code):
+    if not user or not user.is_authenticated:
+        return False
+
+    if "ADMIN" in user.role_codes:
+        return True
+
+    return permission_code in user.get_permissions()
+
+ #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  Add Phase check\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+def can_access(user, permission_code):
+    if not has_permission(user, permission_code):
+        return False
+
+    required_phase = PHASE_GATED_PERMISSIONS.get(permission_code)
+
+    if required_phase:
+        return SeasonPhaseService.is_phase(required_phase)
+
+    return True
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class HasPermission(BasePermission):
+    required_permission = None
 
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
 
-        if not self.required_role_code:
-            return False
+        return can_access(request.user, self.required_permission)
 
-        return UserRole.objects.filter(
-            user=request.user,
-            role__code=self.required_role_code,
-            is_active=True
-        ).filter(
-            models.Q(expires_at__isnull=True) |
-            models.Q(expires_at__gt=timezone.now())
-        ).exists()
+# IDEA
+class CanSubmitIdea(HasPermission):
+    required_permission = "idea.submit"
+
+    def has_object_permission(self, request, view, obj):
+        return obj.owner == request.user
 
 
-class IsIdeaOwner(HasRole):
-    required_role_code = "IDEA_OWNER"
+class CanViewIdea(HasPermission):
+    required_permission = "idea.view"
 
 
-class IsVolunteer(HasRole):
-    required_role_code = "VOLUNTEER"
-
-    def has_permission(self, request, view):
-        base_permission = super().has_permission(request, view)
-
-        if not base_permission:
-            return False
-
-        if not hasattr(request.user, "volunteer_profile"):
-            return False
-
-        return (
-            request.user.volunteer_profile.status ==
-            request.user.volunteer_profile.APPROVED
-        )
-
-
-class IsEvaluator(HasRole):
-    required_role_code = "EVALUATOR"
-
-
-class IsAdmin(HasRole):
-    required_role_code = "ADMIN"
-
-
-#//////////////////////// IDEA PERMISSIONS ///////////////////////////////
-
-class CanSubmitIdea(IsIdeaOwner, IsInPhase):
-    required_phase = SeasonPhase.SUBMISSION
-
-
-class CanEditIdea(IsIdeaOwner, IsInPhase):
-    required_phase = SeasonPhase.SUBMISSION
-
-
-class CanEvaluateIdea(IsEvaluator, IsInPhase):
-    required_phase = SeasonPhase.EVALUATION
+# EVALUATION
+class CanEvaluateIdea(HasPermission):
+    required_permission = "evaluation.submit"
 
 
 
-class IsSecretary(HasRole):
-    required_role_code = "SECRETARY"
+# BOOTCAMP
+
+
+# INCUBATION
+
+
+
+# ADMIN
+class CanManageUsers(HasPermission):
+    required_permission = "user.manage"
     
-    
-class IsAdminOrSecretary(BasePermission):
-
-    def has_permission(self, request, view):
-
-        if not request.user.is_authenticated:
-            return False
-
-        return UserRole.objects.filter(
-            user=request.user,
-            role__code__in=["ADMIN", "SECRETARY"],
-            is_active=True
-        ).exists()
-        
-        
-class IsReadOnly(BasePermission):
-    def has_permission(self, request, view):
-        return request.method in SAFE_METHODS
+class CanManageSeason(HasPermission):
+    required_permission = "season.manage"

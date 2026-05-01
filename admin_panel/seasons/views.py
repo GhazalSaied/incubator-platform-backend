@@ -4,10 +4,12 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
 from django.shortcuts import get_object_or_404
+
+from core.permissions import CanManageSeason
 from .services.season_query_service import SeasonQueryService
 from .services.season_admin_service import SeasonAdminService
 from ideas.models import Season
-from core.permissions import IsAdmin,IsAdminOrSecretary
+
 
 from ideas.serializers import (
     SeasonCreateSerializer,SeasonListSerializer,SeasonDetailsSerializer
@@ -23,8 +25,8 @@ from ideas.phases import SeasonPhase
 
 #\\\\\\\\\\\\\\انشاء موسم\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class CreateSeasonAPIView(APIView):
-    
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    permission_classes = [IsAuthenticated, CanManageSeason]
+   
     def post(self, request):
 
         serializer = SeasonCreateSerializer(data=request.data)

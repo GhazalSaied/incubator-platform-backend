@@ -4,7 +4,6 @@ from rest_framework.response import Response
 from .services.evaluation_results_service import EvaluationDecisionService, EvaluationDetailsService, EvaluationResultsService
 from .services.EvaluationCriteriaService import EvaluationCriteriaService
 from .services.meeting_service import schedule_meeting
-from core.permissions import IsAdminOrSecretary, IsAdmin
 from rest_framework import status
 from evaluations.models import EvaluationCriterion
 from ideas.models import Idea

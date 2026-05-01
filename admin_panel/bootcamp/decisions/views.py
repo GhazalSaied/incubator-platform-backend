@@ -4,7 +4,6 @@ from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
 from admin_panel.bootcamp.services import SeasonManagementService
-from core.permissions import IsAdminOrSecretary, IsAdmin
 from rest_framework import status
 from bootcamp.serializers import (
     BootcampIdeaListSerializer,
@@ -33,7 +32,7 @@ class BootcampIdeasListView(APIView):
 #\\\\\\\BootcampDecision\\\\\\\\\
 
 class BootcampDecisionView(APIView):
-    permission_classes = [IsAuthenticated, IsAdmin]
+    
     def post(self, request, idea_id):
         permissions = SeasonPhaseService.get_phase_permissions()
         if not permissions["can_make_bootcamp_decisions"]:

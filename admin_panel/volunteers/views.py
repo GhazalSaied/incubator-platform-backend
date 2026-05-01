@@ -3,7 +3,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from core.permissions import IsAdminOrSecretary, IsAdmin
 from .services.management_service import VolunteerManagementService
 from django.core.exceptions import ValidationError
 from ideas.services.season_phase_service import SeasonPhaseService
@@ -14,7 +13,7 @@ from django.utils import timezone
 from dateutil import parser
 #\\\\\\\\\\\\\\\\\\\\\\\\\\عرض طلبات التطوع المعلقة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class PendingVolunteersView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    
 
     def get(self, request):
 
@@ -32,7 +31,7 @@ class PendingVolunteersView(APIView):
 
 
 class VolunteerDetailsView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+  
 
     def get(self, request, volunteer_id):
 
@@ -51,7 +50,7 @@ class VolunteerDetailsView(APIView):
 #\\\\\\\\\\\\\\\\\\\قبول طلب التطوع \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class ApproveVolunteerView(APIView):
-    permission_classes = [IsAuthenticated, IsAdmin]
+   
 
     def post(self, request, volunteer_id):
 
@@ -72,8 +71,7 @@ class ApproveVolunteerView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\رفض طلب التطوع \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class RejectVolunteerView(APIView):
-    permission_classes = [IsAuthenticated, IsAdmin]
-
+ 
     def post(self, request, volunteer_id):
 
         try:
@@ -91,8 +89,7 @@ class RejectVolunteerView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض المتطوعين المقبولين \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ \
 class ApprovedVolunteersView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
-
+ 
     def get(self, request):
 
         data = VolunteerQueryService.get_volunteers_by_status(
@@ -105,8 +102,7 @@ class ApprovedVolunteersView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\إرسال دعوة تقييم \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class SendInvitationToVolunteerView(APIView):
-    permission_classes = [IsAuthenticated, IsAdmin]
-
+   
     def post(self, request, volunteer_id):
 
         try:
@@ -132,8 +128,7 @@ class SendInvitationToVolunteerView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض المقيمين\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class EvaluatorsView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
-
+ 
     def get(self, request):
 
         try:
@@ -153,7 +148,7 @@ class EvaluatorsView(APIView):
 
 
 class RemoveEvaluatorRoleView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+ 
 
     def post(self, request, volunteer_id):
 

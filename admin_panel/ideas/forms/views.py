@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.generics import ListCreateAPIView
 from ideas.serializers import CreateFormSerializer, FormSerializer,CreateQuestionSerializer,SeasonFormDesignSerializer,CreateChoiceSerializer,FormQuestion
-from core.permissions import IsAdminOrSecretary
+
 from rest_framework.generics import RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics

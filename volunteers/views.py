@@ -38,7 +38,6 @@ from .serializers import (
     CreateConsultationRequestSerializer,
 )
 from volunteers.services.volunteer_service import VolunteerService
-from core.permissions import IsVolunteer
 from ideas.models import TeamMember 
 from notifications.services.notification_service import NotificationService
 from django.contrib.auth import get_user_model
@@ -223,7 +222,7 @@ class VolunteerAvailabilityDeleteAPIView(APIView):
 #/////////////////////////////// VOLUNTEER DASHBOARD VIEW //////////////////////////////////////////////
 
 class VolunteerDashboardAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsVolunteer]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
 
@@ -357,7 +356,7 @@ class CreateJoinRequestAPIView(APIView):
 #//////////////////////////////////// JOIN REQUEST (GET LIST) ///////////////////////
 
 class JoinRequestsAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsVolunteer]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         profile = request.user.volunteer_profile
@@ -372,7 +371,7 @@ class JoinRequestsAPIView(APIView):
 #////////////////////////////////// JOIN REQUEST DETAILS //////////////////////
 
 class JoinRequestDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsVolunteer]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, request_id):
         jr = get_object_or_404(

@@ -1,0 +1,116 @@
+from django.core.management.base import BaseCommand
+from accounts.models import Role, Permission, RolePermission
+from accounts.constants import SystemRoles
+
+
+class Command(BaseCommand):
+    help = "Seed initial roles, permissions, and mappings"
+
+    def handle(self, *args, **kwargs):
+        self.create_roles()
+        self.create_permissions()
+        self.assign_permissions()
+
+        self.stdout.write(self.style.SUCCESS("✅ Initial data seeded successfully"))
+
+    # ------------------ ROLES ------------------
+
+    def create_roles(self):
+        roles = [
+            (SystemRoles.ADMIN, "Admin"),
+            (SystemRoles.SECRETARY, "Secretary"),
+            (SystemRoles.VOLUNTEER, "Volunteer"),
+            (SystemRoles.EVALUATOR, "Evaluator"),
+            (SystemRoles.IDEA_OWNER, "Idea Owner"),
+        ]
+
+        for code, name in roles:
+            Role.objects.update_or_create(
+                code=code,
+                defaults={
+                    "name_en": name,
+                    "name_ar": name,
+                    "is_system_role": True
+                }
+            )
+
+    # ------------------ PERMISSIONS ------------------
+
+    def create_permissions(self):
+        permissions = [
+            # IDEA
+            ("idea.submit", "Submit Idea", "IDEA"),
+            ("idea.view", "View Idea", "IDEA"),
+
+            # EVALUATION
+            ("evaluation.submit", "Submit Evaluation", "EVALUATION"),
+            ("evaluation.assign", "Assign Evaluation", "EVALUATION"),
+
+            # BOOTCAMP
+            ("bootcamp.session.create", "Create Bootcamp Session", "BOOTCAMP"),
+
+            # INCUBATION
+            ("incubation.assign_mentor", "Assign Mentor", "INCUBATION"),
+
+            # ADMIN
+            ("user.manage", "Manage Users", "ADMIN"),
+            ("season.manage", "Manage Season", "SEASON"),
+        ]
+
+        for code, name, module in permissions:
+            Permission.objects.update_or_create(
+                code=code,
+                defaults={
+                    "name": name,
+                    "module": module,
+                    "is_active": True
+                }
+            )
+
+    # ------------------ ROLE PERMISSIONS ------------------
+
+    def assign_permissions(self):
+        role_permissions_map = {
+
+            SystemRoles.ADMIN: [
+                "idea.submit",
+                "idea.view",
+                "evaluation.submit",
+                "evaluation.assign",
+                "bootcamp.session.create",
+                "incubation.assign_mentor",
+                "user.manage",
+                "season.manage",
+                
+            ],
+
+            SystemRoles.SECRETARY: [
+                "idea.view",
+                "bootcamp.session.create",
+                
+            ],
+
+            SystemRoles.EVALUATOR: [
+                "evaluation.submit",
+            ],
+
+            SystemRoles.VOLUNTEER: [
+                "idea.view",
+            ],
+
+            SystemRoles.IDEA_OWNER: [
+                "idea.submit",
+                "idea.view",
+            ],
+        }
+
+        for role_code, permissions in role_permissions_map.items():
+            role = Role.objects.get(code=role_code)
+
+            for perm_code in permissions:
+                permission = Permission.objects.get(code=perm_code)
+
+                RolePermission.objects.get_or_create(
+                    role=role,
+                    permission=permission
+                )
