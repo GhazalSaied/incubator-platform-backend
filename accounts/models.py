@@ -5,7 +5,6 @@ from .managers import UserManager
 import random
 from datetime import timedelta
 from django.utils import timezone
-
 #/////////////////////////// USER MODEL /////////////////////////////////////
 
 class User(AbstractBaseUser, PermissionsMixin, BaseModel):
@@ -31,12 +30,36 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     objects = UserManager()
     @property
     def role_codes(self):
-        return list(
+       now = timezone.now()
+       return list(
             self.userrole_set.filter(is_active=True)
+            .filter(
+                models.Q(expires_at__isnull=True) |
+                models.Q(expires_at__gt=now)
+            )
             .select_related("role")
             .values_list("role__code", flat=True)
         )
 
+    def get_permissions(self):
+        if hasattr(self, "_cached_permissions"):
+            return self._cached_permissions
+
+    
+
+        now = timezone.now()
+
+        perms = Permission.objects.filter(
+            rolepermission__role__userrole__user=self,
+            rolepermission__role__userrole__is_active=True,
+            is_active=True
+        ).filter(
+            models.Q(rolepermission__role__userrole__expires_at__isnull=True) |
+            models.Q(rolepermission__role__userrole__expires_at__gt=now)
+        ).values_list("code", flat=True).distinct()
+
+        self._cached_permissions = set(perms)
+        return self._cached_permissions
     def __str__(self):
         return self.email
     
@@ -47,7 +70,7 @@ class Role(BaseModel):
     name_ar = models.CharField(max_length=100)
     name_en = models.CharField(max_length=100)
     code = models.CharField(max_length=50, unique=True)
-
+    is_system_role = models.BooleanField(default=False)
     description = models.TextField(null=True, blank=True)
     is_volunteer_role = models.BooleanField(default=False)
 
@@ -91,3 +114,40 @@ class PasswordResetOTP(models.Model):
     @staticmethod
     def generate_otp():
         return str(random.randint(1000, 9999))
+    
+    
+#/////////////////////////// PERMISSION MODEL /////////////////////////////////////
+
+class Permission(models.Model):
+
+    code = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=255)
+
+    module = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.code
+
+#/////////////////////////// ROLE PERMISSION /////////////////////////////////////
+
+class RolePermission(models.Model):
+
+    role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    permission = models.ForeignKey(Permission, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('role', 'permission')
+        
+   #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ USER PERMISSION (FOR OVERRIDES) \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\     
+class UserPermission(models.Model):
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    permission = models.ForeignKey(Permission, on_delete=models.CASCADE)
+
+    granted = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('user', 'permission')

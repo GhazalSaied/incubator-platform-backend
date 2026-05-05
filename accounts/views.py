@@ -1,6 +1,5 @@
 from django.contrib.auth import logout
 from django.shortcuts import get_object_or_404
-from core.permissions import IsAdmin
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import generics, permissions

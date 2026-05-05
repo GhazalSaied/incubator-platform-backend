@@ -2,8 +2,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from core.permissions import IsAdminOrSecretary
-
 from bootcamp.serializers import (
     SessionAttendanceSerializer,
     AttendanceStatsSerializer,
@@ -19,8 +17,7 @@ from admin_panel.bootcamp.attendance.services import (
 
 #\\\\session attendance\\\\\\
 class SessionAttendanceListView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
-
+    
     def get(self, request, session_id):
         queryset = get_session_attendance(session_id)
         serializer = SessionAttendanceSerializer(queryset, many=True)

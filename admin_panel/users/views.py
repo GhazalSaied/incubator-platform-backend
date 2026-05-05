@@ -2,7 +2,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from accounts.models import Role, User
-from core.permissions import IsAdminOrSecretary
 from django.shortcuts import get_object_or_404
 from .serializers import AdminUserSerializer,CreateUserSerializer, WorkshopActionSerializer
 from rest_framework import status
@@ -23,8 +22,7 @@ class AdminUserListView(APIView):
 
 
 class CreateUserView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
-
+   
     def post(self, request):
         serializer = CreateUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -48,7 +46,7 @@ class CreateUserView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض الادوار\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class RoleListAPIView(APIView):
     
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+   
     def get(self, request):
 
         roles = Role.objects.exclude(code="DIRECTOR")
@@ -64,7 +62,7 @@ class RoleListAPIView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تحديث أدوار المستخدم \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class UpdateUserRolesAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+ 
     
 
     def put(self, request, user_id):

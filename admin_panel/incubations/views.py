@@ -2,7 +2,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from admin_panel.seasons.services.season_admin_service import SeasonAdminService
-from core.permissions import IsAdminOrSecretary,IsAdmin
 from ideas.serializers import IdeaDetailSerializer
 from .services import GraduationQueryService, GraduationService, IncubationDashboardService, IncubationNotesService, IncubationQueryService,IncubationAssignmentService,IncubationMeetingService
 from rest_framework.permissions import IsAuthenticated
@@ -77,31 +76,7 @@ class RemoveMentorsView(APIView):
             "deleted_count": result["deleted_count"]
         })
         
-#\\\\\\\\\\\\\\عرض مقيمين لاضافة مقيم\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-
-class AvailableEvaluatorsView(APIView):
-
-    def get(self, request):
-
-        specialization = request.query_params.get("specialization")
-        fields = request.query_params.get("fields")
-
-        season = season_phase_service.SeasonPhaseService.get_current_season()
-
-        if not season:
-            return Response(
-                {"error": "لا يوجد موسم حالي"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        data = IncubationQueryService.get_available_evaluators_data(
-            season=season,
-            specialization=specialization,
-            fields=fields
-        )
-
-        return Response(data)
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\تعيين مقيمين للفكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
@@ -158,7 +133,7 @@ class AssignMentorsView(APIView):
 
 class  ScheduleMeetingView(APIView):
 
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+   
     def post(self, request, idea_id):
         permissions = SeasonPhaseService.get_phase_permissions()
         if not permissions["can_schedule_incubation_meetings"]:

@@ -2,7 +2,6 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from ideas.models import Season,Idea
 from ideas.serializers import IdeaDetailSerializer,SeasonReviewSerializer
-from core.permissions import IsAdminOrSecretary
 from django.shortcuts import get_object_or_404
 from admin_panel.seasons.services.season_admin_service import SeasonAdminService
 from admin_panel.seasons.services.season_query_service import SeasonQueryService

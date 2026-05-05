@@ -4,10 +4,12 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
 from django.shortcuts import get_object_or_404
+
+from core.permissions import CanManageSeason
 from .services.season_query_service import SeasonQueryService
 from .services.season_admin_service import SeasonAdminService
 from ideas.models import Season
-from core.permissions import IsAdmin,IsAdminOrSecretary
+
 
 from ideas.serializers import (
     SeasonCreateSerializer,SeasonListSerializer,SeasonDetailsSerializer
@@ -23,8 +25,8 @@ from ideas.phases import SeasonPhase
 
 #\\\\\\\\\\\\\\انشاء موسم\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class CreateSeasonAPIView(APIView):
-    
-    permission_classes = [IsAuthenticated, IsAdminOrSecretary]
+    permission_classes = [IsAuthenticated, CanManageSeason]
+   
     def post(self, request):
 
         serializer = SeasonCreateSerializer(data=request.data)
@@ -40,7 +42,7 @@ class CreateSeasonAPIView(APIView):
 #\\\\\\Publish Season\\\\
 
 class PublishSeasonAPIView(APIView):
-    
+    permission_classes = [IsAuthenticated, CanManageSeason]
     def post(self, request, pk):
         season = get_object_or_404(Season, pk=pk)
 
@@ -54,7 +56,7 @@ class PublishSeasonAPIView(APIView):
 #\\\\\\\Close Season\\\\
 class CloseSubmissionAPIView(APIView):
     
-
+    permission_classes = [IsAuthenticated, CanManageSeason]
     def post(self, request, season_id):
 
         season = get_object_or_404(Season, id=season_id)
@@ -68,7 +70,7 @@ class CloseSubmissionAPIView(APIView):
 #\\\\\List\\\\
 class SeasonListAPIView(APIView):
     
-    
+    permission_classes = [IsAuthenticated, CanManageSeason]
 
     def get(self, request):
         year = request.query_params.get("year")
@@ -82,7 +84,7 @@ class SeasonListAPIView(APIView):
 #\\\\\Detail\\\\
 class SeasonDetailsAPIView(APIView):
     
-
+    permission_classes = [IsAuthenticated, CanManageSeason]
     def get(self, request, pk):
         season = get_object_or_404(Season, pk=pk)
 

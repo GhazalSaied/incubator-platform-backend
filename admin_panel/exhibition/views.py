@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
-from core.permissions import IsAdminOrSecretary, IsAdmin
+
 from ideas.models import ExhibitionForm, ExhibitionQuestion, ExhibitionSubmission, Season
 from ideas.services.season_phase_service import SeasonPhaseService
 from .services.management_service import ExhibitionAdminService, ExhibitionSubmissionManagementService
