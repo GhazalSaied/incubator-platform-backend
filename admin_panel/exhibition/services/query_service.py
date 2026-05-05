@@ -184,17 +184,24 @@ class ExhibitionSubmissionQueryService:
 class ExhibitionHistoryQueryService:
 
     @staticmethod
-    def list_exhibitions():
+    def list_exhibitions(year=None):
 
         seasons = Season.objects.exclude(
             exhibition_datetime=None
-        ).order_by("-exhibition_datetime")
+        )
+
+        # ✅ فلترة حسب السنة إذا موجودة
+        if year:
+            seasons = seasons.filter(
+                exhibition_datetime__year=year
+            )
+
+        seasons = seasons.order_by("-exhibition_datetime")
 
         data = []
 
         for season in seasons:
 
-            # 🔥 عدد المشاريع المشاركة
             projects_count = season.ideas.filter(
                 status=IdeaStatus.GRADUATED_POSITIVE
             ).count()
@@ -203,11 +210,14 @@ class ExhibitionHistoryQueryService:
                 "id": season.id,
                 "title": f"معرض خريجين {season.name}",
                 "date": season.exhibition_datetime.strftime("%d/%m/%Y"),
+
+                # ✅ الجديد
+                "year": season.exhibition_datetime.year,
+
                 "projects_count": projects_count
             })
 
         return data
-    
 
 
     @staticmethod

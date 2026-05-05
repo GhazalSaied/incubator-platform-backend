@@ -1,6 +1,7 @@
 from django.db import transaction
 from ideas.models import Idea, IdeaStatus, Season , IdeaAuditLog , TeamRequest ,TeamStatus
-
+from accounts.role_service import RoleService
+from accounts.constants import SystemRoles
 from ideas.services.idea_validation import IdeaFormValidator
 from core.events import EventBus
 from ideas.services.season_phase_service import SeasonPhaseService
@@ -54,7 +55,7 @@ class IdeaService:
             answers=answers,
             status=IdeaStatus.DRAFT
         )
-
+        
 
         # proper state transition
         IdeaStateService.change_status(
@@ -62,6 +63,10 @@ class IdeaService:
             to_status=IdeaStatus.SUBMITTED,
             user=user,
             reason="initial_submission"
+        )
+        RoleService.assign_role(
+            user=user,
+            role_code=SystemRoles.IDEA_OWNER
         )
 
         EventBus.emit(

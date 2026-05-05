@@ -172,7 +172,7 @@ class EvaluationDetailsService:
                 "evaluator_image": getattr(evaluator, "user.avatar", None),
 
                 # 🟢 اختصاص (من البروفايل)
-                "specialization": profile.primary_skills if profile else None,
+                "specialization": profile.specialization if profile else None,
 
                 # 🟢 تاريخ الجلسة
 

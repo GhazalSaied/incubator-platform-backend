@@ -8,29 +8,13 @@ from admin_panel.seasons.services.season_query_service import SeasonQueryService
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-
-class SeasonReviewAPIView(ListAPIView):
-    
-
-    def get(self, request, pk):
-        ordering = request.query_params.get("ordering")
-
-        season = get_object_or_404(Season, pk=pk)
-
-        data = SeasonQueryService.get_review_submissions_data(
-            season,
-            ordering
-        )
-
-        serializer = SeasonReviewSerializer(instance=data)
-
-        return Response(serializer.data)
     
 
 #\\\\\\\\\\\\\\\\\\\   IDEA DETAILS \\\\\\\\\\\\\\\\\\
 
 class IdeaDetailsAPIView(APIView):
 
+   
     def get(self, request, pk):
         idea = Idea.objects.get(pk=pk)
 
@@ -38,7 +22,6 @@ class IdeaDetailsAPIView(APIView):
 
         # 🔥 جلب أعضاء الفريق
         team_members = idea.team_members.select_related("user").all()
-
         team_data = [
             {
                 "name": member.user.full_name,
@@ -46,9 +29,9 @@ class IdeaDetailsAPIView(APIView):
             }
             for member in team_members
         ]
-
+        expected_duration = idea.answers.get("expected_duration")
         # 🔥 دمج البيانات
         response_data = serializer.data
         response_data["team_members"] = team_data
-
+        response_data["expected_duration"] = expected_duration or "غير محدد"
         return Response(response_data)

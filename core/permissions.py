@@ -20,6 +20,10 @@ PERMISSIONS = {
     "candecidebootcamp.manage": "Manage Candidate Bootcamp",
     "evaluation.manage": "Manage Evaluations",
     "evaluation_decision.manage": "Manage Evaluation Decisions",
+    "incubtion.manage": "Manage Incubation",
+    "incubtion_decision.manage": "Manage Incubation Decisions",
+    "exhibition.manage": "Manage Exhibition",
+    "can_decide_exhibition": "Can Decide Exhibition",
 }
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 PHASE_GATED_PERMISSIONS = {
@@ -29,6 +33,8 @@ PHASE_GATED_PERMISSIONS = {
     "incubation.assign_mentor": SeasonPhase.INCUBATION,
     "candecidebootcamp.manage": SeasonPhase.BOOTCAMP,
     "evaluation_decision.manage": SeasonPhase.EVALUATION,
+    "incubtion_decision.manage": SeasonPhase.INCUBATION,
+    "can_decide_exhibition": SeasonPhase.EXHIBITION,
 }
 
 
@@ -108,3 +114,16 @@ class CanManageEvaluations(HasPermission):
     
 class CanManageEvaluationDecisions(HasPermission):
     required_permission = "evaluation_decision.manage"  
+    
+class CanManageIncubation(HasPermission):
+    required_permission = "incubtion.manage"
+    
+    
+class CanManageIncubationDecisions(HasPermission):
+    required_permission = "incubtion_decision.manage"
+    
+class CanManageExhibition(HasPermission):
+    required_permission = "exhibition.manage"
+    
+class CanDecideExhibition(HasPermission):
+    required_permission = "can_decide_exhibition"

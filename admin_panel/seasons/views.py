@@ -83,12 +83,18 @@ class SeasonListAPIView(APIView):
     
 #\\\\\Detail\\\\
 class SeasonDetailsAPIView(APIView):
+
     
-    permission_classes = [IsAuthenticated, CanManageSeason]
+
     def get(self, request, pk):
         season = get_object_or_404(Season, pk=pk)
 
-        data = SeasonQueryService.get_season_details(season)
+        ordering = request.query_params.get("ordering")
+
+        data = SeasonQueryService.get_season_details(
+            season,
+            ordering=ordering
+        )
 
         serializer = SeasonDetailsSerializer(data)
 

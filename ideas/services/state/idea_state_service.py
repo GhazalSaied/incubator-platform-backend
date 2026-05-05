@@ -5,7 +5,8 @@ from ideas.services.season_phase_service import SeasonPhaseService
 from core.events import EventBus
 from ideas.models import IdeaStatus
 from ideas.phases import SeasonPhase
-
+from accounts.role_service import RoleService
+from accounts.constants import SystemRoles
 
 
 class IdeaStateService:
@@ -144,6 +145,11 @@ class IdeaStateService:
         # 4. apply state
         idea.status = to_status
         idea.save(update_fields=["status"])
+        if to_status == IdeaStatus.INCUBATION:
+            RoleService.assign_role(
+            user=idea.owner,
+            role_code=SystemRoles.INCUBATOR 
+        )
 
         # 5. audit (single source)
         IdeaAuditLog.objects.create(

@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from admin_panel.seasons.services.season_admin_service import SeasonAdminService
+from core.permissions import CanManageIncubation, CanManageIncubationDecisions
 from ideas.serializers import IdeaDetailSerializer
 from .services import GraduationQueryService, GraduationService, IncubationDashboardService, IncubationNotesService, IncubationQueryService,IncubationAssignmentService,IncubationMeetingService
 from rest_framework.permissions import IsAuthenticated
@@ -15,7 +16,7 @@ from ideas.services.season_phase_service import SeasonPhaseService
 
 #\\\\\\\\\\\\\\\\\\عرض المشاريع المحتضنة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class IncubationProjectsView(APIView):
-
+    permission_classes = [IsAuthenticated,CanManageIncubation]
     def get(self, request):
         data = IncubationDashboardService.get_projects()
         return Response(data)
@@ -25,6 +26,7 @@ class IncubationProjectsView(APIView):
 
 
 class IdeaMentorsView(APIView):
+    permission_classes = [IsAuthenticated,CanManageIncubation]
 
     def get(self, request, idea_id):
 
@@ -41,14 +43,9 @@ class IdeaMentorsView(APIView):
     
 
 class RemoveMentorsView(APIView):
-
+    permission_classes = [IsAuthenticated,CanManageIncubationDecisions]
     def post(self, request, idea_id):
-        permissions = SeasonPhaseService.get_phase_permissions()
-        if not permissions["can_remove_mentors"]:
-            return Response(
-                {"error": "لا يمكن حذف المقيمين في هذه المرحلة"},
-                status=status.HTTP_403_FORBIDDEN
-            )
+    
         mentor_ids = request.data.get("mentor_ids", [])
 
         try:
@@ -82,14 +79,8 @@ class RemoveMentorsView(APIView):
 
 class AssignMentorsView(APIView):
     
-
+    permission_classes = [IsAuthenticated,CanManageIncubationDecisions]
     def post(self, request, idea_id):
-        permissions = SeasonPhaseService.get_phase_permissions()
-        if not permissions["can_assign_mentors"]:
-            return Response(
-                {"error": "لا يمكن تعيين مقيمين في هذه المرحلة"},
-            status=status.HTTP_403_FORBIDDEN
-        )
 
         mentor_user_ids = request.data.get("mentor_user_ids", [])
 
@@ -133,15 +124,8 @@ class AssignMentorsView(APIView):
 
 class  ScheduleMeetingView(APIView):
 
-   
+    permission_classes = [IsAuthenticated,CanManageIncubationDecisions]
     def post(self, request, idea_id):
-        permissions = SeasonPhaseService.get_phase_permissions()
-        if not permissions["can_schedule_incubation_meetings"]:
-            return Response(
-                {"error": "لا يمكن جدولة جلسات متابعة في هذه المرحلة"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
         idea = get_object_or_404(
             Idea,
             id=idea_id
@@ -170,7 +154,8 @@ class  ScheduleMeetingView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض ملاحظات اخر جلسة\\\\\\\\\\\\\\\\\\\\\\
 
 class IdeaLatestReviewView(APIView):
-    
+    permission_classes = [IsAuthenticated,CanManageIncubation]
+
     def get(self, request, idea_id):
 
         try:
@@ -188,15 +173,9 @@ class IdeaLatestReviewView(APIView):
         return Response(data)
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تخريج فكرة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class GraduateIdeaView(APIView):
-    
+    permission_classes = [IsAuthenticated,CanManageIncubationDecisions]
     
     def post(self, request, idea_id):
-        permissions = SeasonPhaseService.get_phase_permissions()
-        if not permissions["can_graduate_from_incubation"]:
-            return Response(
-                {"error": "لا يمكن تخريج الفكرة في هذه المرحلة"},
-                status=status.HTTP_403_FORBIDDEN
-            )
 
         action = request.data.get("action")  # positive / negative
 
@@ -229,7 +208,7 @@ class GraduateIdeaView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class NegativeGraduatedProjectsView(APIView):
 
-
+    permission_classes = [IsAuthenticated,CanManageIncubation]
     def get(self, request):
 
         search = request.query_params.get("search")
