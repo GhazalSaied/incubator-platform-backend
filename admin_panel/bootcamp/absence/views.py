@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
+from core.permissions import CanManageBootcamp, CanManageCandidateBootcamp
+
 from .services import (
     AbsenceQueryService,
     process_absence_decision
@@ -16,7 +18,7 @@ from bootcamp.serializers import (
 
 class AbsenceRequestsListView(APIView):
     
-
+    parser_classes = [IsAuthenticated, CanManageBootcamp]
     def get(self, request):
         query = request.query_params.get("search")
 
@@ -27,7 +29,7 @@ class AbsenceRequestsListView(APIView):
     
 #\\\\AbsenceDecision\\\\\\\\\\\\\
 class AbsenceDecisionView(APIView):
-
+    permission_classes = [IsAuthenticated, CanManageCandidateBootcamp]
     def post(self, request, pk):
         serializer = AbsenceDecisionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

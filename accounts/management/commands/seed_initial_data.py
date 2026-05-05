@@ -53,6 +53,10 @@ class Command(BaseCommand):
             # ADMIN
             ("user.manage", "Manage Users", "ADMIN"),
             ("season.manage", "Manage Season", "SEASON"),
+            ("bootcamp.manage", "Manage Bootcamp", "BOOTCAMP"),
+            ("candecidebootcamp.manage", "Manage Candidate Bootcamp", "BOOTCAMP"),
+            ("evaluation.manage", "Manage Evaluations", "EVALUATION"),
+            ("evaluation_decision.manage", "Manage Evaluation Decisions", "EVALUATION"),
         ]
 
         for code, name, module in permissions:
@@ -75,7 +79,10 @@ class Command(BaseCommand):
                 "evaluation.submit",
                 "user.manage",
                 "season.manage",
-                
+                "bootcamp.manage",
+                "candecidebootcamp.manage",
+                "evaluation.manage",
+                "evaluation_decision.manage",
             ],
 
             SystemRoles.SECRETARY: [

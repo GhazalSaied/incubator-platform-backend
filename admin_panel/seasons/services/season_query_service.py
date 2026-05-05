@@ -48,6 +48,7 @@ class SeasonQueryService:
 
         return {
             "id": season.id,
+            "year": season.start_date.year,
             "name": season.name,
             "start_date": season.start_date,
             "end_date": season.end_date,
@@ -196,7 +197,7 @@ class SeasonQueryService:
                 "id": idea.id,
                 "project_name": idea.title,
                 "submitted_by": idea.owner.full_name,
-                "submitted_at": idea.created_at,
+                "submitted_at": idea.created_at.strftime("%d/%m/%Y"),
             }
             for idea in qs
         ]

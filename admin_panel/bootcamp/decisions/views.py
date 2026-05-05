@@ -15,13 +15,14 @@ from admin_panel.bootcamp.decisions.services import (
     end_bootcamp_sessions,
     process_bootcamp_decision
 )
+from core.permissions import CanManageBootcamp, CanManageCandidateBootcamp
 from ideas.models import Season
 from ideas.services.season_phase_service import SeasonPhaseService
 
 #\\\\\\\\\BootcampIdeasList\\\\\
 class BootcampIdeasListView(APIView):
     
-
+    parser_classes = [IsAuthenticated, CanManageBootcamp]
     def get(self, request):
         search = request.query_params.get("search")
 
@@ -32,12 +33,8 @@ class BootcampIdeasListView(APIView):
 #\\\\\\\BootcampDecision\\\\\\\\\
 
 class BootcampDecisionView(APIView):
-    
+    permission_classes = [IsAuthenticated, CanManageCandidateBootcamp]
     def post(self, request, idea_id):
-        permissions = SeasonPhaseService.get_phase_permissions()
-        if not permissions["can_make_bootcamp_decisions"]:
-            raise ValidationError("لا يمكن اتخاذ قرارات في هذه المرحلة")
-
 
         serializer = BootcampDecisionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -60,12 +57,9 @@ class BootcampDecisionView(APIView):
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\اعلان انتهاء جلسات المعسكر\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  
 class EndBootcampSessionsView(APIView):
+    permission_classes = [IsAuthenticated, CanManageCandidateBootcamp]
     @transaction.atomic
     def post(self, request, season_id):
-        permissions=SeasonPhaseService.get_phase_permissions()
-        if not permissions["can_decide_end_of_bootcamp_sessions"]:
-            raise ValidationError("لا يمكن اتخاذ هذا القرار في هذه المرحلة")
-
         try:
             season = Season.objects.get(id=season_id)
         except Season.DoesNotExist:

@@ -56,7 +56,7 @@ class PublishSeasonAPIView(APIView):
 #\\\\\\\Close Season\\\\
 class CloseSubmissionAPIView(APIView):
     
-    permission_classes = [IsAuthenticated, CanManageSeason]
+   
     def post(self, request, season_id):
 
         season = get_object_or_404(Season, id=season_id)

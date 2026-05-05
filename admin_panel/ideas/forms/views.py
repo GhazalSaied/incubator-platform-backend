@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.generics import ListCreateAPIView
+from core.permissions import CanManageSeason
 from ideas.serializers import CreateFormSerializer, FormSerializer,CreateQuestionSerializer,SeasonFormDesignSerializer,CreateChoiceSerializer,FormQuestion
 
 from rest_framework.generics import RetrieveUpdateDestroyAPIView
@@ -16,7 +17,7 @@ from admin_panel.ideas.forms.services import FormBuilderService
 
 #\\\\creat form\\\
 class CreateFormAPIView(APIView):
-    
+    permission_classes = [IsAuthenticated, CanManageSeason]
     def post(self, request, season_id):
 
         serializer = CreateFormSerializer(data=request.data)
@@ -34,7 +35,7 @@ class CreateFormAPIView(APIView):
    #\\\\\\\\\\\\\\\\\انشاء سؤال تعديل حذف\\\\\\\\\\\\\\\\\
 class FormBuilderAPIView(APIView):
     
-
+    permission_classes = [IsAuthenticated, CanManageSeason]
     def put(self, request, season_id):
 
         season = get_object_or_404(Season, id=season_id)
@@ -52,7 +53,7 @@ class FormBuilderAPIView(APIView):
         
 #\\\\\\\\\\\\\\\\\معاينة النموذج\\\\\\\\\\\\\\\\\\\\\\\\
 class FormPreviewAPIView(APIView):
-    
+    permission_classes = [IsAuthenticated, CanManageSeason]
     def get(self, request, season_id):
 
         season = get_object_or_404(Season, id=season_id)
@@ -68,7 +69,7 @@ class FormPreviewAPIView(APIView):
 #\\\\\\\\\\\\\\\\\عرض النموذج المصمم للموسم مع مراعاة المرحل \\\\\\\\\\\\\\\\\\\\\\
 class SeasonFormDesignAPIView(APIView):
     
-
+    permission_classes = [IsAuthenticated, CanManageSeason]
     def get(self, request, pk):
         season = get_object_or_404(Season, pk=pk)
 

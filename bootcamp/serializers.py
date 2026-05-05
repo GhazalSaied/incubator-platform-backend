@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import BootcampSession, BootcampAbsenceRequest, BootcampAttendance
 from ideas.models import Idea
 from admin_panel.bootcamp.sessions.services import BootcampSessionQueryService
-
+from django.db.models import Q
 # USER SIDE 
 
 
@@ -19,6 +19,8 @@ class BootcampSessionSerializer(serializers.ModelSerializer):
             "trainer",
             "trainer_name",
             "date",
+            "start_time",
+            "end_time",
             "time_range",
             "tasks",
             "location",
@@ -30,14 +32,36 @@ class BootcampSessionSerializer(serializers.ModelSerializer):
     def get_time_range(self, obj):
         return BootcampSessionQueryService.get_time_range(obj)
 
+    
+
+  
+
     def validate(self, data):
         start = data.get("start_time")
         end = data.get("end_time")
+        date = data.get("date")
 
         if start and end and start >= end:
             raise serializers.ValidationError(
-                "وقت البداية يجب أن يكون قبل النهاية"
-            )
+            "وقت البداية يجب أن يكون قبل النهاية"
+           )
+
+        if start and end and date:
+
+            qs = BootcampSession.objects.filter(date=date)
+
+            if self.instance:
+                qs = qs.exclude(id=self.instance.id)
+
+            overlap = qs.filter(
+                Q(start_time__lt=end) & Q(end_time__gt=start)
+            ).exists()
+
+            if overlap:
+                raise serializers.ValidationError(
+                "يوجد جلسة أخرى ضمن نفس التوقيت في هذا اليوم"
+                )
+
         return data
     
 
