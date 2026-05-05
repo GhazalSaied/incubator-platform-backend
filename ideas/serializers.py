@@ -34,7 +34,7 @@ class IdeaFormSerializer(serializers.ModelSerializer):
 class IdeaCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Idea
-        fields = ['title', 'description', 'answers']
+        fields = ['title', 'description', 'target_audience','sector','answers']
 
 #/////////////////////////// PUBLISH FORM /////////////////////////////////
 
@@ -118,6 +118,76 @@ class TeamRequestSerializer(serializers.ModelSerializer):
         model = TeamRequest
         fields = "__all__"
         
+
+
+
+
+
+# ////////////////////////////////////////////////////////////////
+# SHARED PROJECT DETAILS SERIALIZER
+# Used in multiple places across the platform
+# ////////////////////////////////////////////////////////////////
+
+class ProjectDetailsSerializer(serializers.ModelSerializer):
+    """
+    Unified project details serializer.
+
+    Used for:
+    - Evaluation assignments details
+    - Incubation review details
+    - Any shared project details screen
+    """
+
+    # Section 1 → Project Information
+    project_title = serializers.CharField(source="title", read_only=True)
+    editor_name = serializers.CharField(source="owner.full_name", read_only=True)
+    product_type = serializers.SerializerMethodField()
+
+    # Section 2 → Owner Personal Information
+    owner_name = serializers.CharField(source="owner.full_name", read_only=True)
+    phone = serializers.SerializerMethodField()
+    specialization = serializers.SerializerMethodField()
+    email = serializers.CharField(source="owner.email", read_only=True)
+
+    # Section 3 → Idea Information
+    idea_title = serializers.CharField(source="title", read_only=True)
+    target_audience = serializers.CharField(read_only=True)
+    description = serializers.CharField(read_only=True)
+    problem = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Idea
+        fields = [
+            "project_title",
+            "editor_name",
+            "product_type",
+            "owner_name",
+            "phone",
+            "specialization",
+            "email",
+            "idea_title",
+            "target_audience",
+            "description",
+            "problem",
+        ]
+
+    def get_product_type(self, obj):
+        return obj.answers.get("product_type")
+
+    def get_phone(self, obj):
+        return obj.answers.get("phone")
+
+    def get_specialization(self, obj):
+        return obj.answers.get("specialization")
+
+    def get_problem(self, obj):
+        return obj.answers.get("problem")
+
+
+
+
+
+
         
  #\\\\\\\\\\\\\\\\\\SeasonStatusSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class SeasonStatusSerializer(serializers.Serializer):
@@ -143,7 +213,8 @@ class SeasonCreateSerializer(serializers.Serializer):
     start_date = serializers.DateField()
     end_date = serializers.DateField()
     
-#\\\\\\SeasonPublishSerializer\\\\
+#\\\\\\  SeasonPublishSerializer  \\\\
+
 class SeasonPublishSerializer(serializers.ModelSerializer):
     class Meta:
         model = Season
@@ -156,7 +227,8 @@ class SeasonPublishSerializer(serializers.ModelSerializer):
     
     
     
-#\\\\\\\\\\\\\\\IdeaListSerialize\\\\\\\\\\\
+#\\\\\\\\\\\\\\\ IdeaListSerialize \\\\\\\\\\\
+
 class IdeaListSerializer(serializers.ModelSerializer):
     owner_name = serializers.CharField(source="owner.full_name", read_only=True)
 
@@ -172,6 +244,7 @@ class IdeaListSerializer(serializers.ModelSerializer):
         
         
 #\\\\\\\\\\\\\\\\\\\\\SeasonDetailsSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
 class SeasonDetailsSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
@@ -215,6 +288,8 @@ class SeasonInfoSerializer(serializers.Serializer):
 
     show_remaining_days = serializers.BooleanField()
     show_evaluation_count = serializers.BooleanField()
+
+    
 class SeasonFormDesignSerializer(serializers.Serializer):
     season_info = SeasonInfoSerializer()
     form = FormSerializer()
@@ -230,6 +305,7 @@ class IdeaRowSerializer(serializers.Serializer):
 class SeasonReviewSerializer(serializers.Serializer):
     season_info = SeasonInfoSerializer()
     ideas = IdeaRowSerializer(many=True)   
+
 
 class CreateFormSerializer(serializers.Serializer):
     title = serializers.CharField()

@@ -4,9 +4,12 @@ from core.exceptions import BusinessLogicException
 
 class IdeaFormValidator:
 
-    def __init__(self, form: IdeaForm, answers: dict):
+    STATIC_FIELDS = {"title", "description", "target_audience", "sector"}
+
+    def __init__(self, form: IdeaForm, answers: dict ,  data: dict):
         self.form = form
         self.answers = answers
+        self.data = data
         self.errors = {}
 
     def validate(self):
@@ -14,6 +17,13 @@ class IdeaFormValidator:
 
         for question in questions:
             key = question.key
+
+            if key in self.STATIC_FIELDS:
+                value = self.data.get(key)
+
+                if question.required and not value:
+                    self.errors[key] = "هذا الحقل مطلوب"
+                    continue
 
             # Required check
             if question.required and key not in self.answers:
