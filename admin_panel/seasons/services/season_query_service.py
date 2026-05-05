@@ -80,7 +80,8 @@ class SeasonQueryService:
     # =============================
 
     @staticmethod
-    def get_season_details(season):
+    def get_season_details(season, ordering=None):
+
         phase_name = SeasonQueryService.get_phase_name(season)
 
         can_edit = phase_name == SeasonPhase.SUBMISSION
@@ -93,6 +94,9 @@ class SeasonQueryService:
         if phase_name == SeasonPhase.EVALUATION:
             evaluation_ideas_count = SeasonQueryService.get_evaluation_ideas_count(season)
 
+    # 🔥 هاي الإضافة
+        ideas = SeasonQueryService.get_season_ideas(season, ordering)
+
         return {
             "id": season.id,
             "name": season.name,
@@ -102,7 +106,10 @@ class SeasonQueryService:
             "ideas_count": SeasonQueryService.get_ideas_count(season),
             "phase": phase_name,
             "remaining_days": remaining_days,
-            "evaluation_ideas_count": evaluation_ideas_count
+            "evaluation_ideas_count": evaluation_ideas_count,
+
+        # 🔥 الجديد
+            "ideas": ideas
         }
 
     # =============================
@@ -202,17 +209,7 @@ class SeasonQueryService:
             for idea in qs
         ]
         
-    @staticmethod
-    def get_review_submissions_data(season, ordering=None):
-    
-        base_data = SeasonQueryService.get_form_design_data(season)
-
-        ideas = SeasonQueryService.get_season_ideas(season, ordering)
-
-        return {
-            "season_info": base_data["season_info"],
-            "ideas": ideas
-        }
+  
     @staticmethod
     def get_idea_details_with_form(idea):
         form = getattr(idea.season, "form", None)

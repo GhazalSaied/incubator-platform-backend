@@ -57,6 +57,10 @@ class Command(BaseCommand):
             ("candecidebootcamp.manage", "Manage Candidate Bootcamp", "BOOTCAMP"),
             ("evaluation.manage", "Manage Evaluations", "EVALUATION"),
             ("evaluation_decision.manage", "Manage Evaluation Decisions", "EVALUATION"),
+            ("incubtion.manage", "Manage Incubation", "INCUBATION"),
+            ("incubtion_decision.manage", "Manage Incubation Decisions", "INCUBATION"),
+            ("exhibition.manage", "Manage Exhibition", "EXHIBITION"),
+            ("can_decide_exhibition", "Can Decide Exhibition", "EXHIBITION"),
         ]
 
         for code, name, module in permissions:
@@ -83,6 +87,10 @@ class Command(BaseCommand):
                 "candecidebootcamp.manage",
                 "evaluation.manage",
                 "evaluation_decision.manage",
+                "incubtion.manage",
+                "incubtion_decision.manage",
+                "exhibition.manage",
+                "can_decide_exhibition",
             ],
 
             SystemRoles.SECRETARY: [

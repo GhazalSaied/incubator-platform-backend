@@ -78,6 +78,7 @@ class AssignEvaluatorsSerializer(serializers.Serializer):
 class MeetingDashboardSerializer(serializers.ModelSerializer):
 
     has_evaluators = serializers.SerializerMethodField()
+    meeting_date = serializers.SerializerMethodField()
 
     class Meta:
         model = Idea
@@ -86,12 +87,27 @@ class MeetingDashboardSerializer(serializers.ModelSerializer):
             "title",
             "sector",
             "target_audience",
-            "has_evaluators"
+            "has_evaluators",
+            "meeting_date"  
         ]
 
     def get_has_evaluators(self, obj):
         return obj.evaluation_assignments.exists()
-    
+
+    def get_meeting_date(self, obj):
+        assignments = obj.evaluation_assignments.all()
+
+        # فلترة اللي عندهم موعد
+        dates = [
+            a.meeting_date for a in assignments
+            if a.meeting_date is not None
+        ]
+
+        if not dates:
+            return "لم يحدد"
+
+        # رجع أقرب موعد
+        return min(dates).strftime("%Y/%m/%d %H:%M")
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\EvaluatorInfoSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class EvaluatorInfoSerializer(serializers.Serializer):
@@ -100,7 +116,7 @@ class EvaluatorInfoSerializer(serializers.Serializer):
     name = serializers.CharField(source="evaluator.full_name")
     image = serializers.ImageField(source="evaluator.avatar")
     specialization = serializers.CharField(
-        source="evaluator.volunteer_profile.volunteer_type"
+        source="evaluator.volunteer_profile.specialization"
     )
     
 #\\\\\\\\\\\\\\\\\\\SetMeetingSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\

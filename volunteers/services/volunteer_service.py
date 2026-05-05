@@ -1,3 +1,5 @@
+from accounts.constants import SystemRoles
+from accounts.role_service import RoleService
 from volunteers.models import (
     VolunteerProfile,
     ConsultationRequest,
@@ -143,6 +145,10 @@ class VolunteerService:
                 idea=idea,
                 user=user,
                 team_request=team_request
+            )
+            RoleService.assign_role(
+                user=user,
+                role_code=SystemRoles.INCUBATOR 
             )
 
             join_request.status = JoinRequest.ACCEPTED

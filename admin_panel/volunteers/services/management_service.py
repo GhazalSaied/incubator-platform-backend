@@ -4,6 +4,8 @@ from django.utils import timezone
 from dateutil import parser
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from accounts.constants import SystemRoles
+from accounts.role_service import RoleService
 from ideas.models import Season
 from volunteers.models import VolunteerProfile
 from django.utils import timezone
@@ -28,6 +30,13 @@ class VolunteerManagementService:
 
         v.status = VolunteerProfile.APPROVED
         v.save(update_fields=["status"])
+        RoleService.assign_role(
+            user= v.user,
+            role_code=SystemRoles.VOLUNTEER,
+            assigned_by= None
+        )
+
+
 
         return v
 

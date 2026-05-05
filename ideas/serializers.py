@@ -242,7 +242,11 @@ class IdeaListSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         
-        
+class IdeaRowSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    project_name = serializers.CharField()
+    submitted_by = serializers.CharField()
+    submitted_at = serializers.DateTimeField()      
 #\\\\\\\\\\\\\\\\\\\\\SeasonDetailsSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class SeasonDetailsSerializer(serializers.Serializer):
@@ -255,6 +259,9 @@ class SeasonDetailsSerializer(serializers.Serializer):
     phase = serializers.CharField()
     remaining_days = serializers.IntegerField(allow_null=True)
     evaluation_ideas_count = serializers.IntegerField(allow_null=True)
+
+    # 🔥 الجديد
+    ideas = IdeaRowSerializer(many=True)
     
 class ChoiceSerializer(serializers.Serializer):
     id = serializers.IntegerField()
@@ -295,11 +302,7 @@ class SeasonFormDesignSerializer(serializers.Serializer):
     form = FormSerializer()
     
     
-class IdeaRowSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    project_name = serializers.CharField()
-    submitted_by = serializers.CharField()
-    submitted_at = serializers.DateTimeField()
+
 
 
 class SeasonReviewSerializer(serializers.Serializer):
