@@ -16,6 +16,10 @@ PERMISSIONS = {
 
     "user.manage": "Manage Users",
     "season.manage": "Manage Season",
+    "bootcamp.manage": "Manage Bootcamp",
+    "candecidebootcamp.manage": "Manage Candidate Bootcamp",
+    "evaluation.manage": "Manage Evaluations",
+    "evaluation_decision.manage": "Manage Evaluation Decisions",
 }
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 PHASE_GATED_PERMISSIONS = {
@@ -23,6 +27,8 @@ PHASE_GATED_PERMISSIONS = {
     "evaluation.submit": SeasonPhase.EVALUATION,
     "bootcamp.session.create": SeasonPhase.BOOTCAMP,
     "incubation.assign_mentor": SeasonPhase.INCUBATION,
+    "candecidebootcamp.manage": SeasonPhase.BOOTCAMP,
+    "evaluation_decision.manage": SeasonPhase.EVALUATION,
 }
 
 
@@ -90,3 +96,15 @@ class CanManageUsers(HasPermission):
     
 class CanManageSeason(HasPermission):
     required_permission = "season.manage"
+
+class CanManageBootcamp(HasPermission):
+    required_permission = "bootcamp.manage"
+
+class CanManageCandidateBootcamp(HasPermission):
+    required_permission = "candecidebootcamp.manage"
+    
+class CanManageEvaluations(HasPermission):
+    required_permission = "evaluation.manage"
+    
+class CanManageEvaluationDecisions(HasPermission):
+    required_permission = "evaluation_decision.manage"  

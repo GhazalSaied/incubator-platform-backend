@@ -1,12 +1,12 @@
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from ideas.models import Season,Idea
-from ideas.serializers import IdeaDetailSerializer,SeasonReviewSerializer
+from ideas.serializers import IdeaDetailSerializer, ProjectDetailsSerializer,SeasonReviewSerializer
 from django.shortcuts import get_object_or_404
 from admin_panel.seasons.services.season_admin_service import SeasonAdminService
 from admin_panel.seasons.services.season_query_service import SeasonQueryService
 from rest_framework.response import Response
-
+from rest_framework.views import APIView
 
 
 class SeasonReviewAPIView(ListAPIView):
@@ -29,22 +29,26 @@ class SeasonReviewAPIView(ListAPIView):
 
 #\\\\\\\\\\\\\\\\\\\   IDEA DETAILS \\\\\\\\\\\\\\\\\\
 
-class IdeaDetailsAPIView(ListAPIView):
-    
+class IdeaDetailsAPIView(APIView):
 
     def get(self, request, pk):
-        idea = get_object_or_404(
-            Idea.objects.select_related("owner", "season")
-            .prefetch_related("season__form__questions__choices"),
-            pk=pk
-        )
+        idea = Idea.objects.get(pk=pk)
 
-        idea_data = IdeaDetailSerializer(idea).data
+        serializer = ProjectDetailsSerializer(idea)
 
-        # الفورم (Service)
-        answers = SeasonQueryService.get_idea_details_with_form(idea)
+        # 🔥 جلب أعضاء الفريق
+        team_members = idea.team_members.select_related("user").all()
 
-        return Response({
-            "idea": idea_data,
-            "form_answers": answers
-        })
+        team_data = [
+            {
+                "name": member.user.full_name,
+                "email": member.user.email
+            }
+            for member in team_members
+        ]
+
+        # 🔥 دمج البيانات
+        response_data = serializer.data
+        response_data["team_members"] = team_data
+
+        return Response(response_data)

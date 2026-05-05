@@ -6,19 +6,16 @@ from rest_framework.generics import ListAPIView, ValidationError
 
 from bootcamp.models import BootcampSession
 from bootcamp.serializers import BootcampSessionSerializer
+from core.permissions import CanManageBootcamp, CanManageCandidateBootcamp
 from ideas.models import Season
 from admin_panel.bootcamp.sessions.services import create_bootcamp_session
 from ideas.services.season_phase_service import SeasonPhaseService
 
 #\\\\انشاء جلسة للمعسكر\\\\\\\\
 class BootcampSessionCreateView(APIView):
-
+    permission_classes = [IsAuthenticated, CanManageCandidateBootcamp]
     def post(self, request, season_id):
-        permissions = SeasonPhaseService.get_phase_permissions()
-
-        if not permissions["can_add_sessions"]:
-            raise ValidationError("لا يمكن إضافة جلسات في هذه المرحلة")
-
+    
         try:
             season = Season.objects.get(id=season_id)
         except Season.DoesNotExist:
@@ -36,7 +33,7 @@ class BootcampSessionCreateView(APIView):
         
 #\\\\\\\عرض الجلسات \\\\\
 class BootcampSessionListView(ListAPIView):
-    
+    permission_classes = [IsAuthenticated, CanManageBootcamp]
     serializer_class = BootcampSessionSerializer
     def get_queryset(self):
         phase_id = self.request.query_params.get("phase_id")

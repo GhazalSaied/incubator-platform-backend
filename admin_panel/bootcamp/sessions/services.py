@@ -8,9 +8,6 @@ from django.db import transaction
 @transaction.atomic
 def create_bootcamp_session(serializer, season):
     phase = SeasonPhaseService.get_current_phase(season)
-
-    if not phase:
-        raise ValidationError("لا يوجد مرحلة حالية")
     session = serializer.save(phase=phase)
 
     # 🔥 Trigger Event

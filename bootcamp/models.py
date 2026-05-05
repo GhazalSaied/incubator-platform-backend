@@ -29,8 +29,8 @@ class BootcampSession(BaseModel):
     location = models.CharField(max_length=255,null=True)
     tasks = models.TextField(null=True)
     date = models.DateField(null=True)
-    start_time = models.DateTimeField(null=True, blank=True)
-    end_time = models.DateTimeField(null=True, blank=True)
+    start_time = models.TimeField(null=True, blank=True)
+    end_time = models.TimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     
     class Meta:
@@ -63,7 +63,8 @@ class BootcampAttendance(BaseModel):
         ],
         max_length=10
     )
-
+    submitted_at = models.DateTimeField(auto_now_add=True, null=True)
+    is_submitted = models.BooleanField(default=False)
     marked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     class Meta:
         unique_together = ('session', 'idea')

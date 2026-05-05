@@ -71,10 +71,22 @@ class BootcampIdeaQueryService:
 
 #\\\\decision logic\\\\\\
 
+
+def check_all_attendance_submitted(idea):
+    pending = BootcampAttendance.objects.filter(
+        idea=idea,
+        is_submitted=False
+    ).exists()
+
+    if pending:
+        raise ValidationError("لا يمكن اتخاذ قرار قبل إرسال جميع سجلات الحضور")
+    
 @transaction.atomic
 def process_bootcamp_decision(*, idea_id, decision, actor=None):
 
     idea = get_object_or_404(Idea, id=idea_id)
+    check_all_attendance_submitted(idea)
+
     if hasattr(idea, "bootcamp_decision"):
         raise ValidationError("تم اتخاذ القرار مسبقاً لهذه الفكرة")
 
