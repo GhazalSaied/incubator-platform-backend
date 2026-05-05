@@ -27,7 +27,9 @@ class SeasonReviewAPIView(ListAPIView):
 
         return Response(serializer.data)
     
-#\\\\IdeaDetail\\\\\
+
+#\\\\\\\\\\\\\\\\\\\   IDEA DETAILS \\\\\\\\\\\\\\\\\\
+
 class IdeaDetailsAPIView(ListAPIView):
     
 
@@ -40,7 +42,7 @@ class IdeaDetailsAPIView(ListAPIView):
 
         idea_data = IdeaDetailSerializer(idea).data
 
-        # 🔥 الفورم (Service)
+        # الفورم (Service)
         answers = SeasonQueryService.get_idea_details_with_form(idea)
 
         return Response({

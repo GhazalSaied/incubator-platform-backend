@@ -119,14 +119,15 @@ EVENTS = {
     },
 
     "evaluation_invitation_accepted": {
-        "target": "VOLUNTEER",
-        "payload": ["invitation"],
-        "action_url": "/evaluation-dashboard"
+        "target": "ADMIN",
+        "payload": ["invitation", "actor"],
+        "action_url": "/admin/evaluation/invitations"
     },
 
     "evaluation_invitation_rejected": {
         "target": "ADMIN",
-        "payload": ["invitation"]
+        "payload": ["invitation", "actor"],
+        "action_url": "/admin/evaluation/invitations"
     },
 
     "evaluation_joined_committee": {

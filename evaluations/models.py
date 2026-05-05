@@ -3,6 +3,7 @@ from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from common.models import BaseModel
 from ideas.models import Idea, Season
+from django.utils import timezone
 
 User = settings.AUTH_USER_MODEL
 
@@ -159,6 +160,12 @@ class EvaluationInvitation(BaseModel):
         default="PENDING"
     )
 
+    created_by = models.ForeignKey(
+        User,
+        on_delete= models.CASCADE,
+        null=True
+    )
+
     responded_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
@@ -208,6 +215,7 @@ class EvaluationAssignment(BaseModel):
 
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\ EVALUATION SETTINGS \\\\\\\\\\\\\\\\\\\\\\\\\\\
+
 class EvaluationSettings(models.Model):
 
     is_published = models.BooleanField(default=False)
@@ -238,3 +246,23 @@ class IncubationAssignment(models.Model):
 
     class Meta:
         unique_together = ("idea", "mentor")
+
+
+#/////////////////////////////// EVALUATION NOTES //////////////////////
+
+class EvaluationNote(models.Model):
+    evaluation = models.ForeignKey(
+        "evaluations.Evaluation",
+        on_delete=models.CASCADE,
+        related_name="evaluation_notes"
+    )
+
+    note = models.TextField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Evaluation Note #{self.id}"

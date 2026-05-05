@@ -40,7 +40,7 @@ class IdeaService:
         answers = data.get("answers", {})
 
         #  Dynamic Form Validation
-        validator = IdeaFormValidator(season.form, answers)
+        validator = IdeaFormValidator(season.form, answers ,  data=data )
         validator.validate()
 
         #  إنشاء الفكرة
@@ -49,6 +49,8 @@ class IdeaService:
             season=season,
             title=data.get("title"),
             description=data.get("description"),
+            target_audience=data.get("target_audience"),
+            sector=data.get("sector"),
             answers=answers,
             status=IdeaStatus.DRAFT
         )

@@ -3,6 +3,7 @@ from .models import (
     Evaluation, 
     IncubationReview,
     EvaluationScore,
+    EvaluationNote,
 
 )
 
@@ -43,6 +44,35 @@ class IncubationReviewSerializer(serializers.ModelSerializer):
         fields = [
             "meeting_date",
             "progress_score",
-            "notes"
+            "notes",
+            "is_submitted",
+            "submitted_at",
+            "created_at",
         ]
 
+        read_only_fields = [
+            "id",
+            "is_submitted",
+            "submitted_at",
+            "created_at",
+        ]
+
+#/////////////////////////// EVALUATION NOTES //////////////////////
+
+class EvaluationNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EvaluationNote
+        fields = [
+            "id",
+            "note",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+#///////////////////////// FORM OPEN SERIALIZER /////////////////////
+
+class EvaluationFormSerializer(serializers.Serializer):
+    is_published = serializers.BooleanField()
+    criteria = serializers.ListField()
+    scores = serializers.ListField()
+    is_submitted = serializers.BooleanField()

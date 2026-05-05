@@ -1,14 +1,20 @@
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from core.events import EventBus
+from django.shortcuts import get_object_or_404
 
 from evaluations.models import (
     Evaluation,
     EvaluationScore,
     EvaluationAssignment,
+    IncubationAssignment,
     EvaluationCriterion,
+    EvaluationNote,
+    EvaluationSettings,
+    IncubationReview,
 )
-
+from ideas.services.season_phase_service import SeasonPhaseService
+from ideas.models import Idea
 
 class EvaluationService:
 
@@ -33,19 +39,31 @@ class EvaluationService:
         if evaluation.is_submitted:
             raise ValidationError("لا يمكن تعديل تقييم تم إرساله")
 
-        evaluation.notes = data.get("notes", evaluation.notes)
-        evaluation.save()
 
         scores_data = data.get("scores", [])
-        criterion = EvaluationCriterion.objects.get(id=score_data["criterion"])
+
         for score_data in scores_data:
-            criterion = EvaluationCriterion.objects.get(id=score_data["criterion"])
-            if score_data["score"] > criterion.max_score:
-                raise ValidationError("Score exceeds max value")
+            criterion = EvaluationCriterion.objects.get(
+                id=score_data["criterion"]
+            )
+
+            score_value = score_data.get("score")
+
+            if score_value is None:
+                raise ValidationError("الدرجة مطلوبة")
+
+            if score_value < 0:
+                raise ValidationError("الحد الأدنى للدرجة هو 0")
+
+            if score_value > criterion.max_score:
+                raise ValidationError("الدرجة تتجاوز الحد الأعلى")
+
             EvaluationScore.objects.update_or_create(
                 evaluation=evaluation,
-                criterion_id=score_data["criterion"],
-                defaults={"score": score_data["score"]}
+                criterion=criterion,
+                defaults={
+                    "score": score_value
+                }
             )
 
         return evaluation
@@ -103,102 +121,439 @@ class EvaluationService:
 
     @staticmethod
     def get_user_assignments_data(user):
+        """
+        Unified evaluator assignments source:
+
+        - EVALUATION phase  -> EvaluationAssignment
+        - INCUBATION phase -> IncubationAssignment
+
+        Response match Evaluation Center UI only.
+        """
+
+        season = SeasonPhaseService.get_current_season()
+        phase = SeasonPhaseService.get_current_phase(season)
+
+        if not season or not phase:
+            return []
+
+        # =====================================
+        # EVALUATION PHASE
+        # =====================================
+
+        if phase.phase == "EVALUATION":
+            assignments = EvaluationAssignment.objects.filter(
+                evaluator=user,
+                season=season
+            ).select_related("idea")
+
+            return [
+                {
+                    "id": assignment.id,
+                    "idea_id": assignment.idea.id,
+                    "title": assignment.idea.title,
+                    "product_type": assignment.idea.answers.get("product_type"),
+                    "target_audience": assignment.idea.target_audience,
+                }
+                for assignment in assignments
+            ]
+
+        # =====================================
+        # INCUBATION PHASE
+        # =====================================
+
+        if phase.phase == "INCUBATION":
+            assignments = IncubationAssignment.objects.filter(
+                mentor__user=user,
+                idea__season=season
+            ).select_related("idea", "mentor")
+
+            return [
+                {
+                    "id": assignment.id,
+                    "idea_id": assignment.idea.id,
+                    "title": assignment.idea.title,
+                    "product_type": assignment.idea.answers.get("product_type"),
+                    "target_audience": assignment.idea.target_audience,
+                }
+                for assignment in assignments
+            ]
+
+        return []
+
+
+    # ////////////////////////////////// ASSIGNMENT DETAIL //////////////////////////////////
+
+
+
+    @staticmethod
+    def get_assignment_detail(user, assignment_id):
+        """
+        Resolve assignment details based on current season phase.
+
+        - EVALUATION  -> EvaluationAssignment.meeting_date
+        - INCUBATION -> IncubationAssignment.meeting_date
+
+        Returns:
+        {
+            meeting_date,
+            idea
+        }
+        """
+
+        season = SeasonPhaseService.get_current_season()
+        phase = SeasonPhaseService.get_current_phase(season)
+
+        if not season or not phase:
+            raise ValueError("لا يوجد موسم أو مرحلة حالية")
+
+        # =====================================
+        # EVALUATION PHASE
+        # =====================================
+
+        if phase.phase == "EVALUATION":
+            assignment = get_object_or_404(
+                EvaluationAssignment.objects.select_related(
+                    "idea",
+                    "idea__owner"
+                ),
+                id=assignment_id,
+                evaluator=user,
+                season=season
+            )
+
+            return {
+                "meeting_date": assignment.meeting_date,
+                "idea": assignment.idea,
+            }
+
+        # =====================================
+        # INCUBATION PHASE
+        # =====================================
+
+        if phase.phase == "INCUBATION":
+            assignment = get_object_or_404(
+                IncubationAssignment.objects.select_related(
+                    "idea",
+                    "idea__owner",
+                    "mentor"
+                ),
+                id=assignment_id,
+                mentor__user=user,
+                idea__season=season
+            )
+
+            return {
+                "meeting_date": assignment.meeting_date,
+                "idea": assignment.idea,
+            }
+
+        raise ValueError("مرحلة غير مدعومة")
+
+    
+
+
+    # ////////////////////////////////// DASHBOARD //////////////////////////////////
+
+    @staticmethod
+    def get_dashboard(user):
         assignments = EvaluationAssignment.objects.filter(
             evaluator=user
         ).select_related("idea")
 
-        return [
-            {
-                "id": a.id,
+        total = assignments.count()
+        completed = assignments.filter(is_completed=True).count()
+
+        #  أقرب جلسة
+        next_assignment = assignments.filter(
+            meeting_date__gte=timezone.now()
+        ).order_by("meeting_date").first()
+
+        data = []
+
+        for a in assignments:
+            evaluation = Evaluation.objects.filter(
+                evaluator=user,
+                idea=a.idea
+            ).only("is_submitted").first()
+
+            data.append({
+                "assignment_id": a.id,
                 "idea_id": a.idea.id,
                 "title": a.idea.title,
                 "meeting_date": a.meeting_date,
-                "is_completed": a.is_completed
-            }
-            for a in assignments
-        ]
+                "is_completed": a.is_completed,
+                "is_submitted": evaluation.is_submitted if evaluation else False
+            })
 
-    # ////////////////////////////////// ASSIGNMENT DETAIL //////////////////////////////////
+        return {
+            "stats": {
+                "total": total,
+                "completed": completed,
+                "remaining": total - completed
+            },
+
+            "next_meeting": {
+                "idea_title": next_assignment.idea.title,
+                "meeting_date": next_assignment.meeting_date
+            } if next_assignment else None,
+
+            "assignments": data
+        }
+
+        # ////////////////////////////////// MY EVALUATION DETAIL //////////////////////////////////
 
     @staticmethod
-    def get_assignment_detail(user, assignment_id):
-        return EvaluationAssignment.objects.select_related("idea").get(
-            id=assignment_id,
-            evaluator=user
-        )
-
-    # ////////////////////////////////// DASHBOARD //////////////////////////////////
-
-@staticmethod
-def get_dashboard(user):
-    assignments = EvaluationAssignment.objects.filter(
-        evaluator=user
-    ).select_related("idea")
-
-    total = assignments.count()
-    completed = assignments.filter(is_completed=True).count()
-
-    #  أقرب جلسة
-    next_assignment = assignments.filter(
-        meeting_date__gte=timezone.now()
-    ).order_by("meeting_date").first()
-
-    data = []
-
-    for a in assignments:
+    def get_user_evaluation_detail(user, idea_id):
         evaluation = Evaluation.objects.filter(
             evaluator=user,
-            idea=a.idea
-        ).only("is_submitted").first()
+            idea_id=idea_id
+        ).prefetch_related("scores__criterion").first()
 
-        data.append({
-            "assignment_id": a.id,
-            "idea_id": a.idea.id,
-            "title": a.idea.title,
-            "meeting_date": a.meeting_date,
-            "is_completed": a.is_completed,
-            "is_submitted": evaluation.is_submitted if evaluation else False
-        })
+        if not evaluation:
+            return None
 
-    return {
-        "stats": {
-            "total": total,
-            "completed": completed,
-            "remaining": total - completed
-        },
+        scores = [
+            {
+                "criterion": s.criterion.title,
+                "score": s.score,
+                "max_score": s.criterion.max_score
+            }
+            for s in evaluation.scores.all()
+        ]
 
-        "next_meeting": {
-            "idea_title": next_assignment.idea.title,
-            "meeting_date": next_assignment.meeting_date
-        } if next_assignment else None,
-
-        "assignments": data
-    }
-
-    # ////////////////////////////////// MY EVALUATION DETAIL //////////////////////////////////
-
-@staticmethod
-def get_user_evaluation_detail(user, idea_id):
-    evaluation = Evaluation.objects.filter(
-        evaluator=user,
-        idea_id=idea_id
-    ).prefetch_related("scores__criterion").first()
-
-    if not evaluation:
-        return None
-
-    scores = [
-        {
-            "criterion": s.criterion.title,
-            "score": s.score,
-            "max_score": s.criterion.max_score
+        return {
+            "idea_id": evaluation.idea.id,
+            "notes": evaluation.notes,
+            "is_submitted": evaluation.is_submitted,
+            "scores": scores
         }
-        for s in evaluation.scores.all()
-    ]
 
-    return {
-        "idea_id": evaluation.idea.id,
-        "notes": evaluation.notes,
-        "is_submitted": evaluation.is_submitted,
-        "scores": scores
-    }
+    #/////////////////////// OPEN EVALUATION FORM //////////////////
+
+    @staticmethod
+    def get_evaluation_form(user, idea):
+        """
+        Evaluation phase only.
+
+        Returns:
+        - form published state
+        - active criteria
+        - existing saved scores
+        - submitted state
+        """
+
+        season = SeasonPhaseService.get_current_season()
+        phase = SeasonPhaseService.get_current_phase(season)
+
+        if not season or not phase:
+            raise ValidationError("لا يوجد موسم أو مرحلة حالية")
+
+        if phase.phase != "EVALUATION":
+            raise ValidationError("نموذج التقييم متاح فقط في مرحلة التقييم")
+
+        assignment = EvaluationAssignment.objects.filter(
+            evaluator=user,
+            idea=idea,
+            season=season
+        ).first()
+
+        if not assignment:
+            raise ValidationError("غير مصرح لك بتقييم هذه الفكرة")
+
+        settings = EvaluationSettings.objects.order_by("-created_at").first()
+
+        is_published = settings.is_published if settings else False
+
+        if not is_published:
+            return {
+                "is_published": False,
+                "criteria": [],
+                "scores": [],
+                "is_submitted": False,
+            }
+
+        evaluation, _ = Evaluation.objects.get_or_create(
+            evaluator=user,
+            idea=idea,
+            season=season
+        )
+
+        criteria = EvaluationCriterion.objects.filter(
+            is_active=True
+        ).order_by("order")
+
+        existing_scores = {
+            score.criterion_id: score.score
+            for score in evaluation.scores.all()
+        }
+
+        criteria_data = []
+        scores_data = []
+
+        for criterion in criteria:
+            criteria_data.append({
+                "id": criterion.id,
+                "title": criterion.title,
+                "max_score": criterion.max_score,
+            })
+
+            scores_data.append({
+                "criterion": criterion.id,
+                "score": existing_scores.get(criterion.id),
+        })
+        return {
+            "is_published": True,
+            "criteria": criteria_data,
+            "scores": scores_data,
+            "is_submitted": evaluation.is_submitted,
+        }
+
+
+#///////////////////////// NOTES (ADD AND GET ) //////////////////////
+
+
+    @staticmethod
+    def add_evaluation_note(user, idea, note_text):
+        evaluation = get_object_or_404(
+            Evaluation,
+            evaluator=user,
+            idea=idea
+        )
+
+        return EvaluationNote.objects.create(
+            evaluation=evaluation,
+            note=note_text
+        )
+
+    @staticmethod
+    def get_evaluation_notes(user, idea):
+        evaluation = get_object_or_404(
+            Evaluation,
+            evaluator=user,
+            idea=idea
+        )
+
+        return evaluation.evaluation_notes.all()
+
+
+#////////////////////////// CREATE INCUBATION REVIEW (NEW ROW PER SESSION) ///////////////////////
+
+
+    @staticmethod
+    def create_incubation_review(user, idea, data):
+        season = SeasonPhaseService.get_current_season()
+        phase = SeasonPhaseService.get_current_phase(season)
+
+        if not season or not phase:
+            raise ValidationError("لا يوجد موسم أو مرحلة حالية")
+
+        if phase.phase != "INCUBATION":
+            raise ValidationError("المراجعات الدورية متاحة فقط في مرحلة الاحتضان")
+
+        assignment = IncubationAssignment.objects.filter(
+            mentor__user=user,
+            idea=idea,
+            idea__season=season
+        ).first()
+
+        if not assignment:
+            raise ValidationError("غير مصرح لك بمراجعة هذا المشروع")
+
+        progress_score = data.get("progress_score")
+        notes = data.get("notes")
+
+        if progress_score is None:
+            raise ValidationError("نسبة التقدم مطلوبة")
+
+        if progress_score < 0 or progress_score > 100:
+            raise ValidationError("نسبة التقدم يجب أن تكون بين 0 و 100")
+
+        if not notes:
+            raise ValidationError("الملاحظات مطلوبة")
+
+        review = IncubationReview.objects.create(
+            idea=idea,
+            progress_score=progress_score,
+            notes=notes,
+            created_by=user,
+            is_submitted=True,
+            submitted_at=timezone.now(),
+        )
+
+        return review
+
+#//////////////////////////// PREVIOUS INCUBATION REVIEWS ///////////////////////
+
+
+    @staticmethod
+    def get_incubation_reviews(user, idea):
+        season = SeasonPhaseService.get_current_season()
+        phase = SeasonPhaseService.get_current_phase(season)
+
+        if not season or not phase:
+            raise ValidationError("لا يوجد موسم أو مرحلة حالية")
+
+        if phase.phase != "INCUBATION":
+            raise ValidationError("المراجعات الدورية متاحة فقط في مرحلة الاحتضان")
+
+        assignment = IncubationAssignment.objects.filter(
+            mentor__user=user,
+            idea=idea,
+            idea__season=season
+        ).first()
+
+        if not assignment:
+            raise ValidationError("غير مصرح لك بمراجعة هذا المشروع")
+
+        return IncubationReview.objects.filter(
+            idea=idea,
+            created_by=user
+        ).order_by("-created_at")
+    
+
+#/////////////////////////////// NEXT UPCOMING SESSION (PHASE-BASED) /////////////////
+
+
+    @staticmethod
+    def get_next_session(user):
+        season = SeasonPhaseService.get_current_season()
+        phase = SeasonPhaseService.get_current_phase(season)
+
+        if not season or not phase:
+            return None
+
+        now = timezone.now()
+
+        if phase.phase == "EVALUATION":
+            next_assignment = EvaluationAssignment.objects.filter(
+                evaluator=user,
+                season=season,
+                meeting_date__gte=now
+            ).order_by("meeting_date").first()
+
+            if not next_assignment:
+                return None
+
+            return {
+                "meeting_date": next_assignment.meeting_date,
+                "idea_title": next_assignment.idea.title,
+                "phase": "EVALUATION",
+            }
+
+        if phase.phase == "INCUBATION":
+            next_assignment = IncubationAssignment.objects.filter(
+                mentor__user=user,
+                idea__season=season,
+                meeting_date__gte=now
+            ).order_by("meeting_date").first()
+
+            if not next_assignment:
+                return None
+
+            return {
+                "meeting_date": next_assignment.meeting_date,
+                "idea_title": next_assignment.idea.title,
+                "phase": "INCUBATION",
+            }
+
+        return None
