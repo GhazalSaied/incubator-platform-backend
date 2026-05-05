@@ -22,6 +22,7 @@ class Command(BaseCommand):
             (SystemRoles.VOLUNTEER, "Volunteer"),
             (SystemRoles.EVALUATOR, "Evaluator"),
             (SystemRoles.IDEA_OWNER, "Idea Owner"),
+            (SystemRoles.INCUBATOR, "Incubator"),   
         ]
 
         for code, name in roles:
@@ -44,13 +45,10 @@ class Command(BaseCommand):
 
             # EVALUATION
             ("evaluation.submit", "Submit Evaluation", "EVALUATION"),
-            ("evaluation.assign", "Assign Evaluation", "EVALUATION"),
 
             # BOOTCAMP
-            ("bootcamp.session.create", "Create Bootcamp Session", "BOOTCAMP"),
 
             # INCUBATION
-            ("incubation.assign_mentor", "Assign Mentor", "INCUBATION"),
 
             # ADMIN
             ("user.manage", "Manage Users", "ADMIN"),
@@ -73,12 +71,8 @@ class Command(BaseCommand):
         role_permissions_map = {
 
             SystemRoles.ADMIN: [
-                "idea.submit",
                 "idea.view",
                 "evaluation.submit",
-                "evaluation.assign",
-                "bootcamp.session.create",
-                "incubation.assign_mentor",
                 "user.manage",
                 "season.manage",
                 
@@ -86,7 +80,6 @@ class Command(BaseCommand):
 
             SystemRoles.SECRETARY: [
                 "idea.view",
-                "bootcamp.session.create",
                 
             ],
 
@@ -102,6 +95,9 @@ class Command(BaseCommand):
                 "idea.submit",
                 "idea.view",
             ],
+            SystemRoles.INCUBATOR: [
+                "idea.view",
+            ]
         }
 
         for role_code, permissions in role_permissions_map.items():

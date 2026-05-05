@@ -42,7 +42,7 @@ class CreateSeasonAPIView(APIView):
 #\\\\\\Publish Season\\\\
 
 class PublishSeasonAPIView(APIView):
-    
+    permission_classes = [IsAuthenticated, CanManageSeason]
     def post(self, request, pk):
         season = get_object_or_404(Season, pk=pk)
 
@@ -56,7 +56,7 @@ class PublishSeasonAPIView(APIView):
 #\\\\\\\Close Season\\\\
 class CloseSubmissionAPIView(APIView):
     
-
+    permission_classes = [IsAuthenticated, CanManageSeason]
     def post(self, request, season_id):
 
         season = get_object_or_404(Season, id=season_id)
@@ -70,7 +70,7 @@ class CloseSubmissionAPIView(APIView):
 #\\\\\List\\\\
 class SeasonListAPIView(APIView):
     
-    
+    permission_classes = [IsAuthenticated, CanManageSeason]
 
     def get(self, request):
         year = request.query_params.get("year")
@@ -84,7 +84,7 @@ class SeasonListAPIView(APIView):
 #\\\\\Detail\\\\
 class SeasonDetailsAPIView(APIView):
     
-
+    permission_classes = [IsAuthenticated, CanManageSeason]
     def get(self, request, pk):
         season = get_object_or_404(Season, pk=pk)
 
