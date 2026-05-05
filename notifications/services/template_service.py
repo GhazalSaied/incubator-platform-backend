@@ -88,13 +88,13 @@ TEMPLATES = {
     "evaluation_invitation_accepted": {
         "title": "قبول دعوة لجنة التقييم",
         "message": lambda obj, actor=None, extra=None:
-            f"تم قبول طلب الانضمام إلى لجنة التقييم لموسم {obj.season.name} من قبل المقيم {actor.get_full_name() if actor else obj.user.get_full_name()}"
+            f"تم قبول طلب الانضمام إلى لجنة التقييم لموسم {obj.season.name} من قبل المقيم {actor.full_name if actor else obj.user.full_name}"
     },
 
     "evaluation_invitation_rejected": {
         "title": "رفض دعوة لجنة التقييم",
         "message": lambda obj, actor=None, extra=None:
-            f"رفض المقيم {actor.get_full_name() if actor else obj.user.get_full_name()} الانضمام إلى لجنة التقييم لموسم {obj.season.name}"
+            f"رفض المقيم {actor.full_name if actor else obj.user.full_name} الانضمام إلى لجنة التقييم لموسم {obj.season.name}"
     },
 
     

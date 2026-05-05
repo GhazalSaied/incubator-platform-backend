@@ -42,12 +42,11 @@ class IncubationReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = IncubationReview
         fields = [
-            "meeting_date",
             "progress_score",
             "notes",
             "is_submitted",
             "submitted_at",
-            "created_at",
+            "created_by",
         ]
 
         read_only_fields = [

@@ -252,8 +252,8 @@ class IncubationReviewAPIView(APIView):
     def get(self, request, idea_id):
         idea = get_object_or_404(Idea, id=idea_id)
         reviews = EvaluationService.get_incubation_reviews(request.user, idea)
-        serializer = IncubationReviewSerializer(reviews, many=True)
-        return Response(serializer.data)
+        return Response( reviews)
+
 
     def post(self, request, idea_id):
         idea = get_object_or_404(Idea, id=idea_id)
