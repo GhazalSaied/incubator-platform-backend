@@ -129,6 +129,7 @@ class SeasonStatusSerializer(serializers.Serializer):
 #\\\\\\\\SeasonSerializer\\\\\
 class SeasonListSerializer(serializers.Serializer):
     id = serializers.IntegerField()
+    year = serializers.IntegerField()
     name = serializers.CharField()
     start_date = serializers.DateField()
     end_date = serializers.DateField()
