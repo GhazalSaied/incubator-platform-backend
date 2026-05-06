@@ -470,6 +470,7 @@ class EvaluationService:
 
         if not notes:
             raise ValidationError("الملاحظات مطلوبة")
+        
 
         review = IncubationReview.objects.create(
             idea=idea,
@@ -508,7 +509,11 @@ class EvaluationService:
         return IncubationReview.objects.filter(
             idea=idea,
             created_by=user
-        ).order_by("-created_at")
+        ).order_by("-created_at").values(
+            "id",
+            "notes",
+            "created_at"
+        )
     
 
 #/////////////////////////////// NEXT UPCOMING SESSION (PHASE-BASED) /////////////////

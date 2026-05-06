@@ -104,7 +104,6 @@ class IncubationReview(BaseModel):
         on_delete=models.CASCADE,
         related_name="reviews"
     )
-
     progress_score = models.FloatField(null=True, blank=True,validators=[MinValueValidator(0),MaxValueValidator(100)])
 
     notes = models.TextField()

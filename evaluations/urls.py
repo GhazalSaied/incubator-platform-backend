@@ -25,7 +25,7 @@ urlpatterns = [
     path("invitation-details/<int:invitation_id>/",InvitationDetailsAPIView.as_view()),
     path("evaluation-form/<int:idea_id>/",EvaluationFormAPIView.as_view()),
     path("evaluation-notes/<int:idea_id>/",EvaluationNotesAPIView.as_view()),#post + get
-    path("incubation-review/",IncubationReviewAPIView.as_view()),
+    path("incubation-review/<int:idea_id>/",IncubationReviewAPIView.as_view()),
     path("next-evaluation-session/", NextUpcomingSessionAPIView.as_view())
 
 
