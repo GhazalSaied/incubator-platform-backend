@@ -24,6 +24,7 @@ PERMISSIONS = {
     "incubtion_decision.manage": "Manage Incubation Decisions",
     "exhibition.manage": "Manage Exhibition",
     "can_decide_exhibition": "Can Decide Exhibition",
+    "volunteer.manage": "Manage Volunteers",
 }
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 PHASE_GATED_PERMISSIONS = {
@@ -35,6 +36,7 @@ PHASE_GATED_PERMISSIONS = {
     "evaluation_decision.manage": SeasonPhase.EVALUATION,
     "incubtion_decision.manage": SeasonPhase.INCUBATION,
     "can_decide_exhibition": SeasonPhase.EXHIBITION,
+    
 }
 
 
@@ -127,3 +129,6 @@ class CanManageExhibition(HasPermission):
     
 class CanDecideExhibition(HasPermission):
     required_permission = "can_decide_exhibition"
+    
+class CanManageVolunteers(HasPermission):
+    required_permission = "volunteer.manage"

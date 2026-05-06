@@ -30,13 +30,13 @@ class VolunteerQueryService:
             # 🟢 أوقات النشاط
             times = []
             for a in v.availabilities.all():
-                times.append(f"{a.start_time} - {a.end_time}")
+                times.append(f"{a.day}: {a.start_time} - {a.end_time}")
 
             data.append({
                 "id": v.id,
                 "name": user.full_name,
                 "avatar": avatar,
-                "primary_skills": v.primary_skills,
+                "specialization": v.specialization,
                 "availability": times
             })
 
@@ -83,23 +83,25 @@ class VolunteerQueryService:
             "status": v.status,#\\\\\\\\\\\\رح يرجع الحالة لما بتكون (pending) زر قبول ورفض اما لما تكون (approved) .زر ارسال طلب تقييم 
             "avatar": avatar,
 
-            # 🟢 معلومات الخبرة
+            #  معلومات الخبرة
             "primary_skills": v.primary_skills,
             "years_of_experience": v.years_of_experience,
             "additional_skills": v.additional_skills,
+            "specialization": v.specialization,
+            "current_company": v.current_company,
 
-            # 🟢 معلومات التطوع
+            #  معلومات التطوع
             "volunteer_type": v.volunteer_type,
             "availability_type": v.availability_type,
             "motivation": v.motivation,
 
-            # 🟢 الملف
+            #  الملف
             "cv": v.cv.url if v.cv else None,
 
-            # 🟢 أوقات التفرغ
+            #  أوقات التفرغ
             "availability": availability,
 
-            # 🟢 بيانات المستخدم
+            #  بيانات المستخدم
             "email": user.email,
             "is_evaluator": has_accepted_invitation,
             "status": v.status,

@@ -61,6 +61,8 @@ class Command(BaseCommand):
             ("incubtion_decision.manage", "Manage Incubation Decisions", "INCUBATION"),
             ("exhibition.manage", "Manage Exhibition", "EXHIBITION"),
             ("can_decide_exhibition", "Can Decide Exhibition", "EXHIBITION"),
+            {"volunteer.manage", "Manage Volunteers", "VOLUNTEER"},
+            
         ]
 
         for code, name, module in permissions:
@@ -91,6 +93,7 @@ class Command(BaseCommand):
                 "incubtion_decision.manage",
                 "exhibition.manage",
                 "can_decide_exhibition",
+                "volunteer.manage",
             ],
 
             SystemRoles.SECRETARY: [

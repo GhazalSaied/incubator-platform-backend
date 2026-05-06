@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from accounts.constants import SystemRoles
 from accounts.role_service import RoleService
+from core.events import EventBus
 from ideas.models import Season
 from volunteers.models import VolunteerProfile
 from django.utils import timezone
@@ -35,6 +36,7 @@ class VolunteerManagementService:
             role_code=SystemRoles.VOLUNTEER,
             assigned_by= None
         )
+        EventBus.emit("volunteer_approved",user=v.user,actor=None)
 
 
 
@@ -57,7 +59,11 @@ class VolunteerManagementService:
 
         v.status = VolunteerProfile.REJECTED
         v.save(update_fields=["status"])
-
+        EventBus.emit(
+    "volunteer_rejected",
+    user=v.user,
+    actor=None
+)
         return v
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ازالة مقيم \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
