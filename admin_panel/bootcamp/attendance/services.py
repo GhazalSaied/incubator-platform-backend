@@ -42,7 +42,7 @@ class BootcampDecisionQueryService:
             "idea__owner"
         )
 
-        # 🔍 search
+        #  search
         if search:
             qs = qs.filter(
                 Q(idea__title__icontains=search) |
@@ -63,7 +63,7 @@ class BootcampDecisionQueryService:
                 "attendance_rate": decision.attendance_rate
             })
 
-        # 📊 count المقبولين
+        #  count المقبولين
         accepted_count = qs.filter(decision="accepted").count()
 
         return {

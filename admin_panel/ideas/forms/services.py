@@ -13,7 +13,7 @@ class FormBuilderService:
     @staticmethod
     def _validate_questions(questions_data):
 
-    # 🟢 duplicate keys
+    #  duplicate keys
         keys = [q.get("key") for q in questions_data]
         if len(keys) != len(set(keys)):
             raise ValidationError("يوجد مفاتيح مكررة للأسئلة")
@@ -23,7 +23,7 @@ class FormBuilderService:
             q_type = q.get("type")
             choices = q.get("choices", [])
 
-        # 🟡 select لازم choices
+        #  select لازم choices
             if q_type in ["select", "select_multiple"]:
 
                 if not choices:
@@ -31,7 +31,7 @@ class FormBuilderService:
                         f"السؤال '{q.get('label')}' يحتاج خيارات"
                     )
 
-            # 🔵 duplicate choice values
+            #  duplicate choice values
                 values = [c.get("value") for c in choices]
 
                 if len(values) != len(set(values)):
@@ -39,7 +39,7 @@ class FormBuilderService:
                         f"السؤال '{q.get('label')}' يحتوي قيم مكررة"
                     )
 
-        # 🟣 non-select ما لازم choices
+        #  non-select ما لازم choices
             else:
                 if choices:
                     raise ValidationError(
@@ -51,7 +51,7 @@ class FormBuilderService:
 
         if form.season.status != "DRAFT":
             raise ValidationError("لا يمكن تعديل النموذج بعد نشر الموسم")
-        # 🔥 VALIDATION
+        #  VALIDATION
         FormBuilderService._validate_questions(questions_data)
 
         existing_questions = {q.id: q for q in form.questions.all()}
@@ -63,7 +63,7 @@ class FormBuilderService:
             if q_id:
                 q_id = int(q_id)
 
-            # 🟩 UPDATE
+            #  UPDATE
             if q_id and q_id in existing_questions:
                 question = existing_questions[q_id]
 
@@ -76,7 +76,7 @@ class FormBuilderService:
                 question.save()
                 sent_ids.append(q_id)
 
-            # 🟦 CREATE
+            #  CREATE
             else:
                 question = FormQuestion.objects.create(
                     form=form,
@@ -89,13 +89,13 @@ class FormBuilderService:
 
                 sent_ids.append(question.id)
 
-            # 🟪 CHOICES
+            #  CHOICES
             FormBuilderService._handle_choices(
                 question,
                 q_data.get("choices", [])
             )
 
-        # 🟥 DELETE QUESTIONS
+        #  DELETE QUESTIONS
         
         for q_id, question in existing_questions.items():
             if q_id not in sent_ids:

@@ -3,7 +3,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from .services.management_service import VolunteerManagementService
+from rest_framework.generics import  get_object_or_404
+from core.permissions import CanManageVolunteers
+from .services.management_service import TeamSuggestionService, VolunteerManagementService
 from django.core.exceptions import ValidationError
 from ideas.services.season_phase_service import SeasonPhaseService
 from .services.query_service import VolunteerQueryService
@@ -14,9 +16,9 @@ from dateutil import parser
 #\\\\\\\\\\\\\\\\\\\\\\\\\\عرض طلبات التطوع المعلقة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class PendingVolunteersView(APIView):
     
-
+    permission_classes = [IsAuthenticated, CanManageVolunteers]
     def get(self, request):
-
+        
         data = VolunteerQueryService.get_volunteers_by_status(
             status="PENDING"
         )
@@ -32,7 +34,7 @@ class PendingVolunteersView(APIView):
 
 class VolunteerDetailsView(APIView):
   
-
+    permission_classes = [IsAuthenticated, CanManageVolunteers]
     def get(self, request, volunteer_id):
 
         data = VolunteerQueryService.get_volunteer_details(
@@ -51,7 +53,7 @@ class VolunteerDetailsView(APIView):
 
 class ApproveVolunteerView(APIView):
    
-
+    
     def post(self, request, volunteer_id):
 
         try:
@@ -72,6 +74,7 @@ class ApproveVolunteerView(APIView):
 
 class RejectVolunteerView(APIView):
  
+    permission_classes = [IsAuthenticated, CanManageVolunteers]
     def post(self, request, volunteer_id):
 
         try:
@@ -89,11 +92,12 @@ class RejectVolunteerView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض المتطوعين المقبولين \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ \
 class ApprovedVolunteersView(APIView):
- 
+    
     def get(self, request):
-
+        specialization = request.query_params.get("specialization")
         data = VolunteerQueryService.get_volunteers_by_status(
-            status="APPROVED"
+            status="APPROVED",
+            specialization=specialization
         )
 
         return Response(data)
@@ -102,17 +106,14 @@ class ApprovedVolunteersView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\إرسال دعوة تقييم \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class SendInvitationToVolunteerView(APIView):
-   
+    permission_classes = [IsAuthenticated, CanManageVolunteers]
     def post(self, request, volunteer_id):
 
         try:
             invitation = VolunteerManagementService.send_invitation_to_volunteer(
                 volunteer_id=volunteer_id,
-                description=request.data.get("description"),
-                meeting_date=request.data.get("meeting_date"),
                 expected_duration=request.data.get("expected_duration"),
-                task=request.data.get("task"),
-                expertise_field=request.data.get("expertise_field"),
+                task=request.data.get("task")
             )
 
         except ValidationError as e:
@@ -128,7 +129,7 @@ class SendInvitationToVolunteerView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض المقيمين\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class EvaluatorsView(APIView):
- 
+    permission_classes = [IsAuthenticated, CanManageVolunteers]
     def get(self, request):
 
         try:
@@ -149,7 +150,6 @@ class EvaluatorsView(APIView):
 
 class RemoveEvaluatorRoleView(APIView):
  
-
     def post(self, request, volunteer_id):
 
         try:
@@ -167,3 +167,50 @@ class RemoveEvaluatorRoleView(APIView):
             "message": "تم إزالة دور المقيم بنجاح",
             **result
         })
+        
+        
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض طلبات الفريق\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+class TeamRequestOwnersAPIView(APIView):
+
+    def get(self, request):
+
+        season_id = request.query_params.get("season")
+
+        season = None
+        if season_id:
+            season = get_object_or_404(Season, id=season_id)
+
+        data = VolunteerQueryService.get_idea_owners_with_team_requests(
+            season=season
+        )
+
+        return Response(data)
+    
+    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تفاصيل الطلب \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class TeamRequestDetailsAPIView(APIView):
+
+
+    def get(self, request, pk):
+
+        data = VolunteerQueryService.get_team_request_details(
+            request_id=pk
+        )
+
+        return Response(data)
+    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\اقتراح متطوعين لطلب فريق \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   
+class SuggestVolunteersAPIView(APIView):
+
+    def post(self, request, team_request_id):
+
+        volunteer_ids = request.data.get("volunteer_ids", [])
+
+        data = TeamSuggestionService.suggest_volunteers(
+            team_request_id=team_request_id,
+            volunteer_ids=volunteer_ids,
+            actor=request.user
+        )
+
+        return Response(data)

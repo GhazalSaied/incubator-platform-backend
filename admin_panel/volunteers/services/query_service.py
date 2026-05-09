@@ -1,25 +1,29 @@
+from accounts.constants import SystemRoles
+from accounts.models import UserRole
+from ideas.models import TeamRequest
+import volunteers
 from volunteers.models import VolunteerProfile
 from evaluations.models import EvaluationInvitation
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-
+from django.db.models import F
 #\\\\\\\\\\\\\\\\\\\\\عرض طلبات التطوع\المتطوعين   \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class VolunteerQueryService:
 
     @staticmethod
-    def get_volunteers_by_status(*, status):
+    def get_volunteers_by_status(*, status,specialization=None):
 
         qs = VolunteerProfile.objects.filter(
             status=status
         ).select_related("user").prefetch_related("availabilities")
-
+        if specialization:
+            qs = qs.filter(specialization=specialization)
         data = []
 
         for v in qs:
 
             user = v.user
 
-            # 🟢 الصورة
             avatar = None
             if hasattr(user, "avatar") and user.avatar:
                 try:
@@ -27,7 +31,6 @@ class VolunteerQueryService:
                 except:
                     avatar = None
 
-            # 🟢 أوقات النشاط
             times = []
             for a in v.availabilities.all():
                 times.append(f"{a.day}: {a.start_time} - {a.end_time}")
@@ -56,7 +59,6 @@ class VolunteerQueryService:
 
         user = v.user
 
-        # 🟢 الصورة
         avatar = None
         if hasattr(user, "avatar") and user.avatar:
             try:
@@ -64,7 +66,6 @@ class VolunteerQueryService:
             except:
                 avatar = None
 
-        # 🟢 أوقات التفرغ
         availability = []
         for a in v.availabilities.all():
             availability.append({
@@ -113,15 +114,24 @@ class VolunteerQueryService:
     @staticmethod
     def get_evaluators(*, season):
 
-        invitations = EvaluationInvitation.objects.filter(
+       #  1. evaluators من الدعوات المقبولة
+        invited_user_ids = EvaluationInvitation.objects.filter(
             season=season,
             status="ACCEPTED"
-        ).select_related("user")
+        ).values_list("user_id", flat=True)
 
-        user_ids = invitations.values_list("user_id", flat=True)
+    #  2. evaluators من roles
+        role_user_ids = UserRole.objects.filter(
+            role__code=SystemRoles.EVALUATOR,
+            is_active=True
+        ).values_list("user_id", flat=True)
 
+    #  3. دمج الاثنين
+        all_user_ids = set(invited_user_ids) | set(role_user_ids)
+
+    #  4. جلب volunteer profiles
         volunteers = VolunteerProfile.objects.filter(
-            user_id__in=user_ids
+            user_id__in=all_user_ids
         ).select_related("user").prefetch_related("availabilities")
 
         data = []
@@ -130,25 +140,83 @@ class VolunteerQueryService:
 
             user = v.user
 
-            # 🟢 الصورة
+        #  الصورة
             avatar = None
-            if hasattr(user, "avatar") and user.avatar:
+            if user.avatar:
                 try:
                     avatar = user.avatar.url
                 except:
                     avatar = None
 
-            # 🟢 أوقات النشاط
-            times = []
-            for a in v.availabilities.all():
-                times.append(f"{a.start_time} - {a.end_time}")
+        #  أوقات النشاط
+            times = [
+                f"{a.start_time} - {a.end_time}"
+                for a in v.availabilities.all()
+            ]
 
             data.append({
                 "id": v.id,
                 "name": user.full_name,
                 "avatar": avatar,
-                "primary_skills": v.primary_skills,
+                "specialization": v.specialization,
                 "availability": times
             })
 
         return data
+    
+    
+        
+    @staticmethod
+    def get_idea_owners_with_team_requests(season=None):
+
+        qs = TeamRequest.objects.filter(
+        status="PENDING"
+        ).select_related("idea__owner")
+
+        if season:
+            qs = qs.filter(idea__season=season)
+
+        qs = qs.values(
+            user_id=F("idea__owner__id"),
+            name=F("idea__owner__full_name"),
+            avatar=F("idea__owner__avatar")
+        ).distinct()
+
+        data = []
+
+        for item in qs:
+            avatar = item["avatar"]
+            avatar_url = avatar.url if avatar else None
+
+            data.append({
+                "id": item["user_id"],
+                "name": item["name"],
+                "avatar": avatar_url
+            })
+
+        return data
+
+
+
+
+    @staticmethod
+    def get_team_request_details(request_id):
+
+        try:
+            tr = TeamRequest.objects.select_related(
+                "idea"
+            ).get(id=request_id)
+        except TeamRequest.DoesNotExist:
+            raise ValidationError("الطلب غير موجود")
+
+        return {
+            "id": tr.id,
+            "title": tr.title,
+            "skill_required": tr.skill_required,
+            "members_needed": tr.members_needed,
+            "description": tr.description,
+
+            "idea": {
+                "idea_id": tr.idea.id,
+            }
+        }

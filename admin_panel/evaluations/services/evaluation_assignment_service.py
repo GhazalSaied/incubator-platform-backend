@@ -21,7 +21,6 @@ class EvaluationAssignmentService:
         if not evaluators_ids:
             raise ValidationError("يجب اختيار مقيم واحد على الأقل")
 
-        # 🟢 جلب الدعوات المقبولة فقط
         accepted_invitations = EvaluationInvitation.objects.filter(
             season=season,
             status="ACCEPTED",
@@ -38,7 +37,7 @@ class EvaluationAssignmentService:
 
             evaluator = invitation.user
 
-            # 🛑 1. منع صاحب الفكرة
+            #  1. منع صاحب الفكرة
             if evaluator.id == idea.owner_id:
                 skipped_users.append({
                     "user_id": evaluator.id,
@@ -46,7 +45,7 @@ class EvaluationAssignmentService:
                 })
                 continue
 
-            # 🛑 2. منع التكرار
+            #  2. منع التكرار
             exists = EvaluationAssignment.objects.filter(
                 idea=idea,
                 evaluator=evaluator,
@@ -60,7 +59,7 @@ class EvaluationAssignmentService:
                 })
                 continue
 
-            # 🟢 إنشاء التعيين
+            #  إنشاء التعيين
             assignment = EvaluationAssignment.objects.create(
                 evaluator=evaluator,
                 idea=idea,

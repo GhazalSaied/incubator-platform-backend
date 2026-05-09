@@ -419,6 +419,35 @@ EVENTS = {
     ],
     "action_url": ""
 },
+    "volunteer_approved": {
+    "target": "USER",
+    "description": "تم قبول طلب التطوع الخاص بك",
+    "payload": ["user"],
+    "action_url": "api/volunteers/me/update/"
+},
+    "volunteer_rejected": {
+    "target": "USER",
+    "description": "تم رفض طلب التطوع",
+    "payload": ["user"],
+    "action_url": " "
+},
+    "evaluation_invitation_sent": {
+    "target": "VOLUNTEER",
+    "payload": ["invitation"],
+    "action_url": ""
+},
+    
+    "evaluator_role_removed": {
+    "target": "USER",
+    "payload": ["user"],
+    "action_url": " "
+},
+    
+    "volunteers_suggested": {
+    "target": "IDEA_OWNER",
+    "payload": ["idea", "volunteers"],
+    "action_url": ""
+}
 
 }
         

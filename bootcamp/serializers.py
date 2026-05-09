@@ -9,7 +9,6 @@ from django.db.models import Q
 #/////////////////////////// BOOTCAMP SESSION ////////////////////////
 class BootcampSessionSerializer(serializers.ModelSerializer):
     trainer_name = serializers.SerializerMethodField()
-    time_range = serializers.SerializerMethodField()
 
     class Meta:
         model = BootcampSession
@@ -21,16 +20,12 @@ class BootcampSessionSerializer(serializers.ModelSerializer):
             "date",
             "start_time",
             "end_time",
-            "time_range",
             "tasks",
             "location",
         ]
 
     def get_trainer_name(self, obj):
         return BootcampSessionQueryService.get_trainer_name(obj)
-
-    def get_time_range(self, obj):
-        return BootcampSessionQueryService.get_time_range(obj)
 
     
 

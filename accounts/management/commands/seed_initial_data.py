@@ -63,6 +63,7 @@ class Command(BaseCommand):
             ("can_decide_exhibition", "Can Decide Exhibition", "EXHIBITION"),
             {"volunteer.manage", "Manage Volunteers", "VOLUNTEER"},
             
+            
         ]
 
         for code, name, module in permissions:

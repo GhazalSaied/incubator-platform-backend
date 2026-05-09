@@ -19,19 +19,17 @@ class BootcampIdeaQueryService:
 
     @staticmethod
     def list_bootcamp_ideas(search=None):
-        # 1️⃣ Base Query (optimized)
         qs = Idea.objects.filter(
             status=IdeaStatus.BOOTCAMP
         ).select_related("owner")
 
-        # 2️⃣ Search
+        #  Search
         if search:
             qs = qs.filter(
                 Q(title__icontains=search) |
                 Q(owner__full_name__icontains=search)
             )
 
-        # 3️⃣ Prefetch attendance (لتقليل queries)
         attendances = BootcampAttendance.objects.filter(
             idea__in=qs
         ).values("idea").annotate(
@@ -39,12 +37,10 @@ class BootcampIdeaQueryService:
             absent=Count("id", filter=Q(status="absent"))
         )
 
-        # 4️⃣ تحويلها لـ dict لسهولة الوصول
         attendance_map = {
             item["idea"]: item for item in attendances
         }
 
-        # 5️⃣ Build response
         result = []
 
         for idea in qs:
@@ -90,7 +86,7 @@ def process_bootcamp_decision(*, idea_id, decision, actor=None):
     if hasattr(idea, "bootcamp_decision"):
         raise ValidationError("تم اتخاذ القرار مسبقاً لهذه الفكرة")
 
-    # ✅ . decision mapping
+    #  . decision mapping
     if decision == "approve":
         new_status = IdeaStatus.EVALUATION
         decision_value = "accepted"
@@ -102,11 +98,11 @@ def process_bootcamp_decision(*, idea_id, decision, actor=None):
     else:
         raise ValidationError("قرار غير صالح")
 
-    # ✅ 4. حساب attendance
+    #  4. حساب attendance
     total, absent, absence_percentage = calculate_absence(idea)
     attendance_rate = 100 - absence_percentage
 
-    # ✅ 5. حفظ القرار + attendance
+    #  5. حفظ القرار + attendance
     BootcampDecision.objects.update_or_create(
         idea=idea,
         defaults={
@@ -115,7 +111,7 @@ def process_bootcamp_decision(*, idea_id, decision, actor=None):
         }
     )
 
-    # ✅ 6. تغيير الحالة عبر النظام المركزي
+    #  6. تغيير الحالة عبر النظام المركزي
     IdeaStateService.change_status(
         idea=idea,
         to_status=new_status,
@@ -123,7 +119,6 @@ def process_bootcamp_decision(*, idea_id, decision, actor=None):
         source="bootcamp_decision"
     )
 
-    # ✅ 7. event للإشعارات
     EventBus.emit(
         "bootcamp_decision_made",
         idea=idea,

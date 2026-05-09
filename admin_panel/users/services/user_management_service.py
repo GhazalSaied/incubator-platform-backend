@@ -16,23 +16,19 @@ class AdminUserService:
     @transaction.atomic
     def create_user(*, full_name, email, password, role_code, created_by):
 
-        # 🟢 إنشاء المستخدم
         user = User.objects.create_user(
             email=email,
             password=password,
             full_name=full_name
         )
 
-        # 🟢 فرض تغيير كلمة المرور (فقط لأنه admin-created)
         user.must_change_password = True
         user.save(update_fields=["must_change_password"])
 
-        # 🟢 جلب الدور
         role = Role.objects.filter(code=role_code).first()
         if not role:
             raise ValidationError("الدور غير موجود")
 
-        # 🟢 ربط الدور
         UserRole.objects.create(
             user=user,
             role=role,
@@ -98,7 +94,6 @@ class WorkshopServices:
         
         workshop = get_object_or_404(Workshop, id=workshop_id)
 
-        # 🚫 ممنوع تعديل إذا مو pending
         if workshop.status != "PENDING":
             raise ValidationError("You can only act on pending workshops")
 

@@ -48,7 +48,6 @@ class SeasonAdminService:
     @transaction.atomic
     def _create_phases(season):
 
-    # ❗ تأكد ما في مرحلة مسبقاً
         if SeasonPhase.objects.filter(season=season).exists():
             return
 
@@ -65,15 +64,12 @@ class SeasonAdminService:
     @staticmethod
     def publish_season(season):
 
-        # 1️⃣ لازم يكون في فورم
         if not hasattr(season, "form"):
             raise Exception("لا يمكن نشر الموسم بدون نموذج")
 
-        # 2️⃣ الفورم لازم فيه أسئلة
         if season.form.questions.count() == 0:
             raise Exception("النموذج فارغ")
 
-        # 3️⃣ ما يكون منشور قبل
         if season.status != SeasonStatus.DRAFT:
             raise Exception("الموسم منشور مسبقاً")
 
@@ -123,7 +119,6 @@ class SeasonAdminService:
         ideas = Idea.objects.filter(season=season,status=IdeaStatus.SUBMITTED)
         for idea in ideas:
             IdeaStateService.change_status(idea=idea,to_status=IdeaStatus.PRE_ACCEPTED,user=None)
-               # 🧠 7. EVENTS
         EventBus.emit("submission_closed",season=season)
 
         

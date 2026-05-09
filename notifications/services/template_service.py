@@ -246,6 +246,45 @@ TEMPLATES = {
         f"يرجى تعبئة بيانات بطاقة المعرض."
     )
 },
+     "volunteer_approved": {
+        "title": "تم قبول طلب التطوع 🎉",
+        "message": "مبروك! تم قبول طلبك كمتطوع عدل ملفك الشخصي واضف معلوماتك."
+    },
+    "volunteer_rejected": {
+        "title": "تم رفض طلب التطوع",
+        "message": lambda user : ( "نعتذر، تم رفض طلب التطوع الخاص بك. يمكنك المحاولة مرة أخرى لاحقاً.")
+    },
+    
+    "evaluation_invitation_sent": {
+        "title": "دعوة تقييم جديدة",
+
+        "message": lambda invitation: (
+            f"تمت دعوتك كمقيم.\n"
+            f"المهمة: {invitation.task}\n"
+            f"المدة: {invitation.expected_duration} دقيقة"
+        )
+    },
+    
+    "evaluator_role_removed": {
+        "title": "إزالة دور المقيم",
+        "message": lambda user: (
+            "تمت إزالة دورك كمقيم من النظام.\n"
+            "لم تعد قادراً على تقييم المشاريع حالياً."
+        )
+    },
+    
+    
+    "volunteers_suggested": {
+        "title": "تم اقتراح متطوعين ",
+        "message": lambda obj: (
+        f"تم اقتراح متطوعين من قبل الإدارة لفكرتك \"{obj['idea'].title}\". "
+        f"يمكنك الآن الاطلاع عليهم واختيار المناسب."
+    )
+}
+
+
+    
+
 }
 
 

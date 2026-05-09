@@ -145,7 +145,7 @@ class EvaluationInvitation(BaseModel):
         related_name="evaluation_invitations"
     )
 
-    expertise_field = models.CharField(max_length=255)
+    expertise_field = models.CharField(max_length=255,null=True, blank=True)
     description = models.TextField(null=True, blank=True)
 
     meeting_date = models.DateTimeField(null=True, blank=True)

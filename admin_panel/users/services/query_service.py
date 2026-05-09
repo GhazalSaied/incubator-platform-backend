@@ -17,13 +17,11 @@ class UsersQueryService:
 
         qs = User.objects.all().order_by("-created_at")
 
-        # 🚫 استبعاد المديرين (DIRECTOR)
         qs = qs.exclude(
             userrole__role__code="DIRECTOR",
             userrole__is_active=True
         )
 
-        # 🎯 فلترة حسب role إذا مطلوب
         if role_code:
             qs = qs.filter(
                 userrole__role__code=role_code,
@@ -46,8 +44,6 @@ class UserProfileService:
         data["VolunteerProfile"] = {
             "id": request.id if request else None
         }
-
-        # 🔥 توزيع حسب الأدوار
         if "IDEA_OWNER" in user.role_codes:
             data["idea_owner_data"] = UserProfileService._get_idea_owner_data(user)
 
@@ -105,7 +101,6 @@ class UserProfileService:
         total, absent, percentage = calculate_absence(idea)
         commitment = 100 - percentage
 
-    # 🔥 الجديد
         evaluations = UserProfileService.get_all_evaluations_for_idea(idea)
 
         return {
@@ -114,7 +109,6 @@ class UserProfileService:
             "idea.status": idea.status if idea else None,
             "commitment_percentage": round(commitment, 2),
 
-        # 🔥 الجديد
             "evaluations": evaluations
         }
     
