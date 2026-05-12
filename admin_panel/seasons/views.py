@@ -70,12 +70,10 @@ class CloseSubmissionAPIView(APIView):
 #\\\\\List\\\\
 class SeasonListAPIView(APIView):
     
-    permission_classes = [IsAuthenticated, CanManageSeason]
-
+    
     def get(self, request):
-        year = request.query_params.get("year")
 
-        data = SeasonQueryService.list_seasons(year)
+        data = SeasonQueryService.list_seasons()
 
         serializer = SeasonListSerializer(data, many=True)
 
