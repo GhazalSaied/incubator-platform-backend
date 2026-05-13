@@ -280,6 +280,24 @@ TEMPLATES = {
         f"تم اقتراح متطوعين من قبل الإدارة لفكرتك \"{obj['idea'].title}\". "
         f"يمكنك الآن الاطلاع عليهم واختيار المناسب."
     )
+},
+    
+    
+    #------------------admin_workshops-------------
+    "workshop_approved": {
+
+    "title": "تم قبول الورشة",
+
+    "message": lambda workshop:
+        f"تم قبول ورشة العمل ({workshop.title}) بنجاح"
+},
+    
+    "workshop_rejected": {
+
+    "title": "تم رفض الورشة",
+
+    "message": lambda data:
+        f"تم رفض ورشة ({data['workshop'].title}) بسبب: {data['rejection_reason']}"
 }
 
 
