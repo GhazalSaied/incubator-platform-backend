@@ -5,7 +5,7 @@ from accounts.models import User, UserRole, Role
 class AdminUserSerializer(serializers.ModelSerializer):
     roles = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
-
+    created_at = serializers.SerializerMethodField()
     class Meta:
         model = User
         fields = [
@@ -16,12 +16,18 @@ class AdminUserSerializer(serializers.ModelSerializer):
             "roles",
             "status",
         ]
+    def get_created_at(self, obj):
 
+        if not obj.created_at:
+            return None
+
+        return obj.created_at.strftime("%d/%m/%Y")
     def get_roles(self, obj):
-        return [
-            ur.role.code
-            for ur in obj.userrole_set.filter(is_active=True)
-        ]
+        return list({
+        ur.role.code
+        for ur in obj.userrole_set.all()
+        if ur.is_active
+    })
 
     def get_status(self, obj):
         return "ACTIVE" if obj.is_active else "INACTIVE"
@@ -29,21 +35,30 @@ class AdminUserSerializer(serializers.ModelSerializer):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\اضافة مستخدم جديد مع دور\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class CreateUserSerializer(serializers.Serializer):
+
     full_name = serializers.CharField(max_length=255)
+
     email = serializers.EmailField()
-    password = serializers.CharField(min_length=8)
-    role_code = serializers.CharField()
+
+    password = serializers.CharField(
+        min_length=8,
+        write_only=True
+    )
+
+    role_code = serializers.ChoiceField(
+        choices=Role.objects.values_list("code", "code")
+    )
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("الإيميل مستخدم مسبقاً")
-        return value.lower()
 
-    def validate_role_code(self, value):
-        if not Role.objects.filter(code=value).exists():
-            raise serializers.ValidationError("الدور غير موجود")
+        value = value.strip().lower()
+
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError(
+                "الإيميل مستخدم مسبقاً"
+            )
+
         return value
-    
     
     
 

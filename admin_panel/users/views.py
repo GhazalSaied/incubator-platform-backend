@@ -7,6 +7,7 @@ from .serializers import AdminUserSerializer,CreateUserSerializer, WorkshopActio
 from rest_framework import status
 from .services.user_management_service import AdminUserService, WorkshopServices
 from .services.query_service import UsersQueryService, WorkshopService,UserProfileService
+from django.core.exceptions import ValidationError
 
 class AdminUserListView(APIView):
     
@@ -49,7 +50,7 @@ class RoleListAPIView(APIView):
    
     def get(self, request):
 
-        roles = Role.objects.exclude(code="DIRECTOR")
+        roles = Role.objects.exclude(code="ADMIN")
 
         return Response([
             {
@@ -60,23 +61,31 @@ class RoleListAPIView(APIView):
         ])   
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تحديث أدوار المستخدم \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-
 class UpdateUserRolesAPIView(APIView):
- 
-    
 
     def put(self, request, user_id):
 
-        user = get_object_or_404(User, id=user_id)
+        user = get_object_or_404(
+            User,
+            id=user_id
+        )
 
         role_ids = request.data.get("roles", [])
 
-        AdminUserService.update_user_roles(user, role_ids)
+        if not isinstance(role_ids, list):
+            raise ValidationError(
+                "roles must be a list"
+            )
+
+        AdminUserService.update_user_roles(
+            user=user,
+            role_ids=role_ids,
+            assigned_by=request.user
+        )
 
         return Response({
             "message": "تم تحديث الأدوار بنجاح"
         })
-        
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تجميد مستخدم \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class FreezeUserAPIView(APIView):
