@@ -4,10 +4,8 @@ from evaluations.models import Evaluation
 from admin_panel.bootcamp.attendance.services import calculate_absence
 from admin_panel.incubations.services import IncubationNotesService
 from volunteers.models import Workshop,VolunteerProfile, WorkshopRegistration
-from accounts.models import User
+from accounts.models import User,UserRole
 from django.db.models import Q
-
-
 
 
 class UsersQueryService:
@@ -15,12 +13,16 @@ class UsersQueryService:
     @staticmethod
     def get_users(role_code=None):
 
-        qs = User.objects.all().order_by("-created_at")
+        admin_ids = UserRole.objects.filter(
+            role__code="ADMIN",
+            is_active=True
+        ).values_list("user_id", flat=True)
 
-        qs = qs.exclude(
-            userrole__role__code="DIRECTOR",
-            userrole__is_active=True
-        )
+        qs = User.objects.exclude(
+            id__in=admin_ids
+        ).prefetch_related(
+            "userrole_set__role"
+        ).order_by("-created_at")
 
         if role_code:
             qs = qs.filter(

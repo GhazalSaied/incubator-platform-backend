@@ -64,3 +64,51 @@ def volunteers_suggested_handler(payload):
         target_role="IDEA_OWNER"
     )
 EventBus.register("volunteers_suggested", volunteers_suggested_handler) 
+
+
+
+
+
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\قبول ورشة عمل\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+def workshop_approved_handler(payload):
+
+    workshop = payload["workshop"]
+
+    NotificationService.send(
+        user=workshop.created_by,
+
+        event_name="workshop_approved",
+
+        obj=workshop,
+
+        target_role="VOLUNTEER",
+
+        action_url=payload.get("action_url"),
+
+        related_object=workshop
+    )
+EventBus.register("workshop_approved", workshop_approved_handler)
+
+
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\رفض ورشة عمل\\\\\\\\\\\\\\\\\\\\\\\\\\
+def workshop_rejected_handler(payload):
+
+    workshop = payload["workshop"]
+
+    NotificationService.send(
+        user=workshop.created_by,
+
+        event_name="workshop_rejected",
+
+        extra={
+            "workshop": workshop,
+            "rejection_reason": payload["rejection_reason"]
+        },
+
+        target_role="VOLUNTEER",
+
+        action_url=payload.get("action_url"),
+
+        related_object=workshop
+    )
+EventBus.register("workshop_rejected", workshop_rejected_handler)

@@ -447,7 +447,23 @@ EVENTS = {
     "target": "IDEA_OWNER",
     "payload": ["idea", "volunteers"],
     "action_url": ""
-}
+},
+    
+    
+    "workshop_approved": {
+    "target": "VOLUNTEER",
+    "payload": ["workshop"],
+    "action_url": ""
+},
+
+    "workshop_rejected": {
+    "target": "VOLUNTEER",
+    "payload": [
+        "workshop",
+        "rejection_reason"
+    ],
+    "action_url": ""
+},
 
 }
         

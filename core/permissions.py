@@ -25,6 +25,8 @@ PERMISSIONS = {
     "exhibition.manage": "Manage Exhibition",
     "can_decide_exhibition": "Can Decide Exhibition",
     "volunteer.manage": "Manage Volunteers",
+    "workshop.manage": "Manage Workshops",
+    
 }
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 PHASE_GATED_PERMISSIONS = {
@@ -132,3 +134,6 @@ class CanDecideExhibition(HasPermission):
     
 class CanManageVolunteers(HasPermission):
     required_permission = "volunteer.manage"
+    
+class CanManageWorkshops(HasPermission):
+    required_permission = "workshop.manage"

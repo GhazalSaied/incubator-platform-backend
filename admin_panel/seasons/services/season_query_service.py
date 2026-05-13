@@ -60,15 +60,8 @@ class SeasonQueryService:
         }
 
     @staticmethod
-    def list_seasons(year=None):
+    def list_seasons():
         qs = Season.objects.all()
-
-        if year:
-            qs = qs.filter(start_date__year=year)
-        qs = qs.filter(phases__isnull=False).distinct()
-        qs = qs.annotate(
-            ideas_count=Count("ideas")
-        )
 
         return [
             SeasonQueryService.build_season_response(season)
