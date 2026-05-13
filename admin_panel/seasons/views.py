@@ -12,7 +12,7 @@ from ideas.models import Season
 
 
 from ideas.serializers import (
-    SeasonCreateSerializer,SeasonListSerializer,SeasonDetailsSerializer
+    SeasonCreateSerializer,SeasonDetailsSerializer
 )
 
 
@@ -69,16 +69,12 @@ class CloseSubmissionAPIView(APIView):
         
 #\\\\\List\\\\
 class SeasonListAPIView(APIView):
-    
-    
+
     def get(self, request):
 
         data = SeasonQueryService.list_seasons()
 
-        serializer = SeasonListSerializer(data, many=True)
-
-        return Response(serializer.data)
-    
+        return Response(data)
 #\\\\\Detail\\\\
 class SeasonDetailsAPIView(APIView):
 

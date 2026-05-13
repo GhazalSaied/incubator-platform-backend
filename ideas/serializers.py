@@ -195,16 +195,7 @@ class SeasonStatusSerializer(serializers.Serializer):
     label = serializers.CharField()
     phase = serializers.CharField(allow_null=True)       
         
-        
-#\\\\\\\\SeasonSerializer\\\\\
-class SeasonListSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    year = serializers.IntegerField()
-    name = serializers.CharField()
-    start_date = serializers.DateField()
-    end_date = serializers.DateField()
-    ideas_count = serializers.IntegerField()
-    status = SeasonStatusSerializer()
+
     
 #\\\\\SeasonCreateSerializer\\\\\
 class SeasonCreateSerializer(serializers.Serializer):
