@@ -69,12 +69,6 @@ class CloseSubmissionAPIView(APIView):
         
 #\\\\\List\\\\
 class SeasonListAPIView(APIView):
-<<<<<<< HEAD
-    
-    # permission_classes = [IsAuthenticated, CanManageSeason]
-=======
->>>>>>> fd72d7ef8238d47406e64edb742666f170593a4c
-
     def get(self, request):
 
         data = SeasonQueryService.list_seasons()
