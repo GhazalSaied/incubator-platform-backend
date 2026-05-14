@@ -12,9 +12,15 @@ from evaluations.models import (
     EvaluationNote,
     EvaluationSettings,
     IncubationReview,
+    
+    
 )
+
 from ideas.services.season_phase_service import SeasonPhaseService
 from ideas.models import Idea
+from django.db.models import Max
+from django.db.models.functions import TruncDate
+from django.utils import timezone
 
 class EvaluationService:
 
@@ -300,7 +306,7 @@ class EvaluationService:
             "assignments": data
         }
 
-        # ////////////////////////////////// MY EVALUATION DETAIL //////////////////////////////////
+# ////////////////////////////////// MY EVALUATION DETAIL //////////////////////////////////
 
     @staticmethod
     def get_user_evaluation_detail(user, idea_id):
@@ -562,3 +568,157 @@ class EvaluationService:
             }
 
         return None
+    
+   
+#///////////////////////// LATEST INCUBATION REVIEWS FOR ALL EVALUATORS ////////////////
+
+    @staticmethod
+    def get_latest_incubation_notes_for_incubatee(user, idea):
+
+        season = SeasonPhaseService.get_current_season()
+        phase = SeasonPhaseService.get_current_phase(season)
+
+        if not season or not phase:
+            raise ValidationError("لا يوجد موسم أو مرحلة حالية")
+
+        if phase.phase != "INCUBATION":
+            raise ValidationError(
+                "المراجعات الدورية متاحة فقط في مرحلة الاحتضان"
+            )
+
+
+        latest_review_date = (
+            IncubationReview.objects.filter(
+                idea=idea,
+                is_submitted=True,
+                submitted_at__isnull=False,
+            )
+            .annotate(review_date=TruncDate("submitted_at"))
+            .aggregate(latest_date=Max("review_date"))
+            .get("latest_date")
+        )
+
+        if not latest_review_date:
+            return IncubationReview.objects.none()
+
+        return (
+            IncubationReview.objects.filter(
+                idea=idea,
+                is_submitted=True,
+                submitted_at__date=latest_review_date,
+            )
+            .only("notes", "submitted_at")
+            .order_by("submitted_at")
+        )
+    
+
+#/////////////////// INCUBATION PHASE > تاب مراحل الاحتضان  (NOTES + MEETING DATE )//////////////////////
+
+    @staticmethod
+    def get_incubation_overview_for_incubatee(
+        *,
+        user,
+        idea,
+    ):
+
+        season = SeasonPhaseService.get_current_season()
+        phase = SeasonPhaseService.get_current_phase(
+            season
+        )
+
+        if not season or not phase:
+            raise ValidationError(
+                "لا يوجد موسم أو مرحلة حالية"
+            )
+
+        if phase.phase != "INCUBATION":
+            raise ValidationError(
+                "هذه البيانات متاحة فقط ضمن مرحلة الاحتضان"
+            )
+
+        next_meeting = (
+            IncubationAssignment.objects.filter(
+                idea=idea,
+                meeting_date__isnull=False,
+            )
+            .order_by("-meeting_date")
+            .first()
+        )
+
+        latest_notes = (
+            EvaluationService
+            .get_latest_incubation_notes_for_incubatee(
+                user=user,
+                idea=idea
+            )
+        )
+
+        return {
+            "next_meeting_date": (
+                next_meeting.meeting_date
+                if next_meeting
+                else None
+            ),
+            "notes": latest_notes,
+        }
+    
+#////////////////// EVALUATION SESSION STATUS > مرحلة التقييم في تاب مراحل الاحتضان ////////////////
+
+    @staticmethod
+    def get_idea_evaluation_session_status(
+        *,
+        user,
+        idea,
+    ):
+
+        is_owner = idea.owner == user
+
+        is_team_member = idea.team_members.filter(
+            user=user
+        ).exists()
+
+        if not is_owner and not is_team_member:
+            raise ValidationError(
+                "غير مصرح لك بعرض بيانات التقييم"
+            )
+
+        assignments = EvaluationAssignment.objects.filter(
+            idea=idea
+        )
+
+        if not assignments.exists():
+            raise ValidationError(
+                "لا يوجد لجنة تقييم لهذه الفكرة"
+        )
+
+        assignment = assignments.first()
+
+        meeting_date = assignment.meeting_date
+
+        if not meeting_date:
+            raise ValidationError(
+                "لم يتم تحديد موعد جلسة التقييم بعد"
+            )
+
+        now = timezone.now()
+
+        if now < meeting_date:
+            evaluation_status = "PENDING"
+
+        else:
+
+            total_assignments = assignments.count()
+
+            completed_assignments = assignments.filter(
+                is_completed=True
+            ).count()
+
+            if completed_assignments == total_assignments:
+                evaluation_status = "COMPLETED"
+            else:
+                evaluation_status = "IN_REVIEW"
+
+        return {
+            "meeting_date": meeting_date,
+            "status": evaluation_status,
+        }

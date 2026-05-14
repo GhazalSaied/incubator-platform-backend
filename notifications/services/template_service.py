@@ -97,6 +97,16 @@ TEMPLATES = {
             f"رفض المقيم {actor.full_name if actor else obj.user.full_name} الانضمام إلى لجنة التقييم لموسم {obj.season.name}"
     },
 
+    #==============================
+    #BOOTCAMP
+    #==============================
+
+    "bootcamp_absence_request_submitted": {
+    "title": "طلب غياب جديد",
+    "message": lambda obj, actor=None, extra=None:
+        f'تقدم {actor.full_name} بطلب غياب عن جلسة المعسكر التدريبية "{obj.session.title}"',
+    },
+
     
     # ===============================
     # SYSTEM
@@ -134,11 +144,11 @@ TEMPLATES = {
     
     "absence_approved": {
         "title": "طلب الغياب",
-        "message": lambda obj: "تم قبول طلب الغياب الخاص بك ✅"
+        "message": lambda obj: "تم قبول طلب الغياب الخاص بك "
     },
     "absence_warned": {
         "title": "تحذير",
-        "message": lambda obj: "تم رفض طلب الغياب ⚠️ يرجى الالتزام بالحضور"
+        "message": lambda obj: "تم رفض طلب الغياب  يرجى الالتزام بالحضور"
     },
     
     "bootcamp_session_scheduled": {
@@ -151,7 +161,7 @@ TEMPLATES = {
     },
     "idea_approved": {
         "title": "تم قبول فكرتك 🎉",
-    "message": lambda idea, actor: f"مبروك! تم قبول فكرتك '{idea.title}' والانتقال للمرحلة التالية 🚀"
+    "message": lambda idea, actor: f"مبروك! تم قبول فكرتك '{idea.title}' والانتقال للمرحلة التالية "
 
 },
 
@@ -185,7 +195,7 @@ TEMPLATES = {
     },
     "idea_accepted": {
         "title": "تم قبول فكرتك 🎉",
-        "message": lambda idea, actor=None, extra=None: f"مبروك! تم قبول فكرتك '{idea.title}' اهلا بك في مرحلة الاحتضان 🚀"
+        "message": lambda idea, actor=None, extra=None: f"مبروك! تم قبول فكرتك '{idea.title}' اهلا بك في مرحلة الاحتضان "
     },
     "idea_rejected": {
         "title": "تم رفض الفكرة",
@@ -238,7 +248,7 @@ TEMPLATES = {
     
     "exhibition_form_published": {
 
-    "title": "تم نشر فورم المعرض 🎉",
+    "title": "تم نشر فورم المعرض ",
 
     "message": lambda idea: (
         f"تم نشر فورم المعرض الخاص بمشروعك "

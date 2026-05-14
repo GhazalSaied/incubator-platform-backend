@@ -40,15 +40,26 @@ class Command(BaseCommand):
     def create_permissions(self):
         permissions = [
             # IDEA
-            ("idea.submit", "Submit Idea", "IDEA"),
+
             ("idea.view", "View Idea", "IDEA"),
 
             # EVALUATION
             ("evaluation.submit", "Submit Evaluation", "EVALUATION"),
-
+            ("evaluation.center.view", "View Evaluation Center", "EVALUATION"),
+            ("evaluation.notes.view", "View Evaluation Notes", "EVALUATION"),
+            
             # BOOTCAMP
 
+            ("bootcamp.view", "View Bootcamp", "BOOTCAMP"),
+            ("bootcamp.absence.submit", "Submit Bootcamp Absence", "BOOTCAMP"),
+
             # INCUBATION
+
+            ("team.request_completion", "Request Team Completion", "INCUBATION"),
+            ("incubation.team_candidates.view", "View Team Candidate Volunteers", "INCUBATION"),
+            ("incubation.join_request.send", "Send Join Request", "INCUBATION"),
+            ("incubation_reviews.notes.view","View Incubation Reviews Notes","INCUBATION"),
+
 
             # ADMIN
             ("user.manage", "Manage Users", "ADMIN"),
@@ -61,6 +72,27 @@ class Command(BaseCommand):
             ("incubtion_decision.manage", "Manage Incubation Decisions", "INCUBATION"),
             ("exhibition.manage", "Manage Exhibition", "EXHIBITION"),
             ("can_decide_exhibition", "Can Decide Exhibition", "EXHIBITION"),
+
+            #VOLUNTEER
+
+            ("workshop.manage", "Manage Workshop", "WORKSHOP"),
+            ("volunteer.requests.manage", "Manage Volunteer Requests", "VOLUNTEER"),
+            ("volunteer.assigned_consultations.view", "View Assigned Consultations", "VOLUNTEER"),
+            ("volunteer.profile.manage","Manage volunteer profile","VOLUNTEER"),
+
+            ("consultants.view", "View Consultants","VOLUNTEER"),
+            
+
+            #EXHIBITION
+
+            ("exhibition.card.create", "Create Exhibition Card", "EXHIBITION"),
+            ("exhibition.card.view", "View Exhibition Card", "EXHIBITION"),
+
+             # MESSAGING
+
+             ("message.send", "Send Messages", "MESSAGING"),
+
+
         ]
 
         for code, name, module in permissions:
@@ -100,18 +132,32 @@ class Command(BaseCommand):
 
             SystemRoles.EVALUATOR: [
                 "evaluation.submit",
+                "evaluation.center.view",
+                "evaluation.notes.view",
+
             ],
 
             SystemRoles.VOLUNTEER: [
                 "idea.view",
+                "workshop.manage",
+                "volunteer.requests.manage",
+                "volunteer.profile.manage",
+                 
+                
+                
             ],
 
             SystemRoles.IDEA_OWNER: [
-                "idea.submit",
                 "idea.view",
+                "consultants.view",
+                "bootcamp.view",
+                "bootcamp.absence.submit",
             ],
             SystemRoles.INCUBATOR: [
                 "idea.view",
+                "consultants.view",
+                "team.request_completion",
+                "incubation_reviews.notes.view",
             ]
         }
 

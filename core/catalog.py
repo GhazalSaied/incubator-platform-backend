@@ -227,6 +227,12 @@ EVENTS = {
         "action_url": "/bootcamp"
     },
 
+    "bootcamp_absence_request_submitted": {
+    "target": "ADMIN",
+    "payload": ["absence_request"],
+    "action_url":"/api/admin/bootcamp/absence/"
+    },
+
     # ===============================
     # EXHIBITION
     # ===============================

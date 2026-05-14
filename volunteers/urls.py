@@ -18,7 +18,7 @@ from .views import (
     ConsultationRequestDecisionAPIView,
     CreateConsultationRequestAPIView,
 
-    ConsultantsBySkillAPIView,
+    ConsultantByPrimarySkillAPIView,
 
     CreateJoinRequestAPIView,
     JoinRequestsAPIView,
@@ -61,7 +61,7 @@ urlpatterns = [
 
     path("all_requests/",MyAllRequestsAPIView.as_view()), #GET > both consultations & join requests
 
-    path("consultants/",ConsultantsBySkillAPIView.as_view()),
+    path("consultants/<str:primary_skill>/",ConsultantByPrimarySkillAPIView.as_view()),
 
     #================== JOIN =====================
 

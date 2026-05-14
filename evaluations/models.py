@@ -256,7 +256,7 @@ class EvaluationNote(models.Model):
         related_name="evaluation_notes"
     )
 
-    note = models.TextField()
+    note = models.TextField(null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

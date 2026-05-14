@@ -331,38 +331,19 @@ class CreateWorkshopSerializer(serializers.ModelSerializer):
 #///////////////////////////// CONSULTANTS LIST //////////////////////////////
 
 class ConsultantListSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(source="user.full_name", read_only=True)
-    avatar = serializers.SerializerMethodField()
-    primary_skill = serializers.CharField(source="primary_skills", read_only=True)
-    availability = serializers.SerializerMethodField()
+    full_name = serializers.CharField(source="user.full_name")
+    avatar = serializers.ImageField(source="user.avatar")
+    availability = VolunteerAvailabilitySerializer(
+        source="availabilities",
+        many=True
+    )
 
     class Meta:
         model = VolunteerProfile
         fields = [
             "id",
-            "name",
+            "full_name",
             "avatar",
-            "primary_skill",
+            "primary_skills",
             "availability",
         ]
-
-    def get_avatar(self, obj):
-        #  لا يوجد field  safe return
-        if hasattr(obj.user, "avatar"):
-            return obj.user.avatar.url if obj.user.avatar else None
-        return None
-
-    def get_availability(self, obj):
-        availabilities = obj.availabilities.all()
-
-        if not availabilities:
-            return None
-
-        # حسب الفلو: "من - إلى"
-        first = availabilities.first()
-
-        return {
-            "day": first.day,
-            "from": first.start_time,
-            "to": first.end_time
-        }

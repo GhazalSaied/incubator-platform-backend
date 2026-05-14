@@ -38,10 +38,13 @@ class TeamStatus(models.TextChoices):
     IN_PROGRESS = "in_progress", "In Progress"
 
 #\\\\\\\\\\\\\\\\\\season status\\\\\\\\\\\\\\\\\\
+
 class SeasonStatus(models.TextChoices):
     DRAFT = "DRAFT", "Draft"
     PUBLISHED = "PUBLISHED", "Published"
     CLOSED = "CLOSED", "Closed"
+
+    
 # ////////////////////// SEASONS /////////////////////////
 
 class Season(models.Model):
@@ -111,17 +114,7 @@ class Idea(models.Model):
         return self.title
     
 
-    #  EXHIBITION FIELDS
 
-    exhibition_image = models.ImageField(upload_to="exhibition/", null=True, blank=True)
-
-    project_goal = models.TextField(null=True, blank=True)
-    project_services = models.TextField(null=True, blank=True)
-
-    owner_email = models.EmailField(null=True, blank=True)
-    team_emails = models.TextField(null=True, blank=True)
-
-    exhibition_date = models.DateTimeField(null=True, blank=True)
 
 
 
@@ -298,7 +291,8 @@ class SuggestedVolunteer(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     
- #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ EXHIBITION FORM \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   
+ #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ EXHIBITION FORM \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  
+ 
 class ExhibitionForm(models.Model):
     season = models.OneToOneField(
         "ideas.Season",
@@ -312,6 +306,7 @@ class ExhibitionForm(models.Model):
     
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ EXHIBITION QUESTIONS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
 class ExhibitionQuestion(models.Model):
 
     TEXT = 'text'
@@ -357,6 +352,7 @@ class ExhibitionQuestion(models.Model):
     def __str__(self):
         return self.label
  #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ EXHIBITION QUESTION OPTIONS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   
+ 
 class ExhibitionQuestionOption(models.Model):
 
     question = models.ForeignKey(

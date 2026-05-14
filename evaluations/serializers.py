@@ -67,6 +67,20 @@ class EvaluationNoteSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
+        
+
+#//////////////////////////// LATEST INCUBATION NOTES ////////////////////////
+
+class IncubationLatestNotesSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = IncubationReview
+
+        fields = [
+            "notes",
+            "submitted_at",
+        ]
+
 
 #///////////////////////// FORM OPEN SERIALIZER /////////////////////
 
@@ -75,3 +89,25 @@ class EvaluationFormSerializer(serializers.Serializer):
     criteria = serializers.ListField()
     scores = serializers.ListField()
     is_submitted = serializers.BooleanField()
+
+#////////////////// EVALUATION SESSION STATUS > مرحلة التقييم في تاب مراحل الاحتضان ////////////////
+
+class EvaluationSessionStatusSerializer(
+    serializers.Serializer
+):
+    meeting_date = serializers.DateTimeField()
+    status = serializers.CharField()
+
+
+#///////////////////// INCUBATION PHASE > تاب مراحل الاحتضان //////////////////////
+
+class IncubationOverviewSerializer(
+    serializers.Serializer
+):
+    next_meeting_date = serializers.DateTimeField(
+        allow_null=True
+    )
+
+    notes = IncubationLatestNotesSerializer(
+        many=True
+    )

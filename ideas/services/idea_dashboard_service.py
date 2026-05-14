@@ -8,12 +8,15 @@ from bootcamp.services.attendance_service import AttendanceService
 from evaluations.models import EvaluationAssignment ,Evaluation
 from ideas.models import ExhibitionForm
 from evaluations.serializers import IncubationReviewSerializer
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
 
 class IdeaDashboardService:
     @staticmethod
     def build(user):
 
-        idea = Idea.objects.filter(owner=user).order_by("-created_at").first()
+        idea = IdeaService.get_user_idea(user)
 
         if not idea:
             return {"detail": "لا يوجد فكرة"}
@@ -62,9 +65,9 @@ class IdeaDashboardService:
 
 
     @staticmethod
-    def _bootcamp(idea,user):
+    def _bootcamp(idea):
         
-        idea = IdeaService.get_user_idea(user)
+        
         sessions = BootcampSession.objects.filter(
             phase__season=idea.season,
             phase__phase="BOOTCAMP",

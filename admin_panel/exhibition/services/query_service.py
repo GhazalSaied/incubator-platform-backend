@@ -21,7 +21,7 @@ class ExhibitionQueryService:
             "title": form.title,
             "is_active": getattr(form, "is_active", False),
 
-            # 🔥 مهم للـ frontend
+            #  مهم للـ frontend
             "mode": "preview",
 
             "questions": [
@@ -44,7 +44,7 @@ class ExhibitionQueryService:
             "required": question.required,
             "order": question.order,
 
-            # 🔥 مهم جداً للـ frontend rendering
+            #  مهم جداً للـ frontend rendering
             "component": ExhibitionQueryService._map_component(question.type),
 
             # options only if needed
@@ -70,7 +70,7 @@ class ExhibitionQueryService:
         ]
 
     # =========================
-    # UI MAPPING (VERY IMPORTANT 🔥)
+    # UI MAPPING (VERY IMPORTANT )
     # =========================
     @staticmethod
     def _map_component(q_type):
@@ -160,7 +160,7 @@ class ExhibitionSubmissionQueryService:
         }
 
     # =========================
-    # FORMAT ANSWER (🔥 مهم)
+    # FORMAT ANSWER ( مهم)
     # =========================
     @staticmethod
     def _format_answer(question, value):
@@ -190,7 +190,7 @@ class ExhibitionHistoryQueryService:
             exhibition_datetime=None
         )
 
-        # ✅ فلترة حسب السنة إذا موجودة
+        #  فلترة حسب السنة إذا موجودة
         if year:
             seasons = seasons.filter(
                 exhibition_datetime__year=year
@@ -211,7 +211,7 @@ class ExhibitionHistoryQueryService:
                 "title": f"معرض خريجين {season.name}",
                 "date": season.exhibition_datetime.strftime("%d/%m/%Y"),
 
-                # ✅ الجديد
+                #  الجديد
                 "year": season.exhibition_datetime.year,
 
                 "projects_count": projects_count
@@ -232,13 +232,13 @@ class ExhibitionHistoryQueryService:
             "project__team_members__user"
         )
 
-        # 🔍 search
+        #  search
         if search:
             submissions = submissions.filter(
                 project__title__icontains=search
             )
 
-        # 🎯 filter
+        #  filter
         if sector:
             submissions = submissions.filter(
                 project__sector__iexact=sector
@@ -246,7 +246,7 @@ class ExhibitionHistoryQueryService:
 
         return [
             {
-                "submission_id": s.id,  # 🔥 المهم
+                "submission_id": s.id,  #  المهم
 
                 "project_name": s.project.title,
                 "sector": s.project.sector,

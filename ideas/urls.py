@@ -4,13 +4,16 @@ from .views import ( CurrentIdeaFormAPIView , IdeaCreateAPIView ,
                     CurrentSeasonPhaseAPIView,MyIdeasAPIView,
                     IdeaDashboardAPIView,
                     IncubationPhaseAPIView,
-                    ExhibitionPhaseAPIView,
-                    UpdateExhibitionAPIView,
+                    ExhibitionDashboardAPIView,
+                    CreateExhibitionSubmissionAPIView,
                     CreateTeamRequestAPIView,
                     IdeaTeamAPIView,
                     TeamDashboardAPIView,
                     SuggestedVolunteersAPIView,
                     ConsultantsAPIView,
+                    PublicExhibitionProjectsAPIView,
+                    PublicExhibitionProjectDetailsAPIView,
+
                     
                 
                     )
@@ -24,15 +27,18 @@ urlpatterns=[
     path("my/", MyIdeasAPIView.as_view()),
     path("dashboard/", IdeaDashboardAPIView.as_view()),
     path("incubation/", IncubationPhaseAPIView.as_view()),
-    path("exhibition/", ExhibitionPhaseAPIView.as_view()),
-    path("exhibition/update/", UpdateExhibitionAPIView.as_view()),
+
     path("team-request/", CreateTeamRequestAPIView.as_view()),
     path("team/", IdeaTeamAPIView.as_view()),
     path("team-dashboard/",TeamDashboardAPIView.as_view()),
     path("suggested-volunteers/", SuggestedVolunteersAPIView.as_view()),
     path("consultants/", ConsultantsAPIView.as_view()),
     
-
+    #================== EXHIBITION ==========================
+    path("exhibition/dashboard/", ExhibitionDashboardAPIView.as_view()),
+    path("exhibition/submit/", CreateExhibitionSubmissionAPIView.as_view()),
+    path("exhibition-projects/", PublicExhibitionProjectsAPIView.as_view()),
+    path("projects/<int:pk>/", PublicExhibitionProjectDetailsAPIView.as_view()),
     
     
     

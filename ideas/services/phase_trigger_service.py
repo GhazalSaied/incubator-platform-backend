@@ -22,10 +22,10 @@ class PhaseTriggerService:
 
         phase = current_phase.phase
 
-    # 🎯 إذا نحن في submission ونريد PRE_ACCEPTED
+    #  إذا نحن في submission ونريد PRE_ACCEPTED
         if phase == PhaseEnum.SUBMISSION and to_status == IdeaStatus.PRE_ACCEPTED:
 
-        # 👉 نغلق submission ونفتح bootcamp
+        #  نغلق submission ونفتح bootcamp
             PhaseTriggerService._move_to_next_phase(
                 idea.season,
                 PhaseEnum.BOOTCAMP
@@ -47,18 +47,18 @@ class PhaseTriggerService:
 
         phase = current_phase.phase
 
-        # 🔹 Submission → Bootcamp
+        #  Submission → Bootcamp
         if phase == PhaseEnum.SUBMISSION:
             PhaseTriggerService._check_submission_end(season)
 
-        # 🔹 Bootcamp → Evaluation
+        #  Bootcamp → Evaluation
         elif phase == PhaseEnum.BOOTCAMP:
             PhaseTriggerService._check_bootcamp_end(season)
 
-        # 🔹 Evaluation → incubation
+        #  Evaluation → incubation
         elif phase == PhaseEnum.EVALUATION:
             PhaseTriggerService._check_evaluation_end(season)
-        # 🔹 Incubation → Exhibition
+        #  Incubation → Exhibition
         elif phase == PhaseEnum.INCUBATION:
             PhaseTriggerService._check_incubation_end(season)
             
@@ -145,15 +145,15 @@ class PhaseTriggerService:
 
         current_phase = SeasonPhaseService.get_current_phase(season)
 
-        # ❗ حماية من التكرار
+        #  حماية من التكرار
         if not current_phase or current_phase.phase == next_phase:
             return
 
-        # 🔴 إغلاق المرحلة الحالية
+        #  إغلاق المرحلة الحالية
         current_phase.end_date = now
         current_phase.save(update_fields=["end_date"])
 
-        # 🟢 إنشاء المرحلة الجديدة
+        #  إنشاء المرحلة الجديدة
         SeasonPhase.objects.create(
             season=season,
             phase=next_phase,

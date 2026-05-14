@@ -2,9 +2,17 @@ from rest_framework import serializers
 from .models import (Idea, FormQuestion, 
                      IdeaForm, Season,
                      TeamRequest,
-                     FormQuestionChoice
+                     FormQuestionChoice,
+                     ExhibitionForm,
+                     ExhibitionQuestion,
+                     ExhibitionQuestionOption,
+                     ExhibitionSubmission,
+                     TeamMember,
 )
 from ideas.services.season_phase_service import SeasonPhaseService
+
+
+
 
 #///////////////////////////IDAE FORM SERIALIZER /////////////////////////////////
 
@@ -51,7 +59,7 @@ class IdeaDetailSerializer(serializers.ModelSerializer):
         ]
 
 #//////////////////////// IDEA FOR EVALUATER ///////////////////////
-
+#unused
 
 class IdeaForEvaluationSerializer(serializers.ModelSerializer):
     owner_name = serializers.CharField(source="owner.full_name", read_only=True)
@@ -97,19 +105,7 @@ class IdeaDashboardSerializer(serializers.Serializer):
     progress = serializers.ListField()
     data = serializers.DictField()
     
-#//////////////////////////// EXHIBITION  /////////////////////////////
 
-class ExhibitionSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Idea
-        fields = [
-            "title",
-            "exhibition_image",
-            "project_goal",
-            "project_services",
-            "contact_email"
-        ]
 
 #/////////////////////////// TEAM REQUEST SERIALIZER /////////////////////
 
@@ -120,7 +116,148 @@ class TeamRequestSerializer(serializers.ModelSerializer):
         
 
 
+#///////////////////////////// EXHIBITIONS QUESTIONS OPTIONS ////////////////////
 
+class ExhibitionQuestionOptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExhibitionQuestionOption
+        fields = [
+            "value",
+            "label",
+            "order",
+        ]
+
+
+#/////////////////////////////// EXHIBITIONS QUESTIONS /////////////////////////
+
+class ExhibitionQuestionSerializer(serializers.ModelSerializer):
+    options = ExhibitionQuestionOptionSerializer(
+        many=True,
+        read_only=True
+    )
+
+    class Meta:
+        model = ExhibitionQuestion
+        fields = [
+            "id",
+            "key",
+            "label",
+            "type",
+            "required",
+            "order",
+            "options",
+        ]
+
+
+#//////////////////// EXHIBITION FORM DETAILS //////////////////
+
+class ExhibitionFormDetailsSerializer(serializers.ModelSerializer):
+    questions = ExhibitionQuestionSerializer(
+        many=True,
+        read_only=True
+    )
+
+    class Meta:
+        model = ExhibitionForm
+        fields = [
+            "id",
+            "title",
+            "is_active",
+            "questions",
+        ]
+
+
+#/////////////////////// EXHIBITION SUBMISSION CREATE /////////////////////////
+
+class ExhibitionSubmissionCreateSerializer(serializers.Serializer):
+    data = serializers.JSONField()
+
+    def validate(self, attrs):
+        idea = self.context["idea"]
+        request_user = self.context["request"].user
+
+        if idea.owner_id != request_user.id:
+            raise serializers.ValidationError(
+                "Only the idea owner can submit exhibition form."
+            )
+
+        already_submitted = ExhibitionSubmission.objects.filter(
+            project=idea
+        ).exists()
+
+        if already_submitted:
+            raise serializers.ValidationError(
+                "Exhibition form already submitted."
+            )
+
+        form = getattr(
+            idea.season,
+            "exhibition_form",
+            None
+        )
+
+        if not form or not form.is_active:
+            raise serializers.ValidationError(
+                "No active exhibition form found."
+            )
+
+        attrs["form"] = form
+        return attrs
+
+
+#///////////////////////// ExhibitionList > تاب المشاريع ////////////////////////
+
+
+class PublicExhibitionListSerializer(serializers.Serializer):
+
+    id = serializers.IntegerField()
+    title = serializers.SerializerMethodField()
+    sector = serializers.CharField(source="project.sector")
+    team_members = serializers.SerializerMethodField()
+    owner = serializers.SerializerMethodField()
+
+    def get_title(self, obj):
+        return obj.data.get("title")
+
+    def get_team_members(self, obj):
+        return obj.data.get("team_members", [])
+
+    def get_owner(self, obj):
+        return obj.project.owner.full_name
+    
+#/////////////////////////////// EXHIBITION DETAILS > عرض التفاصيل في تاب المشاريع /////////////
+
+class PublicExhibitionDetailsSerializer(serializers.Serializer):
+
+    id = serializers.IntegerField()
+    title = serializers.SerializerMethodField()
+    sector = serializers.CharField(source="project.sector")
+
+    team_members = serializers.SerializerMethodField()
+    project_goal = serializers.SerializerMethodField()
+    project_services = serializers.SerializerMethodField()
+    emails = serializers.SerializerMethodField()
+    owner_email = serializers.SerializerMethodField()
+
+    owner_id = serializers.IntegerField(source="project.owner.id")
+
+    def get_title(self, obj):
+        return obj.data.get("title")
+
+    def get_team_members(self, obj):
+        return obj.data.get("team_members", [])
+
+    def get_project_goal(self, obj):
+        return obj.data.get("project_goal")
+
+    def get_project_services(self, obj):
+        return obj.data.get("project_services", [])
+
+    def get_emails(self, obj):
+        return obj.data.get("emails", [])
+
+    def get_owner_email(self, obj):
+        return obj.data.get("owner_email")
 
 
 # ////////////////////////////////////////////////////////////////
@@ -184,7 +321,19 @@ class ProjectDetailsSerializer(serializers.ModelSerializer):
         return obj.answers.get("problem")
 
 
+#//////////////////////////// EXHIBITION  /////////////////////////////
+#unused
+class ExhibitionSerializer(serializers.ModelSerializer):
 
+    class Meta:
+        model = Idea
+        fields = [
+            "title",
+            "exhibition_image",
+            "project_goal",
+            "project_services",
+            "contact_email"
+        ]
 
 
 
@@ -260,7 +409,7 @@ class SeasonDetailsSerializer(serializers.Serializer):
     remaining_days = serializers.IntegerField(allow_null=True)
     evaluation_ideas_count = serializers.IntegerField(allow_null=True)
 
-    # 🔥 الجديد
+    #  الجديد
     ideas = IdeaRowSerializer(many=True)
     
 class ChoiceSerializer(serializers.Serializer):
