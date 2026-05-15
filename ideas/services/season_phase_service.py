@@ -41,7 +41,6 @@ class SeasonPhaseService:
 
         if not season:
             season = SeasonPhaseService.get_current_season()
-            print("Current season:", season)
         if not season:
             return None
 

@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from accounts.models import Role, User
 from django.shortcuts import get_object_or_404
 
+from core.permissions import CanManageUsers
 from ideas.models import Idea
 from .serializers import AddTeamMemberSerializer, AdminUserSerializer,CreateUserSerializer, SendUserNotificationSerializer, WorkshopActionSerializer
 from rest_framework import status
@@ -12,7 +13,7 @@ from .services.query_service import UsersQueryService, UserProfileService
 from django.core.exceptions import ValidationError
 
 class AdminUserListView(APIView):
-    
+    permission_classes = [IsAuthenticated,CanManageUsers]
     def get(self, request):
         role_code = request.query_params.get("role")
 
@@ -25,7 +26,8 @@ class AdminUserListView(APIView):
 
 
 class CreateUserView(APIView):
-   
+    permission_classes = [IsAuthenticated,CanManageUsers]
+
     def post(self, request):
         serializer = CreateUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -48,7 +50,7 @@ class CreateUserView(APIView):
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض الادوار\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class RoleListAPIView(APIView):
-    
+    permission_classes = [IsAuthenticated,CanManageUsers]
    
     def get(self, request):
 
@@ -64,7 +66,7 @@ class RoleListAPIView(APIView):
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تحديث أدوار المستخدم \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class UpdateUserRolesAPIView(APIView):
-
+    permission_classes = [IsAuthenticated,CanManageUsers]
     def put(self, request, user_id):
 
         user = get_object_or_404(
@@ -93,7 +95,7 @@ class UpdateUserRolesAPIView(APIView):
 
 class FreezeUserAPIView(APIView):
 
-
+    permission_classes = [IsAuthenticated,CanManageUsers]
     def post(self, request, user_id):
 
         user = get_object_or_404(
@@ -117,8 +119,8 @@ class FreezeUserAPIView(APIView):
         })
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تفعيل حساب مجمد \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class ActivateUserAPIView(APIView):
-
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanManageUsers]
+    
 
     def post(self, request, user_id):
 
@@ -144,7 +146,7 @@ class ActivateUserAPIView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ارسال اشعار لمستخدم\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class SendNotificationToUserAPIView(APIView):
-
+    permission_classes = [IsAuthenticated,CanManageUsers]
     def post(self, request, user_id):
 
         serializer = SendUserNotificationSerializer(
@@ -170,7 +172,7 @@ class SendNotificationToUserAPIView(APIView):
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض المشاريع \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class CurrentSeasonIdeasAPIView(APIView):
-
+    permission_classes = [IsAuthenticated,CanManageUsers]
     def get(self, request):
 
         data = UsersQueryService.get_current_ideas()
@@ -179,7 +181,7 @@ class CurrentSeasonIdeasAPIView(APIView):
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\اضافة عضو لفريق \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  
 class AddUserToIdeaAPIView(APIView):
-
+    permission_classes = [IsAuthenticated,CanManageUsers]
     def post(self, request, user_id):
 
         serializer = AddTeamMemberSerializer(
@@ -211,7 +213,7 @@ class AddUserToIdeaAPIView(APIView):
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض تفاصيل المستخدم حسب الدور \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   
 class AdminUserProfileAPIView(APIView):
-
+    permission_classes = [IsAuthenticated,CanManageUsers]
     def get(self, request, user_id):
 
         user = get_object_or_404(

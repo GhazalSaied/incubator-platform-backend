@@ -7,6 +7,7 @@ from django.utils import timezone
 from core.events import EventBus
 from datetime import datetime, date
 
+from core.permissions import CanManageUsers
 from messaging.models import Conversation
 from django.shortcuts import get_object_or_404
 
@@ -571,7 +572,7 @@ class MyWorkshopsAPIView(APIView):
 #/////////////////////// MY WORKSHOPS DETAILS ///////////////////
 
 class MyWorkshopDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated, ]
+    permission_classes = [IsAuthenticated,CanManageUsers ]
 
     def get(self, request, workshop_id):
         w = get_object_or_404(
