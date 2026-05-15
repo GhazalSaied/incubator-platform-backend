@@ -17,7 +17,7 @@ from admin_panel.bootcamp.attendance.services import (
 
 #\\\\session attendance\\\\\\
 class SessionAttendanceListView(APIView):
-    permission_classes = [IsAuthenticated, CanManageBootcamp]
+    # permission_classes = [IsAuthenticated, CanManageBootcamp]
     def get(self, request, session_id):
         queryset = get_session_attendance(session_id)
         serializer = SessionAttendanceSerializer(queryset, many=True)
@@ -27,7 +27,7 @@ class SessionAttendanceListView(APIView):
 #\\\\\\\\idea stats\\\\\\\\\\\
 class IdeaAttendanceStatsView(APIView):
     
-    permission_classes = [IsAuthenticated, CanManageBootcamp]   
+    # permission_classes = [IsAuthenticated, CanManageBootcamp]   
     def get(self, request, idea_id):
         data = get_idea_stats(idea_id)
         return Response(data)
@@ -36,7 +36,7 @@ class IdeaAttendanceStatsView(APIView):
 
 class BootcampDecisionListView(APIView):
     
-    permission_classes = [IsAuthenticated, CanManageBootcamp]
+    # permission_classes = [IsAuthenticated, CanManageBootcamp]
     def get(self, request):
         search = request.query_params.get("search")
 

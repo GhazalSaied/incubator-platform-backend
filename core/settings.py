@@ -173,11 +173,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
 ]
 
-#مؤقتا
+# إعدادات REST_FRAMEWORK الموحدة (للتطوير)
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': [],  # لا مصادقة
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',  # السماح للجميع
+    ],
 }
-REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = ()
-

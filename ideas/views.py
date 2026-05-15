@@ -31,7 +31,7 @@ from ideas.services.idea_permissions import CanSubmitIdea
 #///////////////////////////GET CUURENT IDEA FORM /////////////////////////////////
 
 class CurrentIdeaFormAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+   # permission_classes = [IsAuthenticated]
 
     def get(self, request):
         season = Season.objects.filter(is_open=True).first()
@@ -47,7 +47,7 @@ class CurrentIdeaFormAPIView(APIView):
 #/////////////////////////// CREATE IDEA VIEW /////////////////////////////////
 
 class IdeaCreateAPIView(APIView):
-    permission_classes = [CanSubmitIdea]
+   # permission_classes = [CanSubmitIdea]
 
     def post(self, request):
 
@@ -74,7 +74,7 @@ class IdeaCreateAPIView(APIView):
 #///////////////////////// EDIT IDEA VIEW ///////////////////////////////////
 
 class IdeaUpdateAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+   # permission_classes = [IsAuthenticated]
 
     def put(self, request, idea_id):
 
@@ -110,7 +110,7 @@ class IdeaUpdateAPIView(APIView):
  #////////////////////////  WITHDRIDEAVIEW //////////////////////////////////////////
 
 class WithdrawIdeaView(APIView):
-    permission_classes = [IsAuthenticated]
+   ## permission_classes = [IsAuthenticated]
 
     def post(self, request, idea_id):
 
@@ -143,7 +143,7 @@ class WithdrawIdeaView(APIView):
 #///////////////////////////////// CURRENT SEASON PHASE ////////////////////////////////////////
 
 class CurrentSeasonPhaseAPIView(APIView):
-    permission_classes = [AllowAny]
+   ## permission_classes = [AllowAny]
 
     def get(self, request):
         season = SeasonPhaseService.get_current_season()
@@ -170,7 +170,7 @@ class CurrentSeasonPhaseAPIView(APIView):
 #//////////////////////////// MY IDEA VIEW (DISPLAY IDEA INFO TO THE USER ) /////////////////////////////////////
 
 class MyIdeasAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+   ## permission_classes = [IsAuthenticated]
 
     def get(self, request):
         ideas = Idea.objects.filter(
@@ -186,7 +186,7 @@ from ideas.services.idea_dashboard_service import IdeaDashboardService
 
 
 class IdeaDashboardAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+   ## permission_classes = [IsAuthenticated]
 
     def get(self, request):
 
@@ -203,7 +203,7 @@ class IdeaDashboardAPIView(APIView):
 #//////////////////////////// INCUBATION PHASE //////////////////////////
 
 class IncubationPhaseAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+   ## permission_classes = [IsAuthenticated]
 
     def get(self, request):
 
@@ -217,7 +217,7 @@ class IncubationPhaseAPIView(APIView):
 #//////////////////////////////// EXHIBITION PHASE /////////////////////////////
 
 class ExhibitionPhaseAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+   ## permission_classes = [IsAuthenticated]
 
     def get(self, request):
 
@@ -232,7 +232,7 @@ class ExhibitionPhaseAPIView(APIView):
 #//////////////////////////////// UPDATE EXHIBITION CARD  /////////////////////////////
 
 class UpdateExhibitionAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+   # permission_classes = [IsAuthenticated]
 
     def put(self, request):
 
@@ -251,7 +251,7 @@ class UpdateExhibitionAPIView(APIView):
 #//////////////////////////// CREATE TEAM REQUEST VIEW ////////////////////////
 
 class CreateTeamRequestAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+   # permission_classes = [IsAuthenticated]
 
     def post(self, request):
 
@@ -269,7 +269,7 @@ class CreateTeamRequestAPIView(APIView):
 #/////////////////////////// SUGGESTED VOLUNTREES ///////////////////////////
 
 class SuggestedVolunteersAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+   # permission_classes = [IsAuthenticated]
 
     def get(self, request):
 
@@ -279,7 +279,7 @@ class SuggestedVolunteersAPIView(APIView):
 #///////////////////////////////// IDEA TEAM //////////////////////////
 
 class IdeaTeamAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+   # permission_classes = [IsAuthenticated]
 
     def get(self, request):
 
@@ -307,7 +307,7 @@ class IdeaTeamAPIView(APIView):
 #/////////////////////////// CONSULTANTS LIST ////////////////////////
 
 class ConsultantsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+   # permission_classes = [IsAuthenticated]
 
     def get(self, request):
 
@@ -318,7 +318,7 @@ class ConsultantsAPIView(APIView):
 #///////////////////////// TEAM DASHBOARD ///////////////////////
 
 class TeamDashboardAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+   # permission_classes = [IsAuthenticated]
 
     def get(self, request):
 

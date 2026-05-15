@@ -22,7 +22,7 @@ from ideas.services.season_phase_service import SeasonPhaseService
 #\\\\\\\\\BootcampIdeasList\\\\\
 class BootcampIdeasListView(APIView):
     
-    parser_classes = [IsAuthenticated, CanManageBootcamp]
+    # parser_classes = [IsAuthenticated, CanManageBootcamp]
     def get(self, request):
         search = request.query_params.get("search")
 
@@ -33,7 +33,7 @@ class BootcampIdeasListView(APIView):
 #\\\\\\\BootcampDecision\\\\\\\\\
 
 class BootcampDecisionView(APIView):
-    permission_classes = [IsAuthenticated, CanManageCandidateBootcamp]
+    # permission_classes = [IsAuthenticated, CanManageCandidateBootcamp]
     def post(self, request, idea_id):
 
         serializer = BootcampDecisionSerializer(data=request.data)
@@ -57,7 +57,7 @@ class BootcampDecisionView(APIView):
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\اعلان انتهاء جلسات المعسكر\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  
 class EndBootcampSessionsView(APIView):
-    permission_classes = [IsAuthenticated, CanManageCandidateBootcamp]
+    # permission_classes = [IsAuthenticated, CanManageCandidateBootcamp]
     @transaction.atomic
     def post(self, request, season_id):
         try:

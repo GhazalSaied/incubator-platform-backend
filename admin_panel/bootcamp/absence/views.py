@@ -18,7 +18,7 @@ from bootcamp.serializers import (
 
 class AbsenceRequestsListView(APIView):
     
-    parser_classes = [IsAuthenticated, CanManageBootcamp]
+    # parser_classes = [IsAuthenticated, CanManageBootcamp]
     def get(self, request):
         query = request.query_params.get("search")
 
@@ -29,7 +29,7 @@ class AbsenceRequestsListView(APIView):
     
 #\\\\AbsenceDecision\\\\\\\\\\\\\
 class AbsenceDecisionView(APIView):
-    permission_classes = [IsAuthenticated, CanManageCandidateBootcamp]
+    # permission_classes = [IsAuthenticated, CanManageCandidateBootcamp]
     def post(self, request, pk):
         serializer = AbsenceDecisionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

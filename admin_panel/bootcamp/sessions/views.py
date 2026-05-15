@@ -13,7 +13,7 @@ from ideas.services.season_phase_service import SeasonPhaseService
 
 #\\\\انشاء جلسة للمعسكر\\\\\\\\
 class BootcampSessionCreateView(APIView):
-    permission_classes = [IsAuthenticated, CanManageCandidateBootcamp]
+    # permission_classes = [IsAuthenticated, CanManageCandidateBootcamp]
     def post(self, request, season_id):
     
         try:
@@ -33,7 +33,7 @@ class BootcampSessionCreateView(APIView):
         
 #\\\\\\\عرض الجلسات \\\\\
 class BootcampSessionListView(ListAPIView):
-    permission_classes = [IsAuthenticated, CanManageBootcamp]
+    # permission_classes = [IsAuthenticated, CanManageBootcamp]
     serializer_class = BootcampSessionSerializer
     def get_queryset(self):
         phase_id = self.request.query_params.get("phase_id")
