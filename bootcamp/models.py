@@ -26,6 +26,8 @@ class BootcampSession(BaseModel):
         related_name="session_as_trainer"
     )
 
+
+
     location = models.CharField(max_length=255,null=True)
     tasks = models.TextField(null=True)
     date = models.DateField(null=True)

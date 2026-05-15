@@ -141,31 +141,4 @@ class FormBuilderService:
             if c_id not in sent_ids:
                 choice.delete()
                 
-    @staticmethod
-    def get_form_preview(form):
 
-        questions = form.questions.prefetch_related("choices").order_by("order")
-
-        result = []
-
-        for q in questions:
-
-            result.append({
-                "id": q.id,
-                "key": q.key,
-                "label": q.label,
-                "type": q.type,
-                "required": q.required,
-                "order": q.order,
-                "choices": [
-                    {
-                        "id": c.id,
-                        "value": c.value,
-                        "label": c.label,
-                        "order": c.order
-                    }
-                    for c in q.choices.all().order_by("order")
-                ]
-            })
-
-        return result

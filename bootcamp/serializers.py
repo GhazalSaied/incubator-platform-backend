@@ -1,22 +1,104 @@
 from rest_framework import serializers
 from .models import BootcampSession, BootcampAbsenceRequest, BootcampAttendance
-from ideas.models import Idea
 from admin_panel.bootcamp.sessions.services import BootcampSessionQueryService
 from django.db.models import Q
-# USER SIDE 
+from ideas.models import Idea, IdeaStatus
+from datetime import datetime
+
 
 
 #/////////////////////////// BOOTCAMP SESSION ////////////////////////
 class BootcampSessionSerializer(serializers.ModelSerializer):
     trainer_name = serializers.SerializerMethodField()
 
+
+class BootcampSessionsTableSerializer(serializers.ModelSerializer):
+    trainer_name = serializers.CharField(
+        source="trainer.full_name",
+        default=None
+    )
+    time_range = serializers.SerializerMethodField()
+    session_status = serializers.SerializerMethodField()
+
     class Meta:
         model = BootcampSession
         fields = [
             "id",
             "title",
-            "trainer",
+            "date",
             "trainer_name",
+            "time_range",
+            "tasks",
+            "session_status",
+        ]
+
+    def get_time_range(self, obj):
+        if not obj.start_time or not obj.end_time:
+            return None
+
+        return f"{obj.start_time.strftime('%H:%M')} - {obj.end_time.strftime('%H:%M')}"
+
+    def get_session_status(self, obj):
+        if not obj.date or not obj.start_time:
+            return "لم تأت بعد"
+
+        session_datetime = datetime.combine(
+            obj.date,
+            obj.start_time
+        )
+
+        if session_datetime < datetime.now():
+            return "انتهت"
+
+        return "لم تأت بعد"
+
+
+#/////////////////////////////// NEXT BOOTCAMP SESSION //////////////////////////////
+
+class NextBootcampSessionSerializer(serializers.ModelSerializer):
+    time_range = serializers.SerializerMethodField()
+
+
+    class Meta:
+        model = BootcampSession
+        fields = [
+            "id",
+            "title",
+            "date",
+            "time_range",
+            "location",
+            "tasks",
+        ]
+
+    def get_time_range(self, obj):
+        if not obj.start_time or not obj.end_time:
+            return None
+
+        return f"{obj.start_time.strftime('%H:%M')} - {obj.end_time.strftime('%H:%M')}"
+    
+
+#////////////////////////// BOOTCAMP ABSENCE REQUEST ////////////////////
+
+class BootcampAbsenceRequestCreateSerializer(serializers.Serializer):
+   
+    reason = serializers.CharField()
+
+    def validate_reason(self, value):
+        if not value.strip():
+            raise serializers.ValidationError(
+                "Reason is required."
+            )
+        return value.strip()
+
+
+#/////////////////////////// VOLUNTEER BOOTCAMP SESSIONS > TRAINER /////////////////
+
+class VolunteerBootcampSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BootcampSession
+        fields = [
+            "id",
+            "title",
             "date",
             "start_time",
             "end_time",
@@ -24,41 +106,68 @@ class BootcampSessionSerializer(serializers.ModelSerializer):
             "location",
         ]
 
-    def get_trainer_name(self, obj):
-        return BootcampSessionQueryService.get_trainer_name(obj)
+#/////////////////////// BOOTCAMP IDEA ATTENDANCE LIST ////////////////
 
-    
+class BootcampIdeaAttendanceListSerializer(serializers.ModelSerializer):
+    owner_name = serializers.CharField(source="owner.full_name")
 
-  
+    class Meta:
+        model = Idea
+        fields = [
+            "id",
+            "title",
+            "owner_name",
+        ]
 
-    def validate(self, data):
-        start = data.get("start_time")
-        end = data.get("end_time")
-        date = data.get("date")
+#///////////////////////// BOOTCAMP IDEA ATTENDANCE CREATE ////////////////
 
-        if start and end and start >= end:
+class BootcampAttendanceCreateSerializer(serializers.Serializer):
+    STATUS_PRESENT = "present"
+    STATUS_ABSENT = "absent"
+
+    STATUS_CHOICES = (
+        (STATUS_PRESENT, "Present"),
+        (STATUS_ABSENT, "Absent"),
+    )
+
+    idea_id = serializers.IntegerField()
+    status = serializers.ChoiceField(
+        choices=STATUS_CHOICES
+    )
+
+    def validate(self, attrs):
+        session = self.context["session"]
+        request_user = self.context["request"].user
+        idea_id = attrs["idea_id"]
+
+        if session.trainer_id != request_user.id:
             raise serializers.ValidationError(
-            "وقت البداية يجب أن يكون قبل النهاية"
-           )
+                "You are not allowed to manage this session."
+            )
 
-        if start and end and date:
+        try:
+            idea = Idea.objects.get(
+                id=idea_id,
+                status=IdeaStatus.BOOTCAMP
+            )
+        except Idea.DoesNotExist:
+            raise serializers.ValidationError(
+                "Idea not found or not in BOOTCAMP status."
+            )
 
-            qs = BootcampSession.objects.filter(date=date)
+        already_exists = BootcampAttendance.objects.filter(
+            session=session,
+            idea=idea
+        ).exists()
 
-            if self.instance:
-                qs = qs.exclude(id=self.instance.id)
+        if already_exists:
+            raise serializers.ValidationError(
+                "Attendance already submitted for this idea."
+            )
 
-            overlap = qs.filter(
-                Q(start_time__lt=end) & Q(end_time__gt=start)
-            ).exists()
+        attrs["idea"] = idea
+        return attrs
 
-            if overlap:
-                raise serializers.ValidationError(
-                "يوجد جلسة أخرى ضمن نفس التوقيت في هذا اليوم"
-                )
-
-        return data
-    
 
 
 

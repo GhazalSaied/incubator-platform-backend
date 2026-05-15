@@ -51,20 +51,7 @@ class FormBuilderAPIView(APIView):
         })
         
         
-#\\\\\\\\\\\\\\\\\معاينة النموذج\\\\\\\\\\\\\\\\\\\\\\\\
-class FormPreviewAPIView(APIView):
-    permission_classes = [IsAuthenticated, CanManageSeason]
-    def get(self, request, season_id):
 
-        season = get_object_or_404(Season, id=season_id)
-
-        form = season.form
-
-        data = FormBuilderService.get_form_preview(form)
-
-        return Response({
-            "questions": data
-        })
     
 #\\\\\\\\\\\\\\\\\عرض النموذج المصمم للموسم مع مراعاة المرحل \\\\\\\\\\\\\\\\\\\\\\
 class SeasonFormDesignAPIView(APIView):

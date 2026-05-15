@@ -9,10 +9,13 @@ from rest_framework.permissions import BasePermission
 
 
 PERMISSIONS = {
-    "idea.submit": "Submit Idea",
+
     "idea.view": "View Idea",
 
+    #EVALUATION
     "evaluation.submit": "Submit Evaluation",
+    "evaluation.center.view": "View Evaluation Center",
+    "evaluation.notes.view": "View Evaluation Notes",
 
     "user.manage": "Manage Users",
     "season.manage": "Manage Season",
@@ -26,11 +29,35 @@ PERMISSIONS = {
     "can_decide_exhibition": "Can Decide Exhibition",
     "volunteer.manage": "Manage Volunteers",
     "workshop.manage": "Manage Workshops",
-    
+    #VOLUNTEER:
+    "workshop.manage": "Manage Workshop",
+    "volunteer.requests.manage": "Manage Volunteer Requests",
+    "volunteer.assigned_consultations.view": "View Assigned Consultations",
+    "volunteer.profile.manage" : "manage volunteer profile",
+    "consultants.view" : "View Consultants",
+
+    #INCUBATION
+    "team.request_completion": "Request Team Completion",
+    "incubation.team_candidates.view": "View Team Candidate Volunteers",
+    "incubation.join_request.send": "Send Join Request",
+    "incubation_reviews.notes.view" :"View Incubation Reviews Notes",
+
+    #BOOTCAMP
+    "bootcamp.view": "View Bootcamp",
+    "bootcamp.absence.submit": "Submit Bootcamp Absence",
+
+
+    # EXHIBITION
+    "exhibition.card.create": "Create Exhibition Card",
+    "exhibition.card.view": "View Exhibition Card",
+
+    #MESSAGING
+    "message.send": "Send Messages",
+
 }
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 PHASE_GATED_PERMISSIONS = {
-    "idea.submit": SeasonPhase.SUBMISSION,
+    
     "evaluation.submit": SeasonPhase.EVALUATION,
     "bootcamp.session.create": SeasonPhase.BOOTCAMP,
     "incubation.assign_mentor": SeasonPhase.INCUBATION,
@@ -38,6 +65,22 @@ PHASE_GATED_PERMISSIONS = {
     "evaluation_decision.manage": SeasonPhase.EVALUATION,
     "incubtion_decision.manage": SeasonPhase.INCUBATION,
     "can_decide_exhibition": SeasonPhase.EXHIBITION,
+
+    "bootcamp.view": SeasonPhase.BOOTCAMP,
+    "bootcamp.absence.submit": SeasonPhase.BOOTCAMP,
+
+
+
+    "team.request_completion": SeasonPhase.INCUBATION,
+    "incubation.team_candidates.view": SeasonPhase.INCUBATION,
+    "incubation.join_request.send": SeasonPhase.INCUBATION,
+    "incubationreviews.assignments.view": SeasonPhase.INCUBATION,
+    "incubation_reviews.notes.view":SeasonPhase.INCUBATION,
+
+
+
+    "exhibition.card.create": SeasonPhase.EXHIBITION,
+    "exhibition.card.view": SeasonPhase.EXHIBITION,
     
 }
 
@@ -75,12 +118,8 @@ class HasPermission(BasePermission):
 
         return can_access(request.user, self.required_permission)
 
-# IDEA
-class CanSubmitIdea(HasPermission):
-    required_permission = "idea.submit"
 
-    def has_object_permission(self, request, view, obj):
-        return obj.owner == request.user
+
 
 
 class CanViewIdea(HasPermission):
@@ -91,13 +130,41 @@ class CanViewIdea(HasPermission):
 class CanEvaluateIdea(HasPermission):
     required_permission = "evaluation.submit"
 
+class CanViewEvaluationCenter(HasPermission):
+    required_permission = "evaluation.center.view"
+
+
+class CanViewEvaluationNotes(HasPermission):
+    required_permission = "evaluation.notes.view"
+
 
 
 # BOOTCAMP
 
+class CanViewBootcamp(HasPermission):
+    required_permission = "bootcamp.view"
+
+
+class CanSubmitBootcampAbsence(HasPermission):
+    required_permission = "bootcamp.absence.submit"
+
 
 # INCUBATION
 
+class CanRequestTeamCompletion(HasPermission):
+    required_permission = "team.request_completion"
+
+
+class CanViewTeamCandidates(HasPermission):
+    required_permission = "incubation.team_candidates.view"
+
+
+class CanSendJoinRequest(HasPermission):
+    required_permission = "incubation.join_request.send"
+
+
+class CanViewIncubationReviewsNotes(HasPermission):
+    required_permission = "incubation_reviews.notes.view"
 
 
 # ADMIN
@@ -131,9 +198,42 @@ class CanManageExhibition(HasPermission):
     
 class CanDecideExhibition(HasPermission):
     required_permission = "can_decide_exhibition"
-    
+
 class CanManageVolunteers(HasPermission):
     required_permission = "volunteer.manage"
     
 class CanManageWorkshops(HasPermission):
     required_permission = "workshop.manage"
+
+
+#VOLUNTEER :
+class CanManageWorkshop(HasPermission):
+    required_permission = "workshop.manage"
+
+class CanManageVolunteerRequests(HasPermission):
+    required_permission = "volunteer.requests.manage"
+
+
+class CanViewAssignedConsultations(HasPermission):
+    required_permission = "volunteer.assigned_consultations.view"
+
+class CanManageVolunteerProfile(HasPermission):
+    required_permission = "volunteer.profile.manage"
+
+class CanViewConsultants(HasPermission):
+    required_permission = "consultants.view"
+
+
+# MESSAGING
+class CanSendMessage(HasPermission):
+    required_permission = "message.send"
+
+#EXHIBITION
+
+class CanCreateExhibitionCard(HasPermission):
+    required_permission = "exhibition.card.create"
+
+
+class CanViewExhibitionCard(HasPermission):
+    required_permission = "exhibition.card.view"
+

@@ -20,6 +20,16 @@ class WeekDay(models.TextChoices):
     FRIDAY = "FRIDAY", "الجمعة"
     SATURDAY = "SATURDAY", "السبت"
 
+#////////////////// PRIMARY SKILLS //////////////////////////
+
+class PrimarySkillChoices(models.TextChoices):
+    BACKEND = "backend", "Backend"
+    FRONTEND = "frontend", "Frontend"
+    UI_UX = "ui_ux", "UI/UX"
+    BUSINESS = "business", "Business"
+    MARKETING = "marketing", "Marketing"
+    LEGAL = "legal", "Legal"
+
 
 #//////////////////////////// VOLUNTREE PROFILE //////////////////////////
 
@@ -49,7 +59,7 @@ class VolunteerProfile(models.Model):
 
     residence = models.CharField(max_length=255)
     years_of_experience = models.PositiveIntegerField()
-    primary_skills = models.TextField()
+    primary_skills = models.CharField(max_length=50,choices=PrimarySkillChoices.choices)
 
     additional_skills = models.JSONField(default=list, blank=True)
 
@@ -70,6 +80,8 @@ class VolunteerProfile(models.Model):
 
     current_company = models.CharField(max_length=255, null=True, blank=True)
     specialization = models.CharField(max_length=255, null=True, blank=True)
+    projects_count = models.PositiveBigIntegerField(null=True)
+    bio=models.TextField(null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

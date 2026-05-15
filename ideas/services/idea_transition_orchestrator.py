@@ -11,20 +11,20 @@ class IdeaTransitionOrchestrator:
     @staticmethod
     def change_status(*, idea, to_status, user=None):
 
-        # 🟡 STEP 1: حاول تفتح المرحلة قبل التغيير
+        #  STEP 1: حاول تفتح المرحلة قبل التغيير
         PhaseTriggerService.ensure_phase_allows_transition(
             idea=idea,
             to_status=to_status
         )
 
-        # 🟢 STEP 2: نفذ التغيير (Core)
+        #  STEP 2: نفذ التغيير (Core)
         updated_idea = IdeaStateService.change_status(
             idea=idea,
             to_status=to_status,
             user=user
         )
 
-        # 🔵 STEP 3: تحقق إذا لازم تنتقل مرحلة بعد التغيير
+        #  STEP 3: تحقق إذا لازم تنتقل مرحلة بعد التغيير
         PhaseTriggerService.handle_idea_status_changed({
             "idea": updated_idea
         })

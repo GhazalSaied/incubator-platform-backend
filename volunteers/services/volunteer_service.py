@@ -5,7 +5,9 @@ from volunteers.models import (
     ConsultationRequest,
     Workshop,
     WorkshopRegistration,
-    JoinRequest
+    JoinRequest,
+    VolunteerAvailability,
+    PrimarySkillChoices
 )
 from django.utils import timezone
 from core.events import EventBus
@@ -16,6 +18,7 @@ from ideas.services.team_service import TeamService
 from ideas.models import TeamStatus
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
+from django.db.models import Prefetch
 
 
 
@@ -146,12 +149,13 @@ class VolunteerService:
                 user=user,
                 team_request=team_request
             )
+
+            join_request.status = JoinRequest.ACCEPTED
+
             RoleService.assign_role(
                 user=user,
                 role_code=SystemRoles.INCUBATOR 
             )
-
-            join_request.status = JoinRequest.ACCEPTED
 
             EventBus.emit(
                 "join_request_accepted",
@@ -197,3 +201,32 @@ class VolunteerService:
             status="ACCEPTED",
             start_date__gte=timezone.now().date()
         ).order_by("start_date").first()
+    
+
+    #///////////////////// GET CONSULTANTS BY PRIMARY SKILL //////////////////////
+
+    @staticmethod
+    def get_consultants_by_primary_skill(primary_skill):
+        valid_skills = {
+            choice[0]
+            for choice in PrimarySkillChoices.choices
+        }
+
+        if primary_skill not in valid_skills:
+            return VolunteerProfile.objects.none()
+
+        return (
+            VolunteerProfile.objects
+            .select_related("user")
+            .prefetch_related(
+                Prefetch(
+                    "availabilities",
+                    queryset=VolunteerAvailability.objects.all()
+                )
+            )
+            .filter(
+                status=VolunteerProfile.APPROVED,
+                primary_skills=primary_skill
+            )
+            .order_by("-created_at")
+        )

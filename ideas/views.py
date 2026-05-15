@@ -5,7 +5,6 @@ from rest_framework import status
 from django.utils.timezone import now
 from core.events import EventBus
 
-from core.permissions import CanSubmitIdea
 from .models import Idea, Season , IdeaStatus
 from .serializers import (
     IdeaFormSerializer,
@@ -13,19 +12,34 @@ from .serializers import (
     IdeaDetailSerializer,
     MyIdeaListSerializer,
     TeamRequestSerializer,
+    ExhibitionSubmissionCreateSerializer,
+    ExhibitionFormDetailsSerializer,
+    ExhibitionSubmissionCreateSerializer,
+    PublicExhibitionListSerializer,
+    PublicExhibitionDetailsSerializer,
 )
 from notifications.models import Notification
 from ideas.services.idea_validation import IdeaFormValidator
 from ideas.services.season_phase_service import SeasonPhaseService
 from ideas.phases  import SeasonPhase
-from bootcamp.serializers import BootcampSessionSerializer
+from bootcamp.serializers import BootcampSessionsTableSerializer
 from bootcamp.models import BootcampSession
 from evaluations.models import IncubationReview
 from evaluations.serializers import IncubationReviewSerializer
 from volunteers.models import VolunteerProfile , ConsultationRequest
 from notifications.services.notification_service import NotificationService
 from ideas.services.idea_service import IdeaService
+from ideas.services.idea_dashboard_service import IdeaDashboardService
+from ideas.services.exhibition_service import (
+    ExhibitionService,
+)
+from ideas.services.exhibition_public_service import ExhibitionPublicService
 from ideas.services.idea_permissions import CanSubmitIdea
+from core.permissions import (CanRequestTeamCompletion,
+                              CanViewTeamCandidates
+                            )
+                              
+
 
 
 #///////////////////////////GET CUURENT IDEA FORM /////////////////////////////////
@@ -43,6 +57,7 @@ class CurrentIdeaFormAPIView(APIView):
 
         serializer = IdeaFormSerializer(season.form)
         return Response(serializer.data)
+
 
 #/////////////////////////// CREATE IDEA VIEW /////////////////////////////////
 
@@ -70,74 +85,6 @@ class IdeaCreateAPIView(APIView):
             status=status.HTTP_201_CREATED
         )
     
-
-#///////////////////////// EDIT IDEA VIEW ///////////////////////////////////
-
-class IdeaUpdateAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def put(self, request, idea_id):
-
-        try:
-            idea = Idea.objects.get(id=idea_id, owner=request.user)
-        except Idea.DoesNotExist:
-            return Response(
-                {"detail": "الفكرة غير موجودة"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        serializer = IdeaCreateUpdateSerializer(
-            data=request.data,
-            partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-
-        try:
-            idea = IdeaService.update_idea(
-                user=request.user,
-                idea=idea,
-                data=serializer.validated_data
-            )
-        except PermissionError as e:
-            return Response({"detail": str(e)}, status=403)
-
-        return Response(
-            IdeaDetailSerializer(idea).data,
-            status=status.HTTP_200_OK
-        )
-
-
- #////////////////////////  WITHDRIDEAVIEW //////////////////////////////////////////
-
-class WithdrawIdeaView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, idea_id):
-
-        try:
-            idea = Idea.objects.get(id=idea_id, owner=request.user)
-        except Idea.DoesNotExist:
-            return Response(
-                {"detail": "الفكرة غير موجودة"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        try:
-            IdeaService.withdraw_idea(
-                user=request.user,
-                idea=idea
-            )
-        except PermissionError as e:
-            return Response({"detail": str(e)}, status=403)
-        except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
-        
-        return Response(
-            {"detail": "تم سحب الفكرة بنجاح"},
-            status=status.HTTP_200_OK
-        )
-    
-
 
 
 #///////////////////////////////// CURRENT SEASON PHASE ////////////////////////////////////////
@@ -167,23 +114,9 @@ class CurrentSeasonPhaseAPIView(APIView):
             }
         })
 
-#//////////////////////////// MY IDEA VIEW (DISPLAY IDEA INFO TO THE USER ) /////////////////////////////////////
 
-class MyIdeasAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        ideas = Idea.objects.filter(
-            owner=request.user
-        ).order_by("-created_at")
-
-        serializer = MyIdeaListSerializer(ideas, many=True)
-        return Response(serializer.data)
 
 #////////////////////////////////// IDEA DASHBOARD VIEW  //////////////////////////
-
-from ideas.services.idea_dashboard_service import IdeaDashboardService
-
 
 class IdeaDashboardAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -196,9 +129,7 @@ class IdeaDashboardAPIView(APIView):
             return Response(data, status=404)
 
         return Response(data)
-        
-
-        
+             
     
 #//////////////////////////// INCUBATION PHASE //////////////////////////
 
@@ -214,44 +145,146 @@ class IncubationPhaseAPIView(APIView):
 
         return Response(data)
 
-#//////////////////////////////// EXHIBITION PHASE /////////////////////////////
+#//////////////////////////////// EXHIBITION DASHBOARD /////////////////////////////
 
-class ExhibitionPhaseAPIView(APIView):
+class ExhibitionDashboardAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-
         try:
-            data = IdeaService.get_exhibition_data(request.user)
+            dashboard = (
+                ExhibitionService.get_exhibition_dashboard(
+                    user=request.user
+                )
+            )
         except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
+            return Response(
+                {
+                    "message": str(e)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        return Response(data)
+        form_serializer = ExhibitionFormDetailsSerializer(
+            dashboard["form"]
+        )
+
+        form_data = None
+
+        if dashboard["is_owner"]:
+            form_data = ExhibitionFormDetailsSerializer(
+                dashboard["form"]
+            ).data
+
+        submission_data = (
+            dashboard["submission"].data
+            if dashboard["submission"] 
+            else None
+        )
+
+        return Response(
+            {
+                "phase": "EXHIBITION",
+                "exhibition_date": dashboard["idea"].season.exhibition_datetime,
+                "is_owner": dashboard["is_owner"],
+                "can_edit": (
+                    dashboard["is_owner"]
+                    and dashboard["submission"] is None
+                ),
+                "form": form_data,
+                "submitted_data": submission_data,
+            },
+            status=status.HTTP_200_OK
+        )
 
 
-#//////////////////////////////// UPDATE EXHIBITION CARD  /////////////////////////////
+#/////////////////////// EXHIBITION SUBMISSION CREATE /////////////////////////
 
-class UpdateExhibitionAPIView(APIView):
+class CreateExhibitionSubmissionAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def put(self, request):
+    def post(self, request):
+        try:
+            idea, _ = (
+                ExhibitionService.get_user_exhibition_idea(
+                    request.user
+                )
+            )
+        except ValueError as e:
+            return Response(
+                {
+                    "message": str(e)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = ExhibitionSubmissionCreateSerializer(
+            data=request.data,
+            context={
+                "request": request,
+                "idea": idea,
+            }
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        ExhibitionService.create_submission(
+            idea=idea,
+            form=serializer.validated_data["form"],
+            submitted_data=serializer.validated_data["data"],
+        )
+
+        return Response(
+            {
+                "message": "Exhibition form submitted successfully."
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+#/////////////////////////// EXHIBITION PROJECTS LIST ////////////////////
+
+
+class PublicExhibitionProjectsAPIView(APIView):
+
+    permission_classes = [AllowAny] 
+
+    def get(self, request):
+
+        sector = request.query_params.get("sector")
+
+        projects = ExhibitionPublicService.get_projects(sector)
+
+        serializer = PublicExhibitionListSerializer(
+            projects,
+            many=True
+        )
+
+        return Response(serializer.data)
+
+#//////////////////////////// EXHIBITION PROJECTS DETAILS /////////////////////////
+
+class PublicExhibitionProjectDetailsAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
 
         try:
-            IdeaService.update_exhibition(
-                user=request.user,
-                data=request.data,
-                files=request.FILES
-            )
-        except Exception as e:
-            return Response({"detail": str(e)}, status=400)
+            submission = ExhibitionPublicService.get_project_details(pk)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=404)
 
-        return Response({"detail": "تم تحديث بطاقة المشروع"})
+        serializer = PublicExhibitionDetailsSerializer(submission)
+
+        return Response(serializer.data)
+
+
 
 
 #//////////////////////////// CREATE TEAM REQUEST VIEW ////////////////////////
 
 class CreateTeamRequestAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanRequestTeamCompletion]
 
     def post(self, request):
 
@@ -269,7 +302,7 @@ class CreateTeamRequestAPIView(APIView):
 #/////////////////////////// SUGGESTED VOLUNTREES ///////////////////////////
 
 class SuggestedVolunteersAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanViewTeamCandidates]
 
     def get(self, request):
 
@@ -327,3 +360,83 @@ class TeamDashboardAPIView(APIView):
 
 
 
+
+#///////////////////////// EDIT IDEA VIEW ///////////////////////////////////
+#UNUSED
+
+class IdeaUpdateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, idea_id):
+
+        try:
+            idea = Idea.objects.get(id=idea_id, owner=request.user)
+        except Idea.DoesNotExist:
+            return Response(
+                {"detail": "الفكرة غير موجودة"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = IdeaCreateUpdateSerializer(
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            idea = IdeaService.update_idea(
+                user=request.user,
+                idea=idea,
+                data=serializer.validated_data
+            )
+        except PermissionError as e:
+            return Response({"detail": str(e)}, status=403)
+
+        return Response(
+            IdeaDetailSerializer(idea).data,
+            status=status.HTTP_200_OK
+        )
+
+
+ #////////////////////////  WITHDRIDEAVIEW //////////////////////////////////////////
+#UNUSED
+class WithdrawIdeaView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, idea_id):
+
+        try:
+            idea = Idea.objects.get(id=idea_id, owner=request.user)
+        except Idea.DoesNotExist:
+            return Response(
+                {"detail": "الفكرة غير موجودة"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            IdeaService.withdraw_idea(
+                user=request.user,
+                idea=idea
+            )
+        except PermissionError as e:
+            return Response({"detail": str(e)}, status=403)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
+        
+        return Response(
+            {"detail": "تم سحب الفكرة بنجاح"},
+            status=status.HTTP_200_OK
+        )
+    
+#//////////////////////////// MY IDEA VIEW (DISPLAY IDEA INFO TO THE USER ) /////////////////////////////////////
+#UNUSED
+class MyIdeasAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        ideas = Idea.objects.filter(
+            owner=request.user
+        ).order_by("-created_at")
+
+        serializer = MyIdeaListSerializer(ideas, many=True)
+        return Response(serializer.data)

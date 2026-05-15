@@ -64,16 +64,17 @@ class IdeaService:
             user=user,
             reason="initial_submission"
         )
+
+        # assign IDEA_OWNER role
         RoleService.assign_role(
             user=user,
             role_code=SystemRoles.IDEA_OWNER
         )
 
+        # اشعار
         EventBus.emit(
             "idea_submitted",
-            payload={
-                "idea": idea.id,
-            },
+            idea = idea.id,
             actor=user,
         )
 
@@ -163,59 +164,6 @@ class IdeaService:
         }
 
 
-#///////////////////// EXHIBITION  DATA ////////////////////
-
-    @staticmethod
-    def get_exhibition_data(user):
-
-        idea = IdeaService.get_user_idea(user)
-
-        return {
-            "phase": "EXHIBITION",
-            "message": "يرجى تجهيز بطاقة المشروع للمعرض",
-            "exhibition_date": idea.exhibition_date,
-            "data": {
-                "title": idea.title,
-                "image": idea.exhibition_image,
-                "project_goal": idea.project_goal,
-                "project_services": idea.project_services,
-                "owner_email": idea.owner.email,
-                "team": [
-                    {
-                        "name": getattr(m.user, "full_name", m.user.email),
-                        "email": m.user.email,
-                        "role": m.role,
-                        "is_owner": m.user == idea.owner
-                    }
-                    for m in idea.team_members.all()
-                ]
-            }
-        }
-
-    #///////////////////// UPDATE EXHIBITION ////////////////////
-
-    @staticmethod
-    def update_exhibition(user, data, files):
-
-        idea = IdeaService.get_user_idea(user)
-
-        from ideas.serializers import ExhibitionSerializer
-
-        serializer = ExhibitionSerializer(
-            idea,
-            data=data,
-            partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-
-        idea = serializer.save()
-
-        # image handling
-        if "exhibition_image" in files:
-            idea.exhibition_image = files["exhibition_image"]
-            idea.save()
-
-        return idea
 
     #////////////////////// CREATE TEAM REQUEST /////////////////////
 

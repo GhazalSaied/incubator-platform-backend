@@ -74,7 +74,7 @@ def handle_bootcamp_decision_notification(payload):
     actor = payload.get("actor")
     
 
-    # 🎯 اختيار template حسب القرار
+    #  اختيار template حسب القرار
     if decision == "accepted":
         event_name = "idea_approved"
     else:
@@ -105,3 +105,25 @@ def handle_bootcamp_ended(payload):
             obj=idea
         )
 EventBus.register("bootcamp_sessions_ended", handle_bootcamp_ended)
+
+
+#//////////////////////// اشعار طلب الغياب للادارة /////////////////////////
+
+def bootcamp_absence_request_submitted_handler(payload):
+    
+
+    absence_request = payload["absence_request"]
+
+    NotificationService.send(
+        user=absence_request.idea.owner,
+        event_name=payload["event_name"],
+        obj=absence_request,
+        actor=payload.get("actor"),
+        action_url=payload.get("action_url"),
+        target_role="ADMIN"
+    )
+
+
+EventBus.register(
+    "bootcamp_absence_request_submitted",bootcamp_absence_request_submitted_handler)
+    

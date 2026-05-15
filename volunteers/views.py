@@ -45,6 +45,14 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 User = get_user_model()
 
+from core.permissions import(CanManageWorkshop,
+                             CanManageVolunteerRequests,
+                             CanSendMessage,
+                             CanSendJoinRequest,
+                             CanManageVolunteerProfile,
+                             CanViewConsultants,
+                             ) 
+
 
 
 
@@ -111,7 +119,7 @@ class VolunteerProfileAPIView(APIView):
 #/////////////////////////// UPDATE VOLUNTEER PROFILE ///////////////////////
 
 class VolunteerProfileUpdateAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanManageVolunteerProfile]
 
     def put(self, request):
         try:
@@ -148,7 +156,7 @@ class VolunteerProfileUpdateAPIView(APIView):
 #/////////////////////////// AVAILABLITY  CREATE ///////////////////////
 
 class VolunteerAvailabilityCreateAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanManageVolunteerProfile]
 
     def post(self, request):
         try:
@@ -201,7 +209,7 @@ class VolunteerAvailabilityListAPIView(APIView):
 
 
 class VolunteerAvailabilityDeleteAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanManageVolunteerProfile]
 
     def delete(self, request, availability_id):
         try:
@@ -247,7 +255,7 @@ class VolunteerDashboardAPIView(APIView):
 #///////////////////////// Consultation REQUEST VIEW ///////////////////////////////////
 
 class MyConsultationRequestsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanManageVolunteerRequests]
 
     def get(self, request):
 
@@ -275,7 +283,7 @@ class MyConsultationRequestsAPIView(APIView):
 #///////////////////////// [ACCEPT/REJECT] Consultation ///////////////////////////////////
 
 class ConsultationRequestDecisionAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanManageVolunteerRequests]
 
     def post(self, request, request_id):
 
@@ -335,7 +343,7 @@ class CreateConsultationRequestAPIView(APIView):
 #/////////////////////////////////// CREATE JOIN REQUEST ////////////////////////
 
 class CreateJoinRequestAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanSendJoinRequest]
 
     def post(self, request):
         serializer = CreateJoinRequestSerializer(
@@ -357,7 +365,7 @@ class CreateJoinRequestAPIView(APIView):
 #//////////////////////////////////// JOIN REQUEST (GET LIST) ///////////////////////
 
 class JoinRequestsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanManageVolunteerRequests]
 
     def get(self, request):
         profile = request.user.volunteer_profile
@@ -372,7 +380,7 @@ class JoinRequestsAPIView(APIView):
 #////////////////////////////////// JOIN REQUEST DETAILS //////////////////////
 
 class JoinRequestDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanManageVolunteerRequests]
 
     def get(self, request, request_id):
         jr = get_object_or_404(
@@ -403,7 +411,7 @@ class JoinRequestDetailAPIView(APIView):
 #/////////////////////////////////// JOIN REQUEST DECISION [ACCEPT | REJECT ] /////////////////////////
 
 class JoinRequestDecisionAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanManageVolunteerRequests]
 
     def post(self, request, request_id):
         action = request.data.get("action")
@@ -425,7 +433,7 @@ class JoinRequestDecisionAPIView(APIView):
 #////////////////////////////////// ALL VOLUNTEER REQUESTS /////////////////////////////
 
 class MyAllRequestsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanManageVolunteerRequests]
 
     def get(self, request):
         profile = request.user.volunteer_profile
@@ -460,7 +468,7 @@ class MyAllRequestsAPIView(APIView):
 #//////////////////////////////////// Assigned Projects APIView  ////////////////////////////////////////
 
 class AssignedProjectsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanSendMessage]
 
     def get(self, request):
         profile = request.user.volunteer_profile
@@ -543,7 +551,7 @@ class AssignedProjectsAPIView(APIView):
 #//////////////////////// MY WORKSHOPS > للمتطوع  ///////////////////
 
 class MyWorkshopsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanManageWorkshop]
 
     def get(self, request):
         workshops = Workshop.objects.filter(
@@ -572,7 +580,9 @@ class MyWorkshopsAPIView(APIView):
 #/////////////////////// MY WORKSHOPS DETAILS ///////////////////
 
 class MyWorkshopDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanManageUsers ]
+
+    permission_classes = [IsAuthenticated,CanManageUsers,CanManageWorkshop ]
+
 
     def get(self, request, workshop_id):
         w = get_object_or_404(
@@ -615,7 +625,7 @@ class MyWorkshopDetailAPIView(APIView):
 #//////////////////////// CREATE WORKSHOP ///////////////////
 
 class CreateWorkshopAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanManageWorkshop]
 
     def post(self, request):
         serializer = CreateWorkshopSerializer(data=request.data , context={"request": request})
@@ -681,7 +691,7 @@ class PublicWorkshopsAPIView(APIView):
 #///////////////////// WORKSHOPS DETAILS FOR PUBLIC //////////////
 
 class WorkshopDetailAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, workshop_id):
         w = get_object_or_404(Workshop, id=workshop_id, status="ACCEPTED")
@@ -747,7 +757,7 @@ class RegisterWorkshopAPIView(APIView):
 #//////////////////////// NEAREST WORKSHOP /////////////////////////////
 
 class NearestWorkshopAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanManageWorkshop]
 
     def get(self, request):
         today = timezone.now().date()
@@ -837,7 +847,7 @@ class PublicVolunteerProfileAPIView(APIView):
                 "to": a.end_time,
             })
 
-        projects_count = TeamMember.objects.filter(user=user).count()
+        
 
         return Response({
             "name": user.full_name,
@@ -905,46 +915,30 @@ class DeleteVolunteerVacationAPIView(APIView):
     
 #/////////////////////// CONSULTANTS LIST عرض المستشارين /////////////////////////
 
-class ConsultantsBySkillAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+class ConsultantByPrimarySkillAPIView(APIView):
+    permission_classes = [IsAuthenticated,CanViewConsultants]
 
-    def get(self, request):
-        # فقط المقبولين
-        volunteers = VolunteerProfile.objects.filter(
-            status=VolunteerProfile.APPROVED
-        ).select_related("user").prefetch_related("availabilities")
+    def get(self, request, primary_skill):
+        consultants = VolunteerService.get_consultants_by_primary_skill(
+            primary_skill=primary_skill
+        )
 
-        # الفئات المطلوبة من الفلو
-        categories = {
-            "backend": [],
-            "frontend": [],
-            "ui_ux": [],
-            "business": [],
-            "marketing": [],
-            "legal": [],
-        }
+        if not consultants.exists():
+            return Response(
+                {
+                    "message": "No consultants found for this primary skill."
+                },
+                status=status.HTTP_200_OK
+            )
 
-        serializer = ConsultantListSerializer
+        serializer = ConsultantListSerializer(
+            consultants,
+            many=True
+        )
 
-        for v in volunteers:
-            skill = (v.primary_skills or "").lower()
-
-            if "backend" in skill:
-                categories["backend"].append(serializer(v).data)
-
-            elif "frontend" in skill:
-                categories["frontend"].append(serializer(v).data)
-
-            elif "ui" in skill or "ux" in skill:
-                categories["ui_ux"].append(serializer(v).data)
-
-            elif "business" in skill:
-                categories["business"].append(serializer(v).data)
-
-            elif "marketing" in skill:
-                categories["marketing"].append(serializer(v).data)
-
-            elif "legal" in skill:
-                categories["legal"].append(serializer(v).data)
-
-        return Response(categories)
+        return Response(
+            {
+                "results": serializer.data
+            },
+            status=status.HTTP_200_OK
+        )
