@@ -1,8 +1,9 @@
 
 
-from evaluations.models import Evaluation
+from evaluations.models import Evaluation, EvaluationAssignment, IncubationAssignment, IncubationReview
 from admin_panel.bootcamp.attendance.services import calculate_absence
 from admin_panel.incubations.services import IncubationNotesService
+from ideas.models import Idea, Season
 from volunteers.models import Workshop,VolunteerProfile, WorkshopRegistration
 from accounts.models import User,UserRole
 from django.db.models import Q
@@ -31,43 +32,116 @@ class UsersQueryService:
             )
 
         return qs.distinct()
-    
+    @staticmethod
+    def get_current_ideas():
+
+        season = Season.objects.filter(
+            is_open=True
+        ).first()
+
+        if not season:
+            return []
+
+        ideas = Idea.objects.filter(
+            season=season
+        ).only("id", "title")
+
+        return [
+            {
+                "id": idea.id,
+                "title": idea.title
+            }
+            for idea in ideas
+        ]
+
 class UserProfileService:
+
+    WORKSHOP_STATUS_MAP = {
+        "rejected": "مرفوض",
+        "pending": "قيد المراجعة",
+        "accepted": "مقبول",
+    }
+
+    # =====================================================
+    # MAIN PROFILE
+    # =====================================================
 
     @staticmethod
     def get_user_profile(user):
 
-        data = {
+        return {
             "basic_info": UserProfileService._get_basic_info(user),
-            "roles": list(user.role_codes)
+            "roles": list(user.role_codes),
+            "sections": UserProfileService._build_sections(user)
         }
-        request = VolunteerProfile.objects.filter(user=user).first()
 
-        data["VolunteerProfile"] = {
-            "id": request.id if request else None
-        }
-        if "IDEA_OWNER" in user.role_codes:
-            data["idea_owner_data"] = UserProfileService._get_idea_owner_data(user)
+    # =====================================================
+    # SECTIONS BUILDER
+    # =====================================================
 
-        if user.userrole_set.filter(is_active=True,role__is_volunteer_role=True).exists():
-    
-            data["volunteer_data"] = UserProfileService._get_volunteer_data(user)
-        if "INCUBATED" in user.role_codes:
-            data["incubated_data"] = UserProfileService._get_incubated_data(user)
+    @staticmethod
+    def _build_sections(user):
 
-        return data
+        sections = []
+
+        role_codes = set(user.role_codes)
+
+        if "VOLUNTEER" in role_codes:
+            sections.append({
+                "type": "VOLUNTEER",
+                "data": UserProfileService._get_volunteer_data(user)
+            })
+
+        if "EVALUATOR" in role_codes:
+            sections.append({
+                "type": "EVALUATOR",
+                "data": UserProfileService._get_evaluator_data(user)
+            })
+
+        if "IDEA_OWNER" in role_codes:
+            sections.append({
+                "type": "IDEA_OWNER",
+                "data": UserProfileService._get_idea_owner_data(user)
+            })
+
+        if "INCUBATOR" in role_codes:
+            sections.append({
+                "type": "INCUBATOR",
+                "data": UserProfileService._get_incubated_data(user)
+            })
+
+        return sections
+
+    # =====================================================
+    # BASIC INFO
+    # =====================================================
+
     @staticmethod
     def _get_basic_info(user):
 
         return {
+            "id": user.id,
             "full_name": user.full_name,
             "email": user.email,
             "phone": user.phone,
+            "avatar": user.avatar.url if user.avatar else None,
+            "joined_at": user.created_at.strftime("%d/%m/%Y"),
             "is_active": user.is_active,
-            "roles": list(user.role_codes)
+            "current_roles": list(
+                user.userrole_set.filter(is_active=True)
+                .values_list("role__code", flat=True)
+            ),
+            "all_roles": list(
+                user.userrole_set.values_list(
+                    "role__code",
+                    flat=True
+                ).distinct()
+            ),
         }
-        
-        
+
+    # =====================================================
+    # EVALUATIONS
+    # =====================================================
 
     @staticmethod
     def get_all_evaluations_for_idea(idea):
@@ -75,145 +149,155 @@ class UserProfileService:
         evaluations = Evaluation.objects.filter(
             idea=idea,
             is_submitted=True
-        ).select_related("evaluator").prefetch_related("scores").order_by("submitted_at")
-
-        result = []
-
-        for ev in evaluations:
-            total_score = sum(
-                s.score for s in ev.scores.all() if s.score
-            )
-
-            result.append({
-                "evaluator_name": ev.evaluator.full_name,
-                "score": total_score,
-                "note": ev.notes,
-                "date": ev.submitted_at
-            })
-
-        return result
-    @staticmethod
-    def _get_idea_owner_data(user):
-    
-
-    # ✅ القديم (ما لمسناه)
-        idea = user.ideas.first()
-        if not idea:
-            return {}
-        total, absent, percentage = calculate_absence(idea)
-        commitment = 100 - percentage
-
-        evaluations = UserProfileService.get_all_evaluations_for_idea(idea)
-
-        return {
-            "idea_id": idea.id if idea else None,
-            "idea_title": idea.title if idea else None,
-            "idea.status": idea.status if idea else None,
-            "commitment_percentage": round(commitment, 2),
-
-            "evaluations": evaluations
-        }
-    
-
-    
-    @staticmethod  
-    def get_last_review_notes_only(idea):
-
-        data = IncubationNotesService.get_latest_review_notes(idea=idea)
-
-        if not data or not data.get("review"):
-            return None
-
-        return data["review"].get("notes")
-        
-    @staticmethod
-    def _get_incubated_data(user):
-
-        idea = user.ideas.filter(status="INCUBATION").first()
-
-        if not idea:
-            return {}
-
-        last_review = UserProfileService.get_last_review_notes_only(idea)
-
-        evaluations = UserProfileService.get_all_evaluations_for_idea(idea)
-
-        return {
-            "idea_id": idea.id if idea else None,
-            "idea_title": idea.title if idea else None,
-            "idea.status": idea.status if idea else None,
-            "last_review_note": last_review,
-            "evaluations": evaluations
-        }
-        
-    @staticmethod  
-    def get_user_workshops(user):
-        return Workshop.objects.filter(created_by=user).values(
-            'id',
-            'title',
-            'category',
-            'start_date',
-            'end_date',
-            'status',
-    )
-        
-    @staticmethod
-    def _get_volunteer_data(user):
-
-        workshops = UserProfileService.get_user_workshops(user)
+        ).select_related("evaluator").prefetch_related("scores")
 
         return [
             {
-                "workshops": workshops if workshops else []
+                "evaluator_name": ev.evaluator.full_name,
+                "score": sum(s.score or 0 for s in ev.scores.all()),
+                "note": ev.notes,
             }
-            
-    ]
-        
+            for ev in evaluations
+        ]
 
-
-from django.shortcuts import get_object_or_404
-
-
-class WorkshopService:
+    # =====================================================
+    # IDEA OWNER
+    # =====================================================
 
     @staticmethod
-    def get_workshop_details_for_volunteer(workshop_id):
-        
-        workshop = get_object_or_404(
-            Workshop,
-            id=workshop_id,
-            
-        )
+    def _get_idea_owner_data(user):
 
-        data = {
-            "title": workshop.title,
-            "description": workshop.description,
-            "objectives": workshop.objectives,
-            "status": workshop.status,
-            "start_date": workshop.start_date,
-            "end_date": workshop.end_date,
-            "target_audience": workshop.target_audience,
-            "time_from": workshop.time_from,
-            "time_to": workshop.time_to,
-            "duration": workshop.duration,
-            "capacity": workshop.capacity,
-            "category": workshop.category,
-            "created_by": workshop.created_by.full_name
-            
+        ideas = user.ideas.all()
+
+        if not ideas.exists():
+            return {"ideas": []}
+
+        return {
+            "ideas": [
+                {
+                    "idea_id": idea.id,
+                    "title": idea.title,
+                    "status": idea.status,
+                    "evaluations": UserProfileService.get_all_evaluations_for_idea(idea),
+                    "commitment_percentage": round(
+                        100 - calculate_absence(idea)[2],
+                        2
+                    )
+                }
+                for idea in ideas
+            ]
         }
 
-        if workshop.status == "PENDING":
-            data["can_decide"] = True
+    # =====================================================
+    # VOLUNTEER
+    # =====================================================
 
-        elif workshop.status == "ACCEPTED":
-            registrations = WorkshopRegistration.objects.filter(workshop=workshop)
+    @staticmethod
+    def _get_volunteer_data(user):
 
-            data["attendees"] = [
+        workshops = Workshop.objects.filter(
+            created_by=user
+        ).order_by("-created_at")
+
+        return {
+            "workshops": [
                 {
-                    "name": r.name,
-                    "email": r.email
+                    "id": w.id,
+                    "title": w.title,
+                    "start_date": (
+                        w.start_date.strftime("%d/%m/%Y")
+                        if w.start_date else None
+                    ),
+                    "status": UserProfileService.WORKSHOP_STATUS_MAP.get(
+                        w.status.lower(),
+                        w.status
+                    )
                 }
-                for r in registrations
+                for w in workshops
             ]
+        }
 
-        return data
+    # =====================================================
+    # EVALUATOR (NO DUPLICATION VERSION)
+    # =====================================================
+
+    @staticmethod
+    def _get_evaluator_data(user):
+
+        eval_assignments = EvaluationAssignment.objects.filter(
+            evaluator=user
+        ).select_related("idea")
+
+        inc_assignments = IncubationAssignment.objects.filter(
+            mentor=user.volunteer_profile   
+        ).select_related("idea")
+
+        # ===============================
+        # MERGE IDEAS (NO DUPLICATION)
+        # ===============================
+
+        ideas_map = {}
+
+        # Evaluation assignments
+        for a in eval_assignments:
+
+            ideas_map.setdefault(a.idea.id, {
+                "idea_id": a.idea.id,
+                "title": a.idea.title,
+                "sector": a.idea.sector,
+                "target_audience": a.idea.target_audience,
+                "roles": []
+            })
+
+            ideas_map[a.idea.id]["roles"].append("EVALUATION")
+
+        # Incubation assignments
+        for a in inc_assignments:
+
+            ideas_map.setdefault(a.idea.id, {
+                "idea_id": a.idea.id,
+                "title": a.idea.title,
+                "sector": a.idea.sector,
+                "target_audience": a.idea.target_audience,
+                "roles": []
+            })
+
+            ideas_map[a.idea.id]["roles"].append("INCUBATION")
+
+        return {
+            "assignments": list(ideas_map.values())
+        }
+
+    # =====================================================
+    # INCUBATED
+    # =====================================================
+
+    @staticmethod
+    def _get_incubated_data(user):
+
+        ideas = Idea.objects.filter(
+            owner=user,
+            status__in=[
+                "GRADUATED_POSITIVE",
+                "GRADUATED_NEGATIVE",
+                "INCUBATION"
+            ]
+        )
+
+        if not ideas.exists():
+            return {"ideas": []}
+
+        return {
+            "ideas": [
+                {
+                    "idea_id": idea.id,
+                    "title": idea.title,
+                    "evaluations": UserProfileService.get_all_evaluations_for_idea(idea),
+                    "reviews": [
+                        {"note": r.notes}
+                        for r in idea.reviews.all()
+                    ]
+                }
+                for idea in ideas
+            ]
+        }

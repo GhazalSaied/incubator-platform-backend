@@ -298,7 +298,12 @@ TEMPLATES = {
 
     "message": lambda data:
         f"تم رفض ورشة ({data['workshop'].title}) بسبب: {data['rejection_reason']}"
-}
+},
+    
+    "admin_manual_notification": {
+        "title": "رسالة من الإدارة",
+        "message": lambda data: data.get("message")
+    },
 
 
     

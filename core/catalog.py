@@ -464,7 +464,13 @@ EVENTS = {
     ],
     "action_url": ""
 },
-
+    
+    
+    #---------------------اشعار يدوي من الادمن-------------------
+    "admin_manual_notification": {
+        "target": "USER",
+        "action_url": "/notifications"
+    },
 }
         
           

@@ -3,10 +3,12 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from accounts.models import Role, User
 from django.shortcuts import get_object_or_404
-from .serializers import AdminUserSerializer,CreateUserSerializer, WorkshopActionSerializer
+
+from ideas.models import Idea
+from .serializers import AddTeamMemberSerializer, AdminUserSerializer,CreateUserSerializer, SendUserNotificationSerializer, WorkshopActionSerializer
 from rest_framework import status
-from .services.user_management_service import AdminUserService, WorkshopServices
-from .services.query_service import UsersQueryService, WorkshopService,UserProfileService
+from .services.user_management_service import AdminUserService, TeamMemberAdminService, WorkshopServices, AdminNotificationService
+from .services.query_service import UsersQueryService, UserProfileService
 from django.core.exceptions import ValidationError
 
 class AdminUserListView(APIView):
@@ -88,12 +90,16 @@ class UpdateUserRolesAPIView(APIView):
         })
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تجميد مستخدم \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
 class FreezeUserAPIView(APIView):
-    
+
 
     def post(self, request, user_id):
 
-        user = get_object_or_404(User, id=user_id)
+        user = get_object_or_404(
+            User,
+            id=user_id
+        )
 
         AdminUserService.freeze_user(
             user=user,
@@ -101,52 +107,118 @@ class FreezeUserAPIView(APIView):
         )
 
         return Response({
-            "message": "تم تجميد الحساب بنجاح"
+            "message": "تم تجميد الحساب بنجاح",
+
+            "user": {
+                "id": user.id,
+                "full_name": user.full_name,
+                "status": "INACTIVE"
+            }
+        })
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تفعيل حساب مجمد \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class ActivateUserAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+
+        user = get_object_or_404(
+            User,
+            id=user_id
+        )
+
+        AdminUserService.activate_user(
+            user=user
+        )
+
+        return Response({
+            "message": "تم تفعيل الحساب بنجاح",
+
+            "user": {
+                "id": user.id,
+                "full_name": user.full_name,
+                "status": "ACTIVE"
+            }
         })
         
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ارسال اشعار لمستخدم\\\\\\\\\\\\\\\\\\\\\\\\\
+
+class SendNotificationToUserAPIView(APIView):
+
+    def post(self, request, user_id):
+
+        serializer = SendUserNotificationSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        user = get_object_or_404(
+            User,
+            id=user_id
+        )
+
+        AdminNotificationService.send_to_user(
+            user=user,
+            message=serializer.validated_data["message"],
+            actor=request.user
+        )
+
+        return Response({
+            "message": "تم إرسال الإشعار بنجاح"
+        }, status=status.HTTP_200_OK)
         
-#\\\\\\\\\\\\\\\\\\\\\\\\\\عرض تفاصيل المستخددم حسب الدور \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-class UserDetailsAPIView(APIView):
-    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض المشاريع \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class CurrentSeasonIdeasAPIView(APIView):
+
+    def get(self, request):
+
+        data = UsersQueryService.get_current_ideas()
+
+        return Response(data)      
+        
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\اضافة عضو لفريق \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  
+class AddUserToIdeaAPIView(APIView):
+
+    def post(self, request, user_id):
+
+        serializer = AddTeamMemberSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        user = get_object_or_404(
+            User,
+            id=user_id
+        )
+
+        idea = get_object_or_404(
+            Idea,
+            id=serializer.validated_data["idea_id"]
+        )
+
+        TeamMemberAdminService.add_member(
+            user=user,
+            idea=idea,
+            added_by=request.user
+        )
+
+        return Response({
+            "message": "تمت إضافة المستخدم للفريق بنجاح"
+        }, status=status.HTTP_200_OK)  
+        
+        
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض تفاصيل المستخدم حسب الدور \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   
+class AdminUserProfileAPIView(APIView):
+
     def get(self, request, user_id):
 
-        user = get_object_or_404(User, id=user_id)
+        user = get_object_or_404(
+            User,
+            id=user_id
+        )
 
         data = UserProfileService.get_user_profile(user)
 
         return Response(data)
-    
-    
-#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض تفاصيل المهمة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-
-
-
-class WorkshopDetailsForVolunteerView(APIView):
-
-    def get(self, request, workshop_id):
-
-        data = WorkshopService.get_workshop_details_for_volunteer(
-            workshop_id=workshop_id,
-            
-        )
-
-        return Response(data, status=status.HTTP_200_OK)
-    
-    
-    
-#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\قبول او رفض مهمة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ 
-
-class WorkshopActionView(APIView):
-
-
-    def post(self, request, workshop_id):
-
-        serializer = WorkshopActionSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        result = WorkshopServices.change_workshop_status(
-            workshop_id=workshop_id,
-            action=serializer.validated_data["action"]
-        )
-
-        return Response(result, status=status.HTTP_200_OK)

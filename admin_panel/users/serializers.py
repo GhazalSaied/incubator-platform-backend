@@ -61,7 +61,27 @@ class CreateUserSerializer(serializers.Serializer):
         return value
     
     
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\SendUserNotificationSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class SendUserNotificationSerializer(serializers.Serializer):
 
+    message = serializers.CharField()
+
+    def validate_message(self, value):
+
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError(
+                "الرسالة مطلوبة"
+            )
+
+        return value
+    
+
+
+
+class AddTeamMemberSerializer(serializers.Serializer):
+    idea_id = serializers.IntegerField()
 
 class WorkshopActionSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=["accept", "reject"])

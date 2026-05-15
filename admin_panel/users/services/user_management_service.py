@@ -48,27 +48,6 @@ class AdminUserService:
 
         return user
     
-
-    
-    @staticmethod
-    def update_user_roles(user, role_ids):
-
-        roles = Role.objects.filter(id__in=role_ids)
-
-        if roles.count() != len(role_ids):
-            raise ValidationError("بعض الأدوار غير موجودة")
-
-        with transaction.atomic():
-        # احذف الأدوار القديمة
-            UserRole.objects.filter(user=user).delete()
-
-        # أضف الأدوار الجديدة
-            UserRole.objects.bulk_create([
-                UserRole(user=user, role=role)
-                for role in roles
-            ])
-
-        return user
     
     
 
@@ -136,12 +115,111 @@ class AdminUserService:
 
         return user
     
-    
-    
-    
+
+    @staticmethod
+    @transaction.atomic
+    def freeze_user(*, user, performed_by=None):
+
+        
+        if performed_by and user.id == performed_by.id:
+            raise ValidationError(
+                "لا يمكنك تجميد حسابك"
+            )
+
+        
+        if not user.is_active:
+            raise ValidationError(
+                "الحساب مجمد مسبقاً"
+            )
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+
+        return user 
     
 
+    @staticmethod
+    @transaction.atomic
+    def activate_user(*, user):
 
+        if user.is_active:
+            raise ValidationError(
+                "الحساب مفعل مسبقاً"
+            )
+
+        user.is_active = True
+
+        user.save(update_fields=["is_active"])
+
+        return user   
+    
+
+from core.events import EventBus
+
+
+class AdminNotificationService:
+
+    @staticmethod
+    def send_to_user(
+        *,
+        user,
+        message,
+        actor=None
+    ):
+
+        EventBus.emit(
+            "admin_manual_notification",
+            receiver=user,
+            extra={
+                "message": message
+            },
+            actor=actor
+        )
+
+        return True
+    
+from django.db import transaction
+from django.core.exceptions import ValidationError
+
+from ideas.models import (
+    Idea,
+    TeamMember,
+    TeamStatus
+)
+
+class TeamMemberAdminService:
+
+    @staticmethod
+    @transaction.atomic
+    def add_member(*, user, idea, added_by):
+
+        if idea.owner_id == user.id:
+            raise ValidationError("هذا المستخدم هو صاحب الفكرة بالفعل")
+
+        exists = TeamMember.objects.filter(
+            idea=idea,
+            user=user
+        ).exists()
+
+        if exists:
+            raise ValidationError("المستخدم عضو بالفعل ضمن الفريق")
+
+        TeamMember.objects.create(
+            idea=idea,
+            user=user,
+            role="MEMBER"
+        )
+
+        RoleService.assign_role(
+            user=user,
+            role_code="IDEA_OWNER",
+            #assigned_by=added_by
+        )
+
+        idea.team_status = TeamStatus.IN_PROGRESS
+        idea.save(update_fields=["team_status"])
+
+
+        return True
 class WorkshopServices:
     @transaction.atomic
     @staticmethod

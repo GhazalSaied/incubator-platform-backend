@@ -6,24 +6,42 @@ from ideas.phases import SeasonPhase
 
 
 
+from django.utils import timezone
+from ideas.models import Season, SeasonStatus
+
+
+from django.utils import timezone
+
+
 class SeasonPhaseService:
 
     @staticmethod
     def get_current_season():
-        now = timezone.now().date()
-        return Season.objects.filter(
-            start_date__lte=now,
-            end_date__gte=now
-        ).first()
 
+        now = timezone.now()
 
+        current_phase = SeasonPhase.objects.filter(
+            start_date__lte=now
+        ).filter(
+            models.Q(end_date__isnull=True) |
+            models.Q(end_date__gte=now)
+        ).select_related("season").order_by("-order").first()
+
+        if not current_phase:
+            return None
+
+        if current_phase.season.status == SeasonStatus.DRAFT:
+            return None
+
+        return current_phase.season
+        
  
     @staticmethod
     def get_current_phase(season=None):
 
         if not season:
             season = SeasonPhaseService.get_current_season()
-
+            print("Current season:", season)
         if not season:
             return None
 

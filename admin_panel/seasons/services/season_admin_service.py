@@ -1,11 +1,11 @@
-from datetime import date
+from datetime import date, time
 from django.db.models import Count
 from core.events import EventBus
 from ideas import phases
 import ideas
 from ideas.models import Season, Idea, IdeaStatus, IdeaForm, FormQuestion, FormQuestionChoice,SeasonStatus
 from ideas.services.season_phase_service import SeasonPhaseService
-from django.utils.timezone import now
+from django.utils.timezone import datetime, now
 from ideas.phases import SeasonPhase
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -45,17 +45,32 @@ class SeasonAdminService:
 
 
 
+    @staticmethod
     @transaction.atomic
     def _create_phases(season):
 
         if SeasonPhase.objects.filter(season=season).exists():
             return
 
+        start_datetime = timezone.make_aware(
+            datetime.combine(
+                season.start_date,
+                time.min
+            )
+        )
+
+        end_datetime = timezone.make_aware(
+            datetime.combine(
+                season.end_date,
+                time.max
+            )
+        )
+
         SeasonPhase.objects.create(
             season=season,
             phase=SeasonPhase.SUBMISSION,
-            start_date=season.start_date,
-            end_date=season.end_date,
+            start_date=start_datetime,
+            end_date=end_datetime,
             order=1
         )
     
