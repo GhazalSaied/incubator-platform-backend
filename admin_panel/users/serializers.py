@@ -33,33 +33,32 @@ class AdminUserSerializer(serializers.ModelSerializer):
         return "ACTIVE" if obj.is_active else "INACTIVE"
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\اضافة مستخدم جديد مع دور\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-
 class CreateUserSerializer(serializers.Serializer):
-
     full_name = serializers.CharField(max_length=255)
-
     email = serializers.EmailField()
-
     password = serializers.CharField(
         min_length=8,
         write_only=True
     )
 
-    role_code = serializers.ChoiceField(
-        choices=Role.objects.values_list("code", "code")
-    )
+    role_code = serializers.ChoiceField(choices=[])
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["role_code"].choices = Role.objects.values_list(
+            "code", "code"
+        )
 
     def validate_email(self, value):
-
         value = value.strip().lower()
 
         if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError(
-                "الإيميل مستخدم مسبقاً"
-            )
+            raise serializers.ValidationError("الإيميل مستخدم مسبقاً")
 
         return value
-    
+
+   
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\SendUserNotificationSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class SendUserNotificationSerializer(serializers.Serializer):
