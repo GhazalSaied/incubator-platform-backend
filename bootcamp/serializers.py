@@ -4,6 +4,7 @@ from admin_panel.bootcamp.sessions.services import BootcampSessionQueryService
 from django.db.models import Q
 from ideas.models import Idea, IdeaStatus
 from datetime import datetime
+from bootcamp.services.bootcamp_owner_service import BootcampOwnerService
 
 
 
@@ -36,15 +37,13 @@ class BootcampSessionsTableSerializer(serializers.ModelSerializer):
         return f"{obj.start_time.strftime('%H:%M')} - {obj.end_time.strftime('%H:%M')}"
 
     def get_session_status(self, obj):
-        if not obj.date or not obj.start_time:
-            return "لم تأت بعد"
 
-        session_datetime = datetime.combine(
-            obj.date,
-            obj.start_time
+        is_finished = (
+            BootcampOwnerService
+            .is_session_finished(obj)
         )
 
-        if session_datetime < datetime.now():
+        if is_finished:
             return "انتهت"
 
         return "لم تأت بعد"

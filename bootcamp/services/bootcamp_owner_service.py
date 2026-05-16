@@ -7,6 +7,7 @@ from bootcamp.models import (
 from ideas.models import IdeaStatus
 from ideas.services.idea_service import IdeaService
 from core.events import EventBus
+from django.utils import timezone
 
 
 class BootcampOwnerService:
@@ -20,44 +21,83 @@ class BootcampOwnerService:
             )
 
         return idea
-
+    
     @staticmethod
-    def get_all_bootcamp_sessions():
-        return (
-            BootcampSession.objects
-            .select_related("trainer")
-            .filter(
-                phase__phase="BOOTCAMP",
-                is_active=True,
-            )
-            .order_by("date", "start_time")
-        )
+    def get_session_datetime(session):
 
-    @staticmethod
-    def get_next_session():
-        now = datetime.now()
+        if not session.date or not session.start_time:
+            return None
 
-        sessions = (
-            BootcampSession.objects
-            .filter(
-                phase__phase="BOOTCAMP",
-                is_active=True,
-                date__isnull=False,
-                start_time__isnull=False,
-            )
-            .order_by("date", "start_time")
-        )
-
-        for session in sessions:
-            session_datetime = datetime.combine(
+        return timezone.make_aware(
+            datetime.combine(
                 session.date,
                 session.start_time
             )
+        )
 
-            if session_datetime >= now:
+
+    @staticmethod
+    def is_session_finished(session):
+
+        session_datetime = (
+            BootcampOwnerService
+            .get_session_datetime(session)
+        )
+
+        if not session_datetime:
+            return False
+
+        return session_datetime < timezone.now()
+    
+
+
+
+    @staticmethod
+    def get_all_bootcamp_sessions(*, idea):
+        return (
+            BootcampSession.objects
+            .select_related("trainer", "phase")
+            .filter(
+                phase__season=idea.season,
+                phase__phase="BOOTCAMP",
+                is_active=True,
+            )
+            .order_by("date", "start_time")
+        )
+
+
+    @staticmethod
+    def get_next_session(*, idea):
+
+        now = timezone.now()
+
+        sessions = (
+
+            BootcampSession.objects
+            .filter(
+                phase__season=idea.season,
+                phase__phase="BOOTCAMP",
+                is_active=True,
+                date__isnull=False,
+                start_time__isnull=False,  
+            )
+            .order_by("date", "start_time")
+
+        )
+
+
+        for session in sessions:
+
+            is_finished = (
+                BootcampOwnerService
+                .is_session_finished(session)
+            )
+
+            if not is_finished:
                 return session
 
         return None
+           
 
     @staticmethod
     def create_absence_request(

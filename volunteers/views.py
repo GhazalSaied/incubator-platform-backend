@@ -8,7 +8,7 @@ from core.events import EventBus
 from datetime import datetime, date
 
 from messaging.models import Conversation
-from django.shortcuts import get_object_or_404
+
 
 from notifications.models import Notification
 from messaging.models import Conversation

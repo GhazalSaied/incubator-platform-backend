@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import Season,Idea,IdeaForm,FormQuestion,FormQuestionChoice,TeamMember,ExhibitionForm,ExhibitionQuestion,ExhibitionQuestionOption,ExhibitionSubmission        
+from .models import (Season,Idea,IdeaForm,
+                     FormQuestion,FormQuestionChoice,
+                     TeamMember,ExhibitionForm,
+                     ExhibitionQuestion,
+                     ExhibitionQuestionOption,
+                     ExhibitionSubmission ,
+                     FormStep,
+                     )       
 from .phases import SeasonPhase
 
 admin.site.register(SeasonPhase)
@@ -13,6 +20,7 @@ admin.site.register(ExhibitionForm)
 admin.site.register(ExhibitionQuestion)
 admin.site.register(ExhibitionQuestionOption)
 admin.site.register(ExhibitionSubmission)
+admin.site.register(FormStep)
 
 
 

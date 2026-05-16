@@ -13,14 +13,71 @@ from ideas.services.season_phase_service import SeasonPhaseService
 
 
 
+#============================
+# STEPS FORM + CREATE IDEA 
+#===========================
 
 #///////////////////////////IDAE FORM SERIALIZER /////////////////////////////////
 
-class FormQuestionChoiceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = FormQuestionChoice
-        fields = ["value", "label"]
+class FormQuestionChoiceSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    value = serializers.CharField()
+    label = serializers.CharField()
+    order = serializers.IntegerField()
 
+
+#///////////////////////// SUBMISSION QUESTION SERIALIZER ////////////////////
+
+class SubmissionQuestionSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    key = serializers.CharField()
+    label = serializers.CharField()
+    type = serializers.CharField()
+    required = serializers.BooleanField()
+    order = serializers.IntegerField()
+    source = serializers.CharField()
+    static_field = serializers.CharField(allow_null=True)
+    placeholder = serializers.CharField(allow_null=True)
+    help_text = serializers.CharField(allow_null=True)
+    choices = FormQuestionChoiceSerializer(many=True)
+
+
+#/////////////////////////// SUBMISSION STEP SERIALIZER ///////////////////////////
+
+class SubmissionStepSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    order = serializers.IntegerField()
+    questions = SubmissionQuestionSerializer(many=True)
+
+
+#///////////////////////////// SUBMISSION FORM SERIALIZER ///////////////////////
+
+class SubmissionFormSerializer(serializers.Serializer):
+    form_id = serializers.IntegerField()
+    form_title = serializers.CharField()
+    current_step = serializers.IntegerField()
+    total_steps = serializers.IntegerField()
+    completed_steps = serializers.ListField(
+        child=serializers.IntegerField()
+    )
+    idea_status = serializers.CharField(allow_null=True)
+    draft_data = serializers.DictField()
+    steps = SubmissionStepSerializer(many=True)
+
+
+#//////////////////////////// SAVE STEP /////////////////////
+
+class SaveStepSerializer(serializers.Serializer):
+    step = serializers.IntegerField(min_value=1)
+    data = serializers.DictField()
+
+#///////////////////////// SUBMIT IDEA SERIALIZER ///////////////////////
+
+class SubmitIdeaSerializer(serializers.Serializer):
+    confirm = serializers.BooleanField()
+
+#==================== لهون نهاية كل شي الو علاقة بالخطوات لانشاء الفكرة ===================
 
 class FormQuestionSerializer(serializers.ModelSerializer):
     choices = FormQuestionChoiceSerializer(many=True)
@@ -36,13 +93,10 @@ class IdeaFormSerializer(serializers.ModelSerializer):
         model = IdeaForm
         fields = ['id', 'title', 'questions']
 
-#//////////////////////////// CREATE AND EDIT FORM ////////////////////////////////
 
 
-class IdeaCreateUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Idea
-        fields = ['title', 'description', 'target_audience','sector','answers']
+
+
 
 #/////////////////////////// PUBLISH FORM /////////////////////////////////
 
@@ -58,36 +112,11 @@ class IdeaDetailSerializer(serializers.ModelSerializer):
             'created_at'
         ]
 
-#//////////////////////// IDEA FOR EVALUATER ///////////////////////
-#unused
 
-class IdeaForEvaluationSerializer(serializers.ModelSerializer):
-    owner_name = serializers.CharField(source="owner.full_name", read_only=True)
-    form = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Idea
-        fields = [
-            "id",
-            "title",
-            "description",
-            "status",
-            "owner_name",
-            "answers",
-            "form",
-            "created_at",
-        ]
-
-    def get_form(self, obj):
-        season = getattr(obj, "season", None)
-        if not season or not hasattr(season, "form"):
-            return None
-
-        return IdeaFormSerializer(season.form).data
 
 
 #//////////////////////////////IDEA LIST (VIEW ONLY)/////////////////////////////////////
-
+#UNUSED
 class MyIdeaListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Idea
@@ -98,13 +127,6 @@ class MyIdeaListSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
-#/////////////////////////// IDEA DASHBOARD SERIALIZER /////////////////////////
-
-class IdeaDashboardSerializer(serializers.Serializer):
-    phase = serializers.CharField()
-    progress = serializers.ListField()
-    data = serializers.DictField()
-    
 
 
 #/////////////////////////// TEAM REQUEST SERIALIZER /////////////////////
@@ -335,6 +357,40 @@ class ExhibitionSerializer(serializers.ModelSerializer):
             "contact_email"
         ]
 
+#//////////////////////// IDEA FOR EVALUATER ///////////////////////
+#unused
+
+class IdeaForEvaluationSerializer(serializers.ModelSerializer):
+    owner_name = serializers.CharField(source="owner.full_name", read_only=True)
+    form = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Idea
+        fields = [
+            "id",
+            "title",
+            "description",
+            "status",
+            "owner_name",
+            "answers",
+            "form",
+            "created_at",
+        ]
+
+    def get_form(self, obj):
+        season = getattr(obj, "season", None)
+        if not season or not hasattr(season, "form"):
+            return None
+
+        return IdeaFormSerializer(season.form).data
+    
+#/////////////////////////// IDEA DASHBOARD SERIALIZER /////////////////////////
+#UNUSED
+class IdeaDashboardSerializer(serializers.Serializer):
+    phase = serializers.CharField()
+    progress = serializers.ListField()
+    data = serializers.DictField()
+    
 
 
         
