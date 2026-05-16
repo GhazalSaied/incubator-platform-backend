@@ -23,7 +23,12 @@ class AdminUserListView(APIView):
 
 
 class CreateUserView(APIView):
+<<<<<<< Updated upstream
    
+=======
+    #permission_classes = [IsAuthenticated,CanManageUsers]
+
+>>>>>>> Stashed changes
     def post(self, request):
         serializer = CreateUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

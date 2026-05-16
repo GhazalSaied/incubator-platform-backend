@@ -95,7 +95,7 @@ class LoginAPIView(TokenObtainPairView):
                 "force_password_change": True
             }, status=status.HTTP_403_FORBIDDEN)
 
-        return Response(serializer.validated_data, status=status.HTTP_200_OK)
+        return Response({**serializer.validated_data, "roles": user.role_codes}, status=status.HTTP_200_OK)
 
 #/////////////////////////// USER PROFILE VIEW //////////////////////////////////////////
 

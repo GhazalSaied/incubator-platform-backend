@@ -81,14 +81,13 @@ class SeasonAdminService:
         
         season.is_open = True
         season.status = SeasonStatus.PUBLISHED
-        season.save()
+        season.save(update_fields=["is_open","status"])
 
-        # 2. bootstrap phases
+        
         SeasonAdminService._create_phases(season)
         
 
         EventBus.emit("season_published",season=season)
-
         
     
 
@@ -119,7 +118,7 @@ class SeasonAdminService:
         ideas = Idea.objects.filter(season=season,status=IdeaStatus.SUBMITTED)
         for idea in ideas:
             IdeaStateService.change_status(idea=idea,to_status=IdeaStatus.PRE_ACCEPTED,user=None)
-        EventBus.emit("submission_closed",season=season)
+        
 
         
         return season

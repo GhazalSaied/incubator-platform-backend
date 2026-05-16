@@ -42,7 +42,11 @@ class CreateSeasonAPIView(APIView):
 #\\\\\\Publish Season\\\\
 
 class PublishSeasonAPIView(APIView):
+<<<<<<< Updated upstream
     # permission_classes = [IsAuthenticated, CanManageSeason]
+=======
+    permission_classes = [IsAuthenticated, CanManageSeason]
+>>>>>>> Stashed changes
     def post(self, request, pk):
         season = get_object_or_404(Season, pk=pk)
 

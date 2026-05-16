@@ -20,4 +20,9 @@ class NotificationsConfig(AppConfig):
         import notifications.handlers.admin_incubation_handlers
         import notifications.handlers.admin_exhibition_handlers
         import notifications.handlers.admin_volunteer_handlers
+<<<<<<< Updated upstream
+=======
+        import notifications.handlers.manage_users
+        import notifications.handlers.admin_broadcast
+>>>>>>> Stashed changes
         

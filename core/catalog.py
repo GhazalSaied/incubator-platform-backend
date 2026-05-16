@@ -306,15 +306,19 @@ EVENTS = {
         "action_url": "/events"
     },
 
+#-------------------------------------------------------------------------------
+#-------------------------------ADMIN-------------------------------------------
+#-------------------------------------------------------------------------------
+
 
 # ===============================
 #admin_season_events
 # ===============================
 
     "season_published": {
-        "target" : "USER",
-        "payload" : ["season"],
-        "action_url" : "/form"
+        "target": "USER",
+        "payload": ["season"],
+        "action_url": "/api/ideas/form/"
     },
 
     "submission_closed": {
@@ -464,7 +468,26 @@ EVENTS = {
     ],
     "action_url": ""
 },
+<<<<<<< Updated upstream
 
+=======
+    
+    
+    #---------------------اشعار يدوي من الادمن-------------------
+    "admin_manual_notification": {
+        "target": "USER",
+        "action_url": "/notifications"
+    },
+    
+    # ==============================
+    # ADMIN BROADCAST
+    # ==============================
+
+    "ADMIN_BROADCAST_NOTIFICATION": {
+        "target": "SYSTEM",
+        "action_url": "/notifications"
+    },
+>>>>>>> Stashed changes
 }
         
           
