@@ -26,7 +26,7 @@ class AdminUserListView(APIView):
 
 
 class CreateUserView(APIView):
-    permission_classes = [IsAuthenticated,CanManageUsers]
+    #permission_classes = [IsAuthenticated,CanManageUsers]
 
     def post(self, request):
         serializer = CreateUserSerializer(data=request.data)

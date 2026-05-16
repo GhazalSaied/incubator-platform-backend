@@ -130,10 +130,31 @@ TEMPLATES = {
             f"تم تغيير حالة فكرتك إلى {extra}",
     },
     
+      
+      
+      
+      
+      
+      
+      
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\     
+#----------------------ADMIN------------------------------
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     
+    #-----------------season------------------------------
+    
+    
+    # notifications/services/template_service.py
+
     "season_published": {
-        "title": "فتح موسم جديد",
-        "message": lambda season: f"تم فتح موسم {season.name} للتقديم، يمكنك الآن تقديم فكرتك."
+
+        "title": "افتتاح موسم جديد للاحتضان",
+
+        "message": lambda season: (
+            f"تم إطلاق موسم ({season.name}) "
+            f"لاحتضان الأفكار. "
+            f"اضغط هنا لتقديم فكرتك."
+        )
     },
     
     "submission_closed": {
@@ -314,6 +335,15 @@ TEMPLATES = {
         "title": "رسالة من الإدارة",
         "message": lambda data: data.get("message")
     },
+    
+    
+    "ADMIN_BROADCAST_NOTIFICATION": {
+
+        "title": "إشعار إداري",
+
+        "message": lambda data: data.get("message")
+    },
+
 
 
     
