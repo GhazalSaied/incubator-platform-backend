@@ -41,19 +41,41 @@ class SeasonPhaseService:
 
         if not season:
             season = SeasonPhaseService.get_current_season()
+
         if not season:
             return None
 
         now = timezone.now()
 
-        return SeasonPhase.objects.filter(
-            season=season,
-            start_date__lte=now
-        ).filter(
-            models.Q(end_date__isnull=True) |
-            models.Q(end_date__gte=now)
-        ).order_by("-order").first()
+        current_phase = (
+            SeasonPhase.objects
+            .filter(
+                season=season,
+                start_date__lte=now
+            )
+            .filter(
+               models.Q(end_date__isnull=True) |
+               models.Q(end_date__gte=now)
+            )
+            .order_by("-order")
+            .first()
+        )
 
+        # fallback:
+        # إذا ما لقى مرحلة حالية
+        # جيب آخر مرحلة بدأت
+        if not current_phase:
+            current_phase = (
+                SeasonPhase.objects
+                .filter(
+                    season=season,
+                    start_date__lte=now
+                )
+                .order_by("-order")
+                .first()
+            )
+
+        return current_phase
 
     @staticmethod
     def is_phase(season_phase_code):

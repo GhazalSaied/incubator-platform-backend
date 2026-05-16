@@ -119,9 +119,13 @@ class SeasonAdminService:
             raise Exception("الموسم مغلق بالفعل")
         if season.ideas.filter(status=IdeaStatus.SUBMITTED).count() == 0:
             raise Exception("لا يمكن إغلاق الموسم بدون أفكار مقدمة")
-        if SeasonPhaseService.get_current_phase(season).phase != SeasonPhase.SUBMISSION:
+        phase = SeasonPhaseService.get_current_phase(season)
+
+        if not phase:
+            raise Exception("لا توجد مرحلة حالية")
+
+        if phase.phase != SeasonPhase.SUBMISSION:
             raise Exception("المرحلة الحالية ليست مرحلة التقديم")
-        
         season.is_open = False
         season.status = SeasonStatus.CLOSED
         season.save(update_fields=["is_open", "status"])

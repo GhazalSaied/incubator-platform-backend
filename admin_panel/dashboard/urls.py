@@ -15,9 +15,9 @@ from .views import (
 
 urlpatterns = [
 
-    path("statistics/overview/<int:season_id>/",OverviewStatisticsAPIView.as_view(),name="overview-statistics"),
-    path("statistics/lifecycle/<int:season_id>/",LifecycleStatisticsAPIView.as_view(),name="lifecycle-statistics"),
-    path("statistics/sectors/<int:season_id>/",SectorStatisticsAPIView.as_view(),name="sector-statistics"),
+    path("statistics/overview/",OverviewStatisticsAPIView.as_view(),name="overview-statistics"),
+    path("statistics/lifecycle/",LifecycleStatisticsAPIView.as_view(),name="lifecycle-statistics"),
+    path("statistics/sectors/",SectorStatisticsAPIView.as_view(),name="sector-statistics"),
     path("statistics/expertise/",ExpertiseStatisticsAPIView.as_view(),name="expertise-statistics"),
     path("statistics/seasons-comparison/",SeasonComparisonAPIView.as_view(),name="seasons-comparison"),
     path("statistics/current-season/",CurrentSeasonStatisticsAPIView.as_view(),name="current-season-statistics"),

@@ -4,6 +4,8 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from rest_framework.permissions import IsAuthenticated
+from core.permissions import CanManageSeason
 
 from .serializers import AdminBroadcastSerializer
 from ideas.models import Season
@@ -21,64 +23,41 @@ from .services import (
 
 
 class OverviewStatisticsAPIView(APIView):
+    permission_classes = [IsAuthenticated, CanManageSeason]
 
-    def get(self, request, season_id):
+    def get(self, request):
 
-        season = get_object_or_404(
-            Season,
-            id=season_id
-        )
-
-        data = OverviewStatisticsService.get(
-            season
-        )
+        data = OverviewStatisticsService.get()
 
         return Response(data)
-    
 
 
 
 
 class LifecycleStatisticsAPIView(APIView):
+    permission_classes = [IsAuthenticated, CanManageSeason]
 
-    def get(self, request, season_id):
+    def get(self, request):
 
-        season = get_object_or_404(
-            Season,
-            id=season_id
-        )
-
-        data = LifecycleStatisticsService.get(
-            season
-        )
+        data = LifecycleStatisticsService.get()
 
         return Response(data)
     
     
-    
-
-
 
 class SectorStatisticsAPIView(APIView):
+    permission_classes = [IsAuthenticated, CanManageSeason]
 
-    def get(self, request, season_id):
+    def get(self, request):
 
-        season = get_object_or_404(
-            Season,
-            id=season_id
-        )
-
-        data = SectorStatisticsService.get(
-            season
-        )
+        data = SectorStatisticsService.get()
 
         return Response(data)
     
     
 
-
-
 class ExpertiseStatisticsAPIView(APIView):
+    permission_classes = [IsAuthenticated,CanManageSeason]
 
     def get(self, request):
 
@@ -92,6 +71,7 @@ class ExpertiseStatisticsAPIView(APIView):
 
 
 class SeasonComparisonAPIView(APIView):
+    permission_classes = [IsAuthenticated,CanManageSeason]
 
     def get(self, request):
 
@@ -105,6 +85,7 @@ class SeasonComparisonAPIView(APIView):
 
 
 class CurrentSeasonStatisticsAPIView(APIView):
+    permission_classes = [IsAuthenticated,CanManageSeason]
 
     def get(self, request):
 
@@ -119,6 +100,7 @@ class CurrentSeasonStatisticsAPIView(APIView):
 
 
 class GraduatedProjectsChartAPIView(APIView):
+    permission_classes = [IsAuthenticated,CanManageSeason]
 
     def get(self, request):
 
@@ -134,6 +116,7 @@ class GraduatedProjectsChartAPIView(APIView):
 
 
 class AdminBroadcastAPIView(APIView):
+    permission_classes = [IsAuthenticated,CanManageSeason]
 
     def post(self, request):
 

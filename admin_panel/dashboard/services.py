@@ -163,26 +163,35 @@ class KPIRepository:
 class OverviewStatisticsService:
 
     @staticmethod
-    def get(season):
+    def get():
 
-        return {
-            "total_projects": (
-                KPIRepository.total_ideas(season)
-            ),
+        seasons = KPIRepository.seasons()
 
-            "incubated_projects": (
-                KPIRepository.incubated_projects(season)
-            ),
+        return [
+            {
+                "season_id": season.id,
+                "year": season.start_date.year,
+                "season_name": season.name,
 
-            "graduated_projects": (
-                KPIRepository.graduated_projects(season)
-            ),
+                "total_projects": (
+                    KPIRepository.total_ideas(season)
+                ),
 
-            "volunteer_hours": (
-                OverviewStatisticsService
-                ._calculate_volunteer_hours()
-            )
-        }
+                "incubated_projects": (
+                    KPIRepository.incubated_projects(season)
+                ),
+
+                "graduated_projects": (
+                    KPIRepository.graduated_projects(season)
+                ),
+
+                "volunteer_hours": (
+                    OverviewStatisticsService
+                    ._calculate_volunteer_hours()
+                )
+            }
+            for season in seasons
+        ]
 
     # =====================================================
 
@@ -223,25 +232,34 @@ class OverviewStatisticsService:
 class LifecycleStatisticsService:
 
     @staticmethod
-    def get(season):
+    def get():
 
-        return {
-            "submitted": (
-                KPIRepository.submitted_ideas(season)
-            ),
+        seasons = KPIRepository.seasons()
 
-            "bootcamp": (
-                KPIRepository.bootcamp_projects(season)
-            ),
+        return [
+            {
+                "season_id": s.id,
+                "year": s.start_date.year,
+                "season_name": s.name,
 
-            "incubated": (
-                KPIRepository.incubated_projects(season)
-            ),
+                "submitted": (
+                    KPIRepository.submitted_ideas(s)
+                ),
 
-            "graduated": (
-                KPIRepository.graduated_projects(season)
-            )
-        }
+                "bootcamp": (
+                    KPIRepository.bootcamp_projects(s)
+                ),
+
+                "incubated": (
+                    KPIRepository.incubated_projects(s)
+                ),
+
+                "graduated": (
+                    KPIRepository.graduated_projects(s)
+                ),
+            }
+            for s in seasons
+        ]
 
 
 # =========================================================
@@ -251,41 +269,52 @@ class LifecycleStatisticsService:
 class SectorStatisticsService:
 
     @staticmethod
-    def get(season):
+    def get():
 
-        sectors = (
-            KPIRepository
-            .sector_distribution(season)
-        )
-
-        total = sum(
-            item["count"]
-            for item in sectors
-        )
+        seasons = KPIRepository.seasons()
 
         result = []
 
-        for item in sectors:
+        for s in seasons:
 
-            percentage = 0
+            sectors = (
+                KPIRepository
+                .sector_distribution(s)
+            )
 
-            if total > 0:
+            total = sum(
+                item["count"]
+                for item in sectors
+            )
 
-                percentage = round(
-                    (item["count"] / total) * 100,
-                    1
-                )
+            sector_result = []
+
+            for item in sectors:
+
+                percentage = 0
+
+                if total > 0:
+
+                    percentage = round(
+                        (item["count"] / total) * 100,
+                        1
+                    )
+
+                sector_result.append({
+                    "sector": item["sector"],
+                    "count": item["count"],
+                    "percentage": percentage
+                })
 
             result.append({
-                "sector": item["sector"],
-                "count": item["count"],
-                "percentage": percentage
+                "season_id": s.id,
+                "year": s.start_date.year,
+                "season_name": s.name,
+                "total_projects": total,
+                "sectors": sector_result
             })
 
-        return {
-            "total_projects": total,
-            "sectors": result
-        }
+        return result
 
 
 # =========================================================
@@ -363,6 +392,8 @@ class SeasonComparisonService:
         for season in KPIRepository.seasons():
 
             result.append({
+                "year": season.start_date.year,
+
                 "season_id": season.id,
 
                 "season_name": season.name,
@@ -458,9 +489,8 @@ class GraduatedProjectsChartService:
             })
 
         return result
-    
-    
-    
+
+
 from django.contrib.auth import get_user_model
 
 from core.events import EventBus
