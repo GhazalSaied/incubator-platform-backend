@@ -640,8 +640,9 @@ class EvaluationService:
             IncubationAssignment.objects.filter(
                 idea=idea,
                 meeting_date__isnull=False,
+                meeting_date__gte=timezone.now(),
             )
-            .order_by("-meeting_date")
+            .order_by("meeting_date")
             .first()
         )
 

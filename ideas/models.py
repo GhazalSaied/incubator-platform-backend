@@ -1,5 +1,7 @@
 from django.db import models
 from django.conf import settings
+from django.db.models import Q
+
 
 User = settings.AUTH_USER_MODEL
 
@@ -105,15 +107,32 @@ class Idea(models.Model):
     # editing due to state 
 
     def can_be_edited(self):
-        return self.status in [
-            IdeaStatus.DRAFT,
-            IdeaStatus.SUBMITTED
-        ]
+        return self.status == IdeaStatus.DRAFT
 
     def __str__(self):
         return self.title
     
 
+
+#///////////////////// FORM STEPS ////////////////////
+
+class FormStep(models.Model):
+    form = models.ForeignKey(
+        "IdeaForm",
+        on_delete=models.CASCADE,
+        related_name="steps"
+    )
+
+    title = models.CharField(max_length=255)
+
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order"]
+        unique_together = ("form", "order")
+
+    def __str__(self):
+        return self.title
 
 
 
@@ -140,6 +159,7 @@ class FormQuestion(models.Model):
     SELECT = 'select'
     BOOLEAN = 'boolean'
     SELECT_MULTIPLE = 'select_multiple'
+    LIST_TEXT = 'list_text'
 
     QUESTION_TYPES = [
         (TEXT, 'Text'),
@@ -147,12 +167,53 @@ class FormQuestion(models.Model):
         (SELECT, 'Select (single)'),
         (SELECT_MULTIPLE, 'Select (multiple)'),
         (BOOLEAN, 'Yes / No'),
+        (LIST_TEXT, 'List Text'),
+    ]
+
+    STATIC = "STATIC"
+    DYNAMIC = "DYNAMIC"
+
+    QUESTION_SOURCE_CHOICES = [
+    (STATIC, "Static"),
+    (DYNAMIC, "Dynamic"),
+    ]
+
+    STATIC_TITLE = "title"
+    STATIC_DESCRIPTION = "description"
+    STATIC_TARGET_AUDIENCE = "target_audience"
+    STATIC_SECTOR = "sector"
+
+    STATIC_FIELD_CHOICES = [
+        (STATIC_TITLE, "Title"),
+        (STATIC_DESCRIPTION, "Description"),
+        (STATIC_TARGET_AUDIENCE, "Target Audience"),
+        (STATIC_SECTOR, "Sector"),
     ]
 
     form = models.ForeignKey(
         IdeaForm,
         on_delete=models.CASCADE,
         related_name='questions'
+    )
+
+    step = models.ForeignKey(
+    FormStep,
+    on_delete=models.CASCADE,
+    related_name="questions",
+    null=True,
+    )
+
+    source = models.CharField(
+    max_length=20,
+    choices=QUESTION_SOURCE_CHOICES,
+    default=DYNAMIC
+    )
+
+    static_field = models.CharField(
+        max_length=50,
+        choices=STATIC_FIELD_CHOICES,
+        null=True,
+        blank=True
     )
 
     key = models.CharField(max_length=100)
@@ -164,10 +225,16 @@ class FormQuestion(models.Model):
     help_text = models.TextField(null=True, blank=True)
 
     class Meta:
+        ordering = ["order"]
         constraints = [
             models.UniqueConstraint(
                 fields=['form', 'key'],
                 name='unique_question_key_per_form'
+            ),
+            models.UniqueConstraint(
+                fields=['form', 'static_field'],
+                condition=Q(source='STATIC'),
+                name='unique_static_field_per_form'
             )
         ]
 

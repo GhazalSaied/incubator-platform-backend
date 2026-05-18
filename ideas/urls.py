@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ( CurrentIdeaFormAPIView , IdeaCreateAPIView , 
+from .views import ( CurrentIdeaFormAPIView , 
                     IdeaUpdateAPIView , WithdrawIdeaView,
                     CurrentSeasonPhaseAPIView,MyIdeasAPIView,
                     IdeaDashboardAPIView,
@@ -13,19 +13,22 @@ from .views import ( CurrentIdeaFormAPIView , IdeaCreateAPIView ,
                     ConsultantsAPIView,
                     PublicExhibitionProjectsAPIView,
                     PublicExhibitionProjectDetailsAPIView,
-
+                    SubmissionFormAPIView,
+                    SaveStepAPIView,
+                    SubmitIdeaAPIView,
+                
                     
                 
                     )
 
 urlpatterns=[
     path('form/', CurrentIdeaFormAPIView.as_view()),
-    path('create/', IdeaCreateAPIView.as_view()),
+
     path('<int:idea_id>/update/',IdeaUpdateAPIView.as_view()),
     path("<int:idea_id>/withdraw/", WithdrawIdeaView.as_view()),
     path("current-phase/",CurrentSeasonPhaseAPIView.as_view()),
     path("my/", MyIdeasAPIView.as_view()),
-    path("dashboard/", IdeaDashboardAPIView.as_view()),
+    path("idea-dashboard/", IdeaDashboardAPIView.as_view()),
     path("incubation/", IncubationPhaseAPIView.as_view()),
 
     path("team-request/", CreateTeamRequestAPIView.as_view()),
@@ -40,7 +43,9 @@ urlpatterns=[
     path("exhibition-projects/", PublicExhibitionProjectsAPIView.as_view()),
     path("projects/<int:pk>/", PublicExhibitionProjectDetailsAPIView.as_view()),
     
-    
+    path("seasons/<int:season_id>/submission-form/",SubmissionFormAPIView.as_view()),
+    path("seasons/<int:season_id>/save-step/",SaveStepAPIView.as_view()),
+    path("seasons/<int:season_id>/submit-idea/",SubmitIdeaAPIView.as_view()),
     
 
 ]

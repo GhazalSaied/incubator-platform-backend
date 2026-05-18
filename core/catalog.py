@@ -121,7 +121,7 @@ EVENTS = {
     "evaluation_invitation_accepted": {
         "target": "ADMIN",
         "payload": ["invitation", "actor"],
-        "action_url": "/admin/evaluation/invitations"
+        "action_url": "/api/admin/evaluation/invitations"
     },
 
     "evaluation_invitation_rejected": {
@@ -147,9 +147,9 @@ EVENTS = {
     # ===============================
 
     "idea_submitted": {
-        "target": "USER",
+        "target": "ADMIN",
         "payload": ["idea"],
-        "action_url": "/ideas/{id}"
+        "action_url": "/api/admin/ideas/{idea}/details/"
     },
 
     "idea_withdrawn": {

@@ -8,7 +8,6 @@ from core.events import EventBus
 from .models import Idea, Season , IdeaStatus
 from .serializers import (
     IdeaFormSerializer,
-    IdeaCreateUpdateSerializer,
     IdeaDetailSerializer,
     MyIdeaListSerializer,
     TeamRequestSerializer,
@@ -17,9 +16,11 @@ from .serializers import (
     ExhibitionSubmissionCreateSerializer,
     PublicExhibitionListSerializer,
     PublicExhibitionDetailsSerializer,
+    SubmissionFormSerializer,
+    SaveStepSerializer,
+    
 )
 from notifications.models import Notification
-from ideas.services.idea_validation import IdeaFormValidator
 from ideas.services.season_phase_service import SeasonPhaseService
 from ideas.phases  import SeasonPhase
 from bootcamp.serializers import BootcampSessionsTableSerializer
@@ -38,6 +39,9 @@ from ideas.services.idea_permissions import CanSubmitIdea
 from core.permissions import (CanRequestTeamCompletion,
                               CanViewTeamCandidates
                             )
+
+from ideas.services.idea_dashboard_service import IdeaDashboardService
+from django.shortcuts import get_object_or_404
                               
 
 
@@ -59,32 +63,71 @@ class CurrentIdeaFormAPIView(APIView):
         return Response(serializer.data)
 
 
-#/////////////////////////// CREATE IDEA VIEW /////////////////////////////////
+#/////////////////////////////// GET SUBMISSION FORM /////////////////////////// 
 
-class IdeaCreateAPIView(APIView):
-    permission_classes = [CanSubmitIdea]
+class SubmissionFormAPIView(APIView):
 
-    def post(self, request):
+    permission_classes = [IsAuthenticated]
 
-        serializer = IdeaCreateUpdateSerializer(data=request.data)
+    def get(self, request, season_id):
+
+        season = get_object_or_404(Season, id=season_id)
+
+        data = IdeaService.get_submission_form(
+            user=request.user,
+            season=season
+        )
+
+        serializer = SubmissionFormSerializer(instance=data)
+
+        return Response(serializer.data)
+
+
+#////////////////////////////// SAVE STEP ///////////////////////////////
+
+class SaveStepAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, season_id):
+
+        season = get_object_or_404(Season, id=season_id)
+
+        serializer = SaveStepSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        try:
-            idea = IdeaService.submit_idea(
-                user=request.user,
-                data=serializer.validated_data
-            )
-        except ValueError as e:
-            return Response(
-                {"detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        return Response(
-            IdeaDetailSerializer(idea).data,
-            status=status.HTTP_201_CREATED
+        IdeaService.save_step(
+            user=request.user,
+            season=season,
+            step_order=serializer.validated_data["step"],
+            payload=serializer.validated_data["data"]
         )
-    
+
+        return Response({
+            "message": "تم حفظ الخطوة بنجاح"
+        })
+
+
+#////////////////////////// SUBMIT IDEA ///////////////////////////////
+
+class SubmitIdeaAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, season_id):
+
+        season = get_object_or_404(Season, id=season_id)
+
+        idea = IdeaService.submit_idea(
+            user=request.user,
+            season=season
+        )
+
+        return Response({
+            "message": "تم إرسال الفكرة بنجاح",
+            "idea_id": idea.id,
+            "status": idea.status,
+        })
 
 
 #///////////////////////////////// CURRENT SEASON PHASE ////////////////////////////////////////
@@ -119,17 +162,22 @@ class CurrentSeasonPhaseAPIView(APIView):
 #////////////////////////////////// IDEA DASHBOARD VIEW  //////////////////////////
 
 class IdeaDashboardAPIView(APIView):
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
 
-        data = IdeaDashboardService.build(request.user)
+        dashboard = (
+            IdeaDashboardService
+            .get_user_dashboard(
+                request.user
+            )
+        )
 
-        if "detail" in data:
-            return Response(data, status=404)
-
-        return Response(data)
-             
+        return Response(
+            dashboard,
+            status=status.HTTP_200_OK
+        )
     
 #//////////////////////////// INCUBATION PHASE //////////////////////////
 

@@ -9,7 +9,7 @@ from datetime import datetime, date
 
 from core.permissions import CanManageUsers
 from messaging.models import Conversation
-from django.shortcuts import get_object_or_404
+
 
 from notifications.models import Notification
 from messaging.models import Conversation
