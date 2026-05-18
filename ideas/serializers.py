@@ -8,6 +8,7 @@ from .models import (Idea, FormQuestion,
                      ExhibitionQuestionOption,
                      ExhibitionSubmission,
                      TeamMember,
+                     FormStep
 )
 from ideas.services.season_phase_service import SeasonPhaseService
 
@@ -506,32 +507,208 @@ class SeasonReviewSerializer(serializers.Serializer):
     ideas = IdeaRowSerializer(many=True)   
 
 
-class CreateFormSerializer(serializers.Serializer):
-    title = serializers.CharField()
-    
+from rest_framework import serializers
 
 
+# =========================================
+# CHOICES
+# =========================================
 
-class CreateQuestionSerializer(serializers.Serializer):
-    key = serializers.CharField()
-    label = serializers.CharField()
-    type = serializers.ChoiceField(choices=[
-        "text",
-        "number",
-        "select",
-        "select_multiple",
-        "boolean"
-    ])
-    required = serializers.BooleanField(default=False)
-    order = serializers.IntegerField(required=False)
-    
-    
-class CreateChoiceSerializer(serializers.Serializer):
+class FormChoicePayloadSerializer(serializers.Serializer):
+
+    id = serializers.IntegerField(required=False)
+
     value = serializers.CharField()
+
     label = serializers.CharField()
-    order = serializers.IntegerField(required=False)
+
+    order = serializers.IntegerField()
+
+
+# =========================================
+# QUESTIONS
+# =========================================
+
+class FormQuestionPayloadSerializer(serializers.Serializer):
+
+    id = serializers.IntegerField(required=False)
+
+    source = serializers.ChoiceField(
+        choices=["STATIC", "DYNAMIC"]
+    )
+
+    static_field = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True
+    )
+
+    key = serializers.CharField()
+
+    label = serializers.CharField()
+
+    type = serializers.ChoiceField(
+        choices=[
+            "text",
+            "number",
+            "select",
+            "select_multiple",
+            "boolean",
+            "list_text"
+        ]
+    )
+
+    required = serializers.BooleanField()
+
+    order = serializers.IntegerField()
+
+    placeholder = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True
+    )
+
+    help_text = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True
+    )
+
+    choices = FormChoicePayloadSerializer(
+        many=True,
+        required=False
+    )
+
+
+# =========================================
+# STEPS
+# =========================================
+
+class FormStepPayloadSerializer(serializers.Serializer):
+
+    id = serializers.IntegerField(required=False)
+
+    title = serializers.CharField()
+
+    order = serializers.IntegerField()
+
+    questions = FormQuestionPayloadSerializer(
+        many=True
+    )
+
+
+# =========================================
+# ROOT
+# =========================================
+
+class FormBuilderSerializer(serializers.Serializer):
+
+    title = serializers.CharField()
+
+    steps = FormStepPayloadSerializer(
+        many=True
+    )
     
     
-class UpdateChoiceSerializer(serializers.Serializer):
-    value = serializers.CharField(required=False)
-    label = serializers.CharField(required=False)
+
+
+# =========================================
+# CHOICES
+# =========================================
+
+class FormChoiceReadSerializer(
+    serializers.ModelSerializer
+):
+
+    class Meta:
+
+        model = FormQuestionChoice
+
+        fields = [
+            "id",
+            "value",
+            "label",
+            "order"
+        ]
+
+
+# =========================================
+# QUESTIONS
+# =========================================
+
+class FormQuestionReadSerializer(
+    serializers.ModelSerializer
+):
+
+    choices = FormChoiceReadSerializer(
+        many=True,
+        read_only=True
+    )
+
+    class Meta:
+
+        model = FormQuestion
+
+        fields = [
+            "id",
+            "source",
+            "static_field",
+            "key",
+            "label",
+            "type",
+            "required",
+            "order",
+            "placeholder",
+            "help_text",
+            "choices"
+        ]
+
+
+# =========================================
+# STEPS
+# =========================================
+
+class FormStepReadSerializer(
+    serializers.ModelSerializer
+):
+
+    questions = FormQuestionReadSerializer(
+        many=True,
+        read_only=True
+    )
+
+    class Meta:
+
+        model = FormStep
+
+        fields = [
+            "id",
+            "title",
+            "order",
+            "questions"
+        ]
+
+
+# =========================================
+# FORM
+# =========================================
+
+class FormReadSerializer(
+    serializers.ModelSerializer
+):
+
+    steps = FormStepReadSerializer(
+        many=True,
+        read_only=True
+    )
+
+    class Meta:
+
+        model = IdeaForm
+
+        fields = [
+            "id",
+            "title",
+            "season",
+            "steps"
+        ]

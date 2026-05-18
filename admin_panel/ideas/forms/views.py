@@ -2,54 +2,80 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.generics import ListCreateAPIView
+from .services import FormBuilderService
 from core.permissions import CanManageSeason
-from ideas.serializers import CreateFormSerializer, FormSerializer,CreateQuestionSerializer,SeasonFormDesignSerializer,CreateChoiceSerializer,FormQuestion
-
-from rest_framework.generics import RetrieveUpdateDestroyAPIView
+from ideas.serializers import FormReadSerializer, SeasonFormDesignSerializer,FormBuilderSerializer
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import generics
 from django.shortcuts import get_object_or_404
-from admin_panel.seasons.services.season_admin_service import SeasonAdminService
 from admin_panel.seasons.services.season_query_service import SeasonQueryService
 from ideas.models import FormQuestionChoice, Season,IdeaForm
-from admin_panel.ideas.forms.services import FormBuilderService
 
 
-#\\\\creat form\\\
-class CreateFormAPIView(APIView):
-    permission_classes = [IsAuthenticated, CanManageSeason]
-    def post(self, request, season_id):
+class FormBuilderAPIView(APIView):
 
-        serializer = CreateFormSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
 
-        season = get_object_or_404(Season, id=season_id)
+    def get(self, request, season_id):
 
-        FormBuilderService.create_form(
-            season,
-            serializer.validated_data
+        season = get_object_or_404(
+            Season,
+            id=season_id
         )
 
-        return Response({"message": "تم إنشاء النموذج"})
-    
-   #\\\\\\\\\\\\\\\\\انشاء سؤال تعديل حذف\\\\\\\\\\\\\\\\\
-class FormBuilderAPIView(APIView):
-    
-    permission_classes = [IsAuthenticated, CanManageSeason]
+        form = getattr(
+            season,
+            "form",
+            None
+        )
+
+        if not form:
+            return Response(
+                {
+                    "form": None
+                },
+                status=status.HTTP_200_OK
+            )
+
+        serializer = FormReadSerializer(
+            form
+        )
+
+        return Response(
+            serializer.data
+        )
+
+    # =====================================
+    # PUT
+    # =====================================
+
     def put(self, request, season_id):
 
-        season = get_object_or_404(Season, id=season_id)
+        season = get_object_or_404(
+            Season,
+            id=season_id
+        )
 
-        form = season.form
+        serializer = FormBuilderSerializer(
+            data=request.data
+        )
 
-        questions_data = request.data.get("questions", [])
+        serializer.is_valid(
+            raise_exception=True
+        )
 
-        FormBuilderService.save_form_builder(form, questions_data)
+        form = FormBuilderService.sync(
+            season=season,
+            data=serializer.validated_data
+        )
 
-        return Response({
-            "message": "تم حفظ النموذج بنجاح"
-        })
-        
+        response_serializer = (
+            FormReadSerializer(form)
+        )
+
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_200_OK
+        )
+
         
 
     
