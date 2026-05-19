@@ -342,7 +342,7 @@ class CreateConsultationRequestAPIView(APIView):
 #/////////////////////////////////// CREATE JOIN REQUEST ////////////////////////
 
 class CreateJoinRequestAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanSendJoinRequest]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = CreateJoinRequestSerializer(

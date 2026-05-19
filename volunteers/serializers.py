@@ -174,7 +174,6 @@ class CreateJoinRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = JoinRequest
         fields = [
-            "volunteer",
             "description",
             "tasks",
             "required_skill",

@@ -47,7 +47,7 @@ from django.shortcuts import get_object_or_404
 
 
 #///////////////////////////GET CUURENT IDEA FORM /////////////////////////////////
-
+#UNUSED
 class CurrentIdeaFormAPIView(APIView):
     permission_classes = [IsAuthenticated]
 

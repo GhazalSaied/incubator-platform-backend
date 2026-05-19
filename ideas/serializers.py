@@ -98,7 +98,7 @@ class IdeaFormSerializer(serializers.ModelSerializer):
 
 
 
-#/////////////////////////// PUBLISH FORM /////////////////////////////////
+#/////////////////////////// IDEA DETAILS /////////////////////////////////
 
 class IdeaDetailSerializer(serializers.ModelSerializer):
     class Meta:
@@ -134,7 +134,12 @@ class MyIdeaListSerializer(serializers.ModelSerializer):
 class TeamRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeamRequest
-        fields = "__all__"
+        fields = [
+            "title",
+            "skill_required",
+            "members_needed",
+            "description",
+        ]
         
 
 

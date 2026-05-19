@@ -433,10 +433,8 @@ class IdeaService:
         # Notification
         EventBus.emit(
             "team_request_created",
-            payload={
-                "team_request": team_request,
-                "idea": idea.id,
-            },
+            team_request= team_request,
+            idea= idea.id,
             actor=user,
         )
             
@@ -470,16 +468,7 @@ class IdeaService:
                 "id": s.volunteer.id,
                 "name": s.volunteer.user.full_name,
                 "email": s.volunteer.user.email,
-                "role": s.volunteer.primary_skills,
-                "avatar": s.volunteer.user.avatar.url if s.volunteer.user.avatar else None,
-                "years_of_experience": s.volunteer.years_of_experience,
-                "availability_type": s.volunteer.availability_type,
-                "category": s.volunteer_type,
-                "skills": {
-                    "primary": s.volunteer.primary_skills,
-                    "additional": s.volunteer.additional_skills
-                }
-
+                "primary_skills":s.volunteer.primary_skills,
             }
             for s in suggested
         ]

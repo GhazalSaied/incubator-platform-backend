@@ -6,6 +6,8 @@ from .models import (Season,Idea,IdeaForm,
                      ExhibitionQuestionOption,
                      ExhibitionSubmission ,
                      FormStep,
+                     TeamRequest,
+                     SuggestedVolunteer,
                      )       
 from .phases import SeasonPhase
 
@@ -21,6 +23,11 @@ admin.site.register(ExhibitionQuestion)
 admin.site.register(ExhibitionQuestionOption)
 admin.site.register(ExhibitionSubmission)
 admin.site.register(FormStep)
+
+
+
+
+
 
 
 
