@@ -33,28 +33,13 @@ class AssignmentDashboardSerializer(serializers.ModelSerializer):
         
         
 #\\\\\\\\\\\\\\\\SeasonEvaluatorSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-
-from rest_framework import serializers
-
-
 class SeasonEvaluatorSerializer(serializers.ModelSerializer):
 
-    full_name = serializers.CharField(
-        source="user.full_name"
-    )
+    full_name = serializers.CharField(source="user.full_name")
 
-    specialization = serializers.CharField(
-        source="user.volunteer_profile.specialization"
-    )
-
-    primary_skills = serializers.CharField(
-        source="user.volunteer_profile.primary_skills"
-    )
-
-    additional_skills = serializers.ListField(
-    source="user.volunteer_profile.additional_skills",
-    child=serializers.CharField()
-)
+    specialization = serializers.SerializerMethodField()
+    primary_skills = serializers.SerializerMethodField()
+    additional_skills = serializers.SerializerMethodField()
 
     class Meta:
         model = EvaluationInvitation
@@ -66,6 +51,22 @@ class SeasonEvaluatorSerializer(serializers.ModelSerializer):
             "primary_skills",
             "additional_skills",
         ]
+
+    def get_specialization(self, obj):
+        profile = getattr(obj.user, "volunteer_profile", None)
+        return profile.specialization if profile else None
+
+    def get_primary_skills(self, obj):
+        profile = getattr(obj.user, "volunteer_profile", None)
+        if not profile:
+            return None
+        return profile.get_primary_skills_display()
+
+    def get_additional_skills(self, obj):
+        profile = getattr(obj.user, "volunteer_profile", None)
+        if not profile:
+            return []
+        return profile.additional_skills
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\AssignEvaluatorsSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class AssignEvaluatorsSerializer(serializers.Serializer):

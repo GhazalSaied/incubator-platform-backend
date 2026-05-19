@@ -312,15 +312,19 @@ EVENTS = {
         "action_url": "/events"
     },
 
+#-------------------------------------------------------------------------------
+#-------------------------------ADMIN-------------------------------------------
+#-------------------------------------------------------------------------------
+
 
 # ===============================
 #admin_season_events
 # ===============================
 
     "season_published": {
-        "target" : "USER",
-        "payload" : ["season"],
-        "action_url" : "/form"
+        "target": "USER",
+        "payload": ["season"],
+        "action_url": "/api/ideas/form/"
     },
 
     "submission_closed": {
@@ -425,7 +429,67 @@ EVENTS = {
     ],
     "action_url": ""
 },
+    "volunteer_approved": {
+    "target": "USER",
+    "description": "تم قبول طلب التطوع الخاص بك",
+    "payload": ["user"],
+    "action_url": "api/volunteers/me/update/"
+},
+    "volunteer_rejected": {
+    "target": "USER",
+    "description": "تم رفض طلب التطوع",
+    "payload": ["user"],
+    "action_url": " "
+},
+    "evaluation_invitation_sent": {
+    "target": "VOLUNTEER",
+    "payload": ["invitation"],
+    "action_url": ""
+},
+    
+    "evaluator_role_removed": {
+    "target": "USER",
+    "payload": ["user"],
+    "action_url": " "
+},
+    
+    "volunteers_suggested": {
+    "target": "IDEA_OWNER",
+    "payload": ["idea", "volunteers"],
+    "action_url": ""
+},
+    
+    
+    "workshop_approved": {
+    "target": "VOLUNTEER",
+    "payload": ["workshop"],
+    "action_url": ""
+},
 
+    "workshop_rejected": {
+    "target": "VOLUNTEER",
+    "payload": [
+        "workshop",
+        "rejection_reason"
+    ],
+    "action_url": ""
+},
+    
+    
+    #---------------------اشعار يدوي من الادمن-------------------
+    "admin_manual_notification": {
+        "target": "USER",
+        "action_url": "/notifications"
+    },
+    
+    # ==============================
+    # ADMIN BROADCAST
+    # ==============================
+
+    "ADMIN_BROADCAST_NOTIFICATION": {
+        "target": "SYSTEM",
+        "action_url": "/notifications"
+    },
 }
         
           

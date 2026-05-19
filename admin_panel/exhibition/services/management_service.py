@@ -45,17 +45,17 @@ class ExhibitionAdminService:
     @staticmethod
     def create_exhibition(*, date, time):
 
-        # 🟢 1. parse datetime
+        #  1. parse datetime
         dt = ExhibitionAdminService._parse_datetime(date, time)
 
-        # 🟢 2. get season
+        #  2. get season
         season = ExhibitionAdminService._get_active_season()
 
-        # 🛑 منع تكرار المعرض
+        #  منع تكرار المعرض
         if season.exhibition_datetime:
             raise ValidationError("تم تحديد المعرض مسبقاً")
 
-        # 🟢 5. حفظ التاريخ
+        #  5. حفظ التاريخ
         season.exhibition_datetime = dt
         season.save()
         EventBus.emit("exhibition_scheduled", season_id=season.id, exhibition_datetime=season.exhibition_datetime)
@@ -130,7 +130,7 @@ class ExhibitionAdminService:
 
                 question = existing_questions[q_id]
 
-                # 🔥 check DB duplicate key (exclude self)
+                #  check DB duplicate key (exclude self)
                 if form.questions.exclude(id=q_id).filter(key=key).exists():
                     raise ValidationError(f"Key already exists: {key}")
 
@@ -154,7 +154,7 @@ class ExhibitionAdminService:
             # =========================
             else:
 
-                # 🔥 DB check before create
+                #  DB check before create
                 if form.questions.filter(key=key).exists():
                     raise ValidationError(f"Key already exists: {key}")
 
@@ -190,7 +190,6 @@ class ExhibitionAdminService:
     def _sync_options(question, options_data):
         
 
-        # ❗ if not selectable type → remove all options
         if question.type not in ["select", "select_multiple"]:
             question.options.all().delete()
             return
@@ -255,7 +254,7 @@ class ExhibitionAdminService:
 
 
     # =========================
-    # 🔒 CHECK LOCK
+    #  CHECK LOCK
     # =========================
     @staticmethod
     def check_not_published(form):
@@ -263,22 +262,22 @@ class ExhibitionAdminService:
             raise ValidationError("لا يمكن التعديل على بطاقة منشورة")
 
     # =========================
-    # 🚀 PUBLISH FORM
+    #  PUBLISH FORM
     # =========================
     @transaction.atomic
     @staticmethod
     def publish_form(form):
 
-        # 🔒 إذا منشور مسبقاً
+        #  إذا منشور مسبقاً
         if form.is_active:
             raise ValidationError("الفورم منشور مسبقاً")
 
     
-        # 🟢 تحقق انه الفورم فيه أسئلة
+        #  تحقق انه الفورم فيه أسئلة
         if not form.questions.exists():
             raise ValidationError("لا يمكن نشر فورم فارغ")
 
-        # 🟢 نشر
+        #  نشر
         form.is_active = True
         form.save()
         EventBus.emit("exhibition_form_published", form_id=form.id, season_id=form.season.id)
@@ -306,7 +305,6 @@ class ExhibitionSubmissionManagementService:
         actor=None
     ):
 
-        # 🔒 row locking
         submission = (
             ExhibitionSubmission.objects
             .select_for_update()

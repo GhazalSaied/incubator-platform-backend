@@ -8,9 +8,12 @@ from django.db import transaction
 @transaction.atomic
 def create_bootcamp_session(serializer, season):
     phase = SeasonPhaseService.get_current_phase(season)
+
+    if not phase:
+        raise ValidationError("لا يوجد مرحلة حالية")
     session = serializer.save(phase=phase)
 
-    # 🔥 Trigger Event
+    # Trigger Event
     EventBus.emit(
         "bootcamp_session_created",
         session=session
@@ -28,10 +31,3 @@ class BootcampSessionQueryService:
         return getattr(session.trainer, "full_name", None) or getattr(session.trainer, "username", None)
 
     # ----------------------------------
-
-    @staticmethod
-    def get_time_range(session):
-        if not session.start_time or not session.end_time:
-            return None
-
-        return f"{session.start_time.strftime('%H:%M')} - {session.end_time.strftime('%H:%M')}"

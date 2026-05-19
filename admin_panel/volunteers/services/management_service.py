@@ -6,7 +6,9 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from accounts.constants import SystemRoles
 from accounts.role_service import RoleService
-from ideas.models import Season
+from core.events import EventBus
+from ideas.models import Season, SuggestedVolunteer, TeamRequest
+from ideas.phases import SeasonPhase
 from volunteers.models import VolunteerProfile
 from django.utils import timezone
 from ideas.services.season_phase_service import SeasonPhaseService
@@ -24,7 +26,6 @@ class VolunteerManagementService:
         except VolunteerProfile.DoesNotExist:
             raise ValidationError("المتطوع غير موجود")
 
-        # 🛑 تحقق الحالة
         if v.status != VolunteerProfile.PENDING:
             raise ValidationError("لا يمكن قبول هذا الطلب")
 
@@ -35,6 +36,7 @@ class VolunteerManagementService:
             role_code=SystemRoles.VOLUNTEER,
             assigned_by= None
         )
+        EventBus.emit("volunteer_approved",user=v.user,actor=None)
 
 
 
@@ -51,40 +53,70 @@ class VolunteerManagementService:
         except VolunteerProfile.DoesNotExist:
             raise ValidationError("المتطوع غير موجود")
 
-        # 🛑 تحقق الحالة
         if v.status != VolunteerProfile.PENDING:
             raise ValidationError("لا يمكن رفض هذا الطلب")
 
         v.status = VolunteerProfile.REJECTED
         v.save(update_fields=["status"])
-
+        EventBus.emit(
+    "volunteer_rejected",
+    user=v.user,
+    actor=None
+)
         return v
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ازالة مقيم \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     @staticmethod
     @transaction.atomic
-    def remove_evaluator_role(*, volunteer_id):
-        
-        # 🛑 تحقق المتطوع
+    def remove_evaluator_role(*, volunteer_id, actor=None):
+
         try:
             volunteer = VolunteerProfile.objects.select_related("user").get(id=volunteer_id)
         except VolunteerProfile.DoesNotExist:
             raise ValidationError("المتطوع غير موجود")
 
-        # 🛑 جيب الدعوة المقبولة فقط
+        user = volunteer.user
+        current_phase = SeasonPhaseService.get_current_phase()
+        """"
+        if current_phase in [
+            SeasonPhase.EVALUATION,
+            SeasonPhase.INCUBATION
+        ]:
+            raise ValidationError(
+            "لا يمكن إزالة المقيم خلال مرحلة التقييم أو الاحتضان"
+            )"""
         invitation = EvaluationInvitation.objects.filter(
-            user=volunteer.user,
+            user=user,
             status="ACCEPTED"
         ).select_for_update().first()
 
-        # 🛑 إذا مو مقيم
-        if not invitation:
+        has_role = user.userrole_set.filter(
+            role__code=SystemRoles.EVALUATOR,
+            is_active=True
+        ).exists()
+
+        if not invitation and not has_role:
             raise ValidationError("هذا المستخدم ليس مقيم حالياً")
 
-        # 🟢 تحديث الحالة (Soft remove)
-        invitation.status = "REVOKED"
-        invitation.responded_at = timezone.now()
-        invitation.save(update_fields=["status", "responded_at"])
+    #  revoke invitation
+        if invitation:
+            invitation.status = "REVOKED"
+            invitation.responded_at = timezone.now()
+            invitation.save(update_fields=["status", "responded_at"])
+
+    #  remove role
+        if has_role:
+            RoleService.remove_role(
+                user=user,
+                role_code=SystemRoles.EVALUATOR
+            )
+
+    #  الإشعار
+        EventBus.emit(
+            "evaluator_role_removed",
+            user=user,
+            actor=actor
+        )
 
         return {
             "success": True,
@@ -99,46 +131,32 @@ class VolunteerManagementService:
     def send_invitation_to_volunteer(
         *,
         volunteer_id,
-        description,
-        meeting_date,
         expected_duration,
         task,
-        expertise_field
+        actor=None
     ):
         season = SeasonPhaseService.get_current_season()
 
-
-        # 🛑 تحقق الموسم
+    #  تحقق الموسم
         try:
             season = Season.objects.get(id=season.id)
         except Season.DoesNotExist:
             raise ValidationError("الموسم غير موجود")
 
-        # 🛑 تحقق المتطوع
+    #  جلب المتطوع أولاً
         try:
             v = VolunteerProfile.objects.select_related("user").get(id=volunteer_id)
         except VolunteerProfile.DoesNotExist:
             raise ValidationError("المتطوع غير موجود")
-
-        # 🛑 لازم يكون مقبول
+        
+        v = VolunteerProfile.objects.select_related("user").get(id=volunteer_id)
+    # تحقق أنه متطوع
+        if SystemRoles.VOLUNTEER not in v.user.role_codes:
+            raise ValidationError("هذا المستخدم ليس متطوعاً")
         if v.status != VolunteerProfile.APPROVED:
             raise ValidationError("لا يمكن إرسال دعوة لهذا المتطوع")
 
-        # 🟢 تحويل التاريخ
-        try:
-            meeting_date = datetime.strptime(
-                meeting_date,
-                "%Y-%m-%d %H:%M"
-            )
-            meeting_date = timezone.make_aware(meeting_date)
-        except Exception:
-            raise ValidationError("تنسيق التاريخ غير صحيح")
-
-        # 🛑 تحقق التاريخ
-        if meeting_date < timezone.now():
-            raise ValidationError("لا يمكن تحديد موعد في الماضي")
-
-        # 🛑 منع التكرار (smart)
+    #  منع التكرار
         exists = EvaluationInvitation.objects.filter(
             user=v.user,
             season=season,
@@ -148,15 +166,66 @@ class VolunteerManagementService:
         if exists:
             raise ValidationError("هذا المتطوع لديه دعوة فعالة بالفعل")
 
-        # 🟢 إنشاء الدعوة
+    #  إنشاء الدعوة
         invitation = EvaluationInvitation.objects.create(
             user=v.user,
             season=season,
-            description=description,
-            meeting_date=meeting_date,
             expected_duration=expected_duration,
-            task=task,
-            expertise_field=expertise_field
+            task=task
+        )
+
+        EventBus.emit(
+            "evaluation_invitation_sent",
+            invitation=invitation,
+            actor=actor
         )
 
         return invitation
+    
+    
+
+class TeamSuggestionService:
+
+    @staticmethod
+    @transaction.atomic
+    def suggest_volunteers(*, team_request_id, volunteer_ids, actor):
+
+        try:
+            team_request = TeamRequest.objects.select_related("idea__owner").get(id=team_request_id)
+        except TeamRequest.DoesNotExist:
+            raise ValidationError("طلب الفريق غير موجود")
+
+        #  لازم يكون PENDING
+        if team_request.status != "PENDING":
+            raise ValidationError("تم معالجة هذا الطلب مسبقاً")
+
+        suggestions = []
+
+        for vid in volunteer_ids:
+            try:
+                volunteer = VolunteerProfile.objects.get(id=vid)
+            except VolunteerProfile.DoesNotExist:
+                continue
+
+            suggestion = SuggestedVolunteer.objects.create(
+                team_request=team_request,
+                volunteer=volunteer
+            )
+            suggestions.append(suggestion)
+
+        #  تغيير حالة الطلب
+        team_request.status = "APPROVED"
+        team_request.save(update_fields=["status"])
+
+        #  إشعار لصاحب الفكرة
+        EventBus.emit(
+            "volunteers_suggested",
+            idea=team_request.idea,
+            volunteers=volunteer_ids,
+            actor=actor
+        )
+
+        return {
+            "team_request_id": team_request.id,
+            "suggested_count": len(suggestions)
+        }

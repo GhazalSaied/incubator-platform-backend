@@ -145,12 +145,37 @@ class IdeaStateService:
         # 4. apply state
         idea.status = to_status
         idea.save(update_fields=["status"])
+        
+        
         if to_status == IdeaStatus.INCUBATION:
+            
+            
             RoleService.assign_role(
             user=idea.owner,
             role_code=SystemRoles.INCUBATOR 
         )
+             # 2. حذف دور صاحب الفكرة
+            RoleService.remove_role(
+                user=idea.owner,
+                role_code=SystemRoles.IDEA_OWNER
+            )
+            
+            # 3. أعضاء الفريق → محتضنين
+            team_members = idea.team_members.select_related("user").all()
 
+            for member in team_members:
+                RoleService.assign_role(
+                    user=member.user,
+                    role_code=SystemRoles.INCUBATOR
+                )
+                
+        elif to_status == IdeaStatus.BOOTCAMP_FAILED : 
+            RoleService.remove_role(
+                user=idea.owner,
+                role_code=SystemRoles.IDEA_OWNER
+            )
+            
+            
         # 5. audit (single source)
         IdeaAuditLog.objects.create(
             idea=idea,

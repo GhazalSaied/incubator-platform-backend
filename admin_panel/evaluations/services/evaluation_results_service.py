@@ -1,4 +1,6 @@
 from django.db.models import Avg, Sum
+from accounts.constants import SystemRoles
+from accounts.role_service import RoleService
 from core.events import EventBus
 from evaluations.models import Evaluation
 import ideas
@@ -168,20 +170,16 @@ class EvaluationDetailsService:
             results.append({
                 "evaluator_name": evaluator.full_name,
 
-                # 🟢 صورة (إذا عندك image بالحساب)
                 "evaluator_image": getattr(evaluator, "user.avatar", None),
 
-                # 🟢 اختصاص (من البروفايل)
                 "specialization": profile.specialization if profile else None,
 
-                # 🟢 تاريخ الجلسة
 
                 "meeting_date": (
                 meeting_date.strftime("%d/%m/%Y")
                 if meeting_date else None
                 ),
 
-                # 🟢 الملاحظات
                 "notes": evaluation.notes,
             })
 
@@ -202,7 +200,7 @@ class EvaluationDecisionService:
         if not idea.status == IdeaStatus.EVALUATED:
             raise ValidationError("لا يمكن اتخاذ قرار قبل اكتمال جميع التقييمات")
 
-        # 🟢 منع التكرار
+        #  منع التكرار
         if idea.status in [IdeaStatus.ACCEPTED, IdeaStatus.REJECTED]:
             raise ValidationError("تم اتخاذ قرار مسبقاً لهذه الفكرة")
 
@@ -237,6 +235,11 @@ class EvaluationDecisionService:
         to_status=new_status,
         source="evaluation_decision"
     )
+        
+        RoleService.remove_role(
+            user=idea.owner,
+            role_code=SystemRoles.IDEA_OWNER
+        )
         EventBus.emit(
             "idea_rejected",idea=idea,actor=None )
         return idea

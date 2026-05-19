@@ -19,4 +19,7 @@ class NotificationsConfig(AppConfig):
         import notifications.handlers.admin_evaluation_handlers
         import notifications.handlers.admin_incubation_handlers
         import notifications.handlers.admin_exhibition_handlers
+        import notifications.handlers.admin_volunteer_handlers
+        import notifications.handlers.manage_users
+        import notifications.handlers.admin_broadcast
         

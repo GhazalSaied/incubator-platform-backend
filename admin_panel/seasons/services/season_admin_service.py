@@ -1,11 +1,11 @@
-from datetime import date
+from datetime import date, time
 from django.db.models import Count
 from core.events import EventBus
 from ideas import phases
 import ideas
 from ideas.models import Season, Idea, IdeaStatus, IdeaForm, FormQuestion, FormQuestionChoice,SeasonStatus
 from ideas.services.season_phase_service import SeasonPhaseService
-from django.utils.timezone import now
+from django.utils.timezone import datetime, now
 from ideas.phases import SeasonPhase
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -45,18 +45,32 @@ class SeasonAdminService:
 
 
 
+    @staticmethod
     @transaction.atomic
     def _create_phases(season):
 
-    # ❗ تأكد ما في مرحلة مسبقاً
         if SeasonPhase.objects.filter(season=season).exists():
             return
+
+        start_datetime = timezone.make_aware(
+            datetime.combine(
+                season.start_date,
+                time.min
+            )
+        )
+
+        end_datetime = timezone.make_aware(
+            datetime.combine(
+                season.end_date,
+                time.max
+            )
+        )
 
         SeasonPhase.objects.create(
             season=season,
             phase=SeasonPhase.SUBMISSION,
-            start_date=season.start_date,
-            end_date=season.end_date,
+            start_date=start_datetime,
+            end_date=end_datetime,
             order=1
         )
     
@@ -65,15 +79,12 @@ class SeasonAdminService:
     @staticmethod
     def publish_season(season):
 
-        # 1️⃣ لازم يكون في فورم
         if not hasattr(season, "form"):
             raise Exception("لا يمكن نشر الموسم بدون نموذج")
 
-        # 2️⃣ الفورم لازم فيه أسئلة
         if season.form.questions.count() == 0:
             raise Exception("النموذج فارغ")
 
-        # 3️⃣ ما يكون منشور قبل
         if season.status != SeasonStatus.DRAFT:
             raise Exception("الموسم منشور مسبقاً")
 
@@ -85,14 +96,13 @@ class SeasonAdminService:
         
         season.is_open = True
         season.status = SeasonStatus.PUBLISHED
-        season.save()
+        season.save(update_fields=["is_open","status"])
 
-        # 2. bootstrap phases
+        
         SeasonAdminService._create_phases(season)
         
 
         EventBus.emit("season_published",season=season)
-
         
     
 
@@ -109,9 +119,13 @@ class SeasonAdminService:
             raise Exception("الموسم مغلق بالفعل")
         if season.ideas.filter(status=IdeaStatus.SUBMITTED).count() == 0:
             raise Exception("لا يمكن إغلاق الموسم بدون أفكار مقدمة")
-        if SeasonPhaseService.get_current_phase(season).phase != SeasonPhase.SUBMISSION:
+        phase = SeasonPhaseService.get_current_phase(season)
+
+        if not phase:
+            raise Exception("لا توجد مرحلة حالية")
+
+        if phase.phase != SeasonPhase.SUBMISSION:
             raise Exception("المرحلة الحالية ليست مرحلة التقديم")
-        
         season.is_open = False
         season.status = SeasonStatus.CLOSED
         season.save(update_fields=["is_open", "status"])
@@ -123,8 +137,7 @@ class SeasonAdminService:
         ideas = Idea.objects.filter(season=season,status=IdeaStatus.SUBMITTED)
         for idea in ideas:
             IdeaStateService.change_status(idea=idea,to_status=IdeaStatus.PRE_ACCEPTED,user=None)
-               # 🧠 7. EVENTS
-        EventBus.emit("submission_closed",season=season)
+        
 
         
         return season

@@ -72,6 +72,11 @@ class Command(BaseCommand):
             ("incubtion_decision.manage", "Manage Incubation Decisions", "INCUBATION"),
             ("exhibition.manage", "Manage Exhibition", "EXHIBITION"),
             ("can_decide_exhibition", "Can Decide Exhibition", "EXHIBITION"),
+            ("volunteer.manage", "Manage Volunteers", "VOLUNTEER"),
+            ("workshop.manage", "Manage Workshops", "WORKSHOP"),
+            
+            
+
 
             #VOLUNTEER
 
@@ -123,6 +128,8 @@ class Command(BaseCommand):
                 "incubtion_decision.manage",
                 "exhibition.manage",
                 "can_decide_exhibition",
+                "volunteer.manage",
+                "workshop.manage",
             ],
 
             SystemRoles.SECRETARY: [

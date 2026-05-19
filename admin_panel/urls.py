@@ -9,4 +9,6 @@ urlpatterns = [
     path("volunteers/", include("admin_panel.volunteers.urls")),
     path("users/", include("admin_panel.users.urls")),
     path("exhibition/", include("admin_panel.exhibition.urls")),
+    path("workshops/", include("admin_panel.workshops.urls")),
+    path("dashboard/", include("admin_panel.dashboard.urls")),
 ]

@@ -27,7 +27,8 @@ PERMISSIONS = {
     "incubtion_decision.manage": "Manage Incubation Decisions",
     "exhibition.manage": "Manage Exhibition",
     "can_decide_exhibition": "Can Decide Exhibition",
-
+    "volunteer.manage": "Manage Volunteers",
+    "workshop.manage": "Manage Workshops",
     #VOLUNTEER:
     "workshop.manage": "Manage Workshop",
     "volunteer.requests.manage": "Manage Volunteer Requests",
@@ -52,7 +53,6 @@ PERMISSIONS = {
 
     #MESSAGING
     "message.send": "Send Messages",
-
 
 }
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -81,7 +81,6 @@ PHASE_GATED_PERMISSIONS = {
 
     "exhibition.card.create": SeasonPhase.EXHIBITION,
     "exhibition.card.view": SeasonPhase.EXHIBITION,
-
     
 }
 
@@ -200,6 +199,12 @@ class CanManageExhibition(HasPermission):
 class CanDecideExhibition(HasPermission):
     required_permission = "can_decide_exhibition"
 
+class CanManageVolunteers(HasPermission):
+    required_permission = "volunteer.manage"
+    
+class CanManageWorkshops(HasPermission):
+    required_permission = "workshop.manage"
+
 
 #VOLUNTEER :
 class CanManageWorkshop(HasPermission):
@@ -231,3 +236,4 @@ class CanCreateExhibitionCard(HasPermission):
 
 class CanViewExhibitionCard(HasPermission):
     required_permission = "exhibition.card.view"
+

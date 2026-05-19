@@ -9,6 +9,9 @@ from bootcamp.services.bootcamp_owner_service import BootcampOwnerService
 
 
 #/////////////////////////// BOOTCAMP SESSION ////////////////////////
+class BootcampSessionSerializer(serializers.ModelSerializer):
+    trainer_name = serializers.SerializerMethodField()
+
 
 class BootcampSessionsTableSerializer(serializers.ModelSerializer):
     trainer_name = serializers.CharField(
@@ -54,6 +57,7 @@ class BootcampSessionsTableSerializer(serializers.ModelSerializer):
 class NextBootcampSessionSerializer(serializers.ModelSerializer):
     time_range = serializers.SerializerMethodField()
 
+
     class Meta:
         model = BootcampSession
         fields = [
@@ -97,10 +101,9 @@ class VolunteerBootcampSessionSerializer(serializers.ModelSerializer):
             "date",
             "start_time",
             "end_time",
-            "location",
             "tasks",
+            "location",
         ]
-
 
 #/////////////////////// BOOTCAMP IDEA ATTENDANCE LIST ////////////////
 

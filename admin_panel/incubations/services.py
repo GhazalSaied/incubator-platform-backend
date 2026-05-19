@@ -135,13 +135,13 @@ class IncubationQueryService:
             status="ACCEPTED"
         ).select_related("user", "user__volunteer_profile")
 
-        # 🟢 فلترة الاختصاص
+        #  فلترة الاختصاص
         if specialization:
             qs = qs.filter(
                 user__volunteer_profile__specialization__icontains=specialization
             )
 
-        # 🟢 فلترة المجالات
+        #  فلترة المجالات
         if fields:
             qs = qs.filter(
                 user__volunteer_profile__primary_skills__icontains=fields
@@ -183,12 +183,12 @@ class IncubationAssignmentService:
     @transaction.atomic
     def remove_mentors(*, idea, mentor_ids):
 
-        # 🛑 تحقق من الإدخال
+        #  تحقق من الإدخال
         if not mentor_ids:
             raise ValidationError("يجب اختيار مقيم واحد على الأقل")
 
       
-        # 🟢 جلب العلاقات الموجودة فقط
+        #  جلب العلاقات الموجودة فقط
         existing_assignments = IncubationAssignment.objects.filter(
             idea=idea,
             mentor_id__in=mentor_ids
@@ -197,7 +197,7 @@ class IncubationAssignmentService:
         if not existing_assignments.exists():
             raise ValidationError("المقيمون غير مرتبطين بهذه الفكرة")
 
-        # 🟢 حذف
+        #  حذف
         deleted_count, _ = existing_assignments.delete()
 
         return {
@@ -213,11 +213,11 @@ class IncubationAssignmentService:
     @transaction.atomic
     def assign_mentors(*, idea, mentor_user_ids, season):
 
-        # 🛑 1. تحقق من الإدخال
+        #  1. تحقق من الإدخال
         if not mentor_user_ids:
             raise ValidationError("يجب اختيار مقيم واحد على الأقل")
 
-        # 🟢 3. جلب الدعوات المقبولة فقط
+        #  3. جلب الدعوات المقبولة فقط
         invitations = EvaluationInvitation.objects.filter(
             season=season,
             status="ACCEPTED",
@@ -234,7 +234,7 @@ class IncubationAssignmentService:
 
             user = inv.user
 
-            # 🛑 4. منع صاحب الفكرة
+            #  4. منع صاحب الفكرة
             if user.id == idea.owner_id:
                 skipped.append({
                     "user_id": user.id,
@@ -251,7 +251,7 @@ class IncubationAssignmentService:
                 })
                 continue
 
-            # 🛑 5. منع التكرار
+            #  5. منع التكرار
             exists = IncubationAssignment.objects.filter(
                 idea=idea,
                 mentor=profile
@@ -264,7 +264,7 @@ class IncubationAssignmentService:
                 })
                 continue
 
-            # 🟢 6. إنشاء العلاقة
+            #  6. إنشاء العلاقة
             assignment = IncubationAssignment.objects.create(
                 idea=idea,
                 mentor=profile

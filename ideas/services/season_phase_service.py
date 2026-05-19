@@ -6,17 +6,35 @@ from ideas.phases import SeasonPhase
 
 
 
+from django.utils import timezone
+from ideas.models import Season, SeasonStatus
+
+
+from django.utils import timezone
+
+
 class SeasonPhaseService:
 
     @staticmethod
     def get_current_season():
-        now = timezone.now().date()
-        return Season.objects.filter(
-            start_date__lte=now,
-            end_date__gte=now
-        ).first()
 
+        now = timezone.now()
 
+        current_phase = SeasonPhase.objects.filter(
+            start_date__lte=now
+        ).filter(
+            models.Q(end_date__isnull=True) |
+            models.Q(end_date__gte=now)
+        ).select_related("season").order_by("-order").first()
+
+        if not current_phase:
+            return None
+
+        if current_phase.season.status == SeasonStatus.DRAFT:
+            return None
+
+        return current_phase.season
+        
  
     @staticmethod
     def get_current_phase(season=None):
@@ -29,14 +47,35 @@ class SeasonPhaseService:
 
         now = timezone.now()
 
-        return SeasonPhase.objects.filter(
-            season=season,
-            start_date__lte=now
-        ).filter(
-            models.Q(end_date__isnull=True) |
-            models.Q(end_date__gte=now)
-        ).order_by("-order").first()
+        current_phase = (
+            SeasonPhase.objects
+            .filter(
+                season=season,
+                start_date__lte=now
+            )
+            .filter(
+               models.Q(end_date__isnull=True) |
+               models.Q(end_date__gte=now)
+            )
+            .order_by("-order")
+            .first()
+        )
 
+        # fallback:
+        # إذا ما لقى مرحلة حالية
+        # جيب آخر مرحلة بدأت
+        if not current_phase:
+            current_phase = (
+                SeasonPhase.objects
+                .filter(
+                    season=season,
+                    start_date__lte=now
+                )
+                .order_by("-order")
+                .first()
+            )
+
+        return current_phase
 
     @staticmethod
     def is_phase(season_phase_code):

@@ -52,12 +52,18 @@ class NotificationService:
 
             if obj and actor:
                 message = template["message"](obj, actor)
+
             elif obj:
                 message = template["message"](obj)
+
+            elif extra:
+                message = template["message"](extra)
+
             elif actor:
                 message = template["message"](actor)
+
             else:
-                message = template["message"](extra)
+                raise Exception("No notification payload provided")
 
         #  VALIDATION
         if not title or not message:

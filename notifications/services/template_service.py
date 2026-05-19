@@ -141,10 +141,31 @@ TEMPLATES = {
             f"تم تغيير حالة فكرتك إلى {extra}",
     },
     
+      
+      
+      
+      
+      
+      
+      
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\     
+#----------------------ADMIN------------------------------
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     
+    #-----------------season------------------------------
+    
+    
+    # notifications/services/template_service.py
+
     "season_published": {
-        "title": "فتح موسم جديد",
-        "message": lambda season: f"تم فتح موسم {season.name} للتقديم، يمكنك الآن تقديم فكرتك."
+
+        "title": "افتتاح موسم جديد للاحتضان",
+
+        "message": lambda season: (
+            f"تم إطلاق موسم ({season.name}) "
+            f"لاحتضان الأفكار. "
+            f"اضغط هنا لتقديم فكرتك."
+        )
     },
     
     "submission_closed": {
@@ -267,6 +288,77 @@ TEMPLATES = {
         f"يرجى تعبئة بيانات بطاقة المعرض."
     )
 },
+     "volunteer_approved": {
+        "title": "تم قبول طلب التطوع 🎉",
+        "message": "مبروك! تم قبول طلبك كمتطوع عدل ملفك الشخصي واضف معلوماتك."
+    },
+    "volunteer_rejected": {
+        "title": "تم رفض طلب التطوع",
+        "message": lambda user : ( "نعتذر، تم رفض طلب التطوع الخاص بك. يمكنك المحاولة مرة أخرى لاحقاً.")
+    },
+    
+    "evaluation_invitation_sent": {
+        "title": "دعوة تقييم جديدة",
+
+        "message": lambda invitation: (
+            f"تمت دعوتك كمقيم.\n"
+            f"المهمة: {invitation.task}\n"
+            f"المدة: {invitation.expected_duration} دقيقة"
+        )
+    },
+    
+    "evaluator_role_removed": {
+        "title": "إزالة دور المقيم",
+        "message": lambda user: (
+            "تمت إزالة دورك كمقيم من النظام.\n"
+            "لم تعد قادراً على تقييم المشاريع حالياً."
+        )
+    },
+    
+    
+    "volunteers_suggested": {
+        "title": "تم اقتراح متطوعين ",
+        "message": lambda obj: (
+        f"تم اقتراح متطوعين من قبل الإدارة لفكرتك \"{obj['idea'].title}\". "
+        f"يمكنك الآن الاطلاع عليهم واختيار المناسب."
+    )
+},
+    
+    
+    #------------------admin_workshops-------------
+    "workshop_approved": {
+
+    "title": "تم قبول الورشة",
+
+    "message": lambda workshop:
+        f"تم قبول ورشة العمل ({workshop.title}) بنجاح"
+},
+    
+    "workshop_rejected": {
+
+    "title": "تم رفض الورشة",
+
+    "message": lambda data:
+        f"تم رفض ورشة ({data['workshop'].title}) بسبب: {data['rejection_reason']}"
+},
+    
+    "admin_manual_notification": {
+        "title": "رسالة من الإدارة",
+        "message": lambda data: data.get("message")
+    },
+    
+    
+    "ADMIN_BROADCAST_NOTIFICATION": {
+
+        "title": "إشعار إداري",
+
+        "message": lambda data: data.get("message")
+    },
+
+
+
+    
+
 }
 
 

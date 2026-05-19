@@ -60,15 +60,8 @@ class SeasonQueryService:
         }
 
     @staticmethod
-    def list_seasons(year=None):
+    def list_seasons():
         qs = Season.objects.all()
-
-        if year:
-            qs = qs.filter(start_date__year=year)
-        qs = qs.filter(phases__isnull=False).distinct()
-        qs = qs.annotate(
-            ideas_count=Count("ideas")
-        )
 
         return [
             SeasonQueryService.build_season_response(season)
@@ -94,7 +87,6 @@ class SeasonQueryService:
         if phase_name == SeasonPhase.EVALUATION:
             evaluation_ideas_count = SeasonQueryService.get_evaluation_ideas_count(season)
 
-    # 🔥 هاي الإضافة
         ideas = SeasonQueryService.get_season_ideas(season, ordering)
 
         return {
@@ -108,7 +100,6 @@ class SeasonQueryService:
             "remaining_days": remaining_days,
             "evaluation_ideas_count": evaluation_ideas_count,
 
-        # 🔥 الجديد
             "ideas": ideas
         }
 
@@ -136,14 +127,14 @@ class SeasonQueryService:
             }
         }
 
-        # 🟢 SUBMISSION
+        #  SUBMISSION
         if phase_name == SeasonPhase.SUBMISSION:
             data["season_info"].update({
                 "remaining_days": SeasonQueryService.get_remaining_days(season),
                 "show_remaining_days": True
             })
 
-        # 🔵 EVALUATION
+        #  EVALUATION
         elif phase_name == SeasonPhase.EVALUATION:
             data["season_info"].update({
                 "evaluation_ideas_count": SeasonQueryService.get_evaluation_ideas_count(season),
@@ -189,7 +180,6 @@ class SeasonQueryService:
             "id", "title", "created_at", "owner__full_name"
        )
 
-    # 🧠 sorting
         if ordering == "newest":
             qs = qs.order_by("-created_at")
         elif ordering == "oldest":
