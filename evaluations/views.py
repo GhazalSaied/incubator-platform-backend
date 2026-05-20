@@ -18,6 +18,7 @@ from .serializers import (EvaluationSerializer ,
                           IncubationLatestNotesSerializer,
                           EvaluationSessionStatusSerializer,
                           IncubationOverviewSerializer,
+                          RejectedIdeaNoteSerializer
 
                         )
 from ideas.models import Idea
@@ -263,6 +264,7 @@ class EvaluationNotesAPIView(APIView):
         serializer = EvaluationNoteSerializer(note)
         return Response(serializer.data)
     
+
 #/////////////////////// INCUBATION REVIEW API ///////////////////////
 
 
@@ -404,7 +406,30 @@ class EvaluationSessionStatusAPIView(APIView):
             serializer.data,
             status=status.HTTP_200_OK
         )
+    
 
+#//////////////////// NOTES FOR REJECTED IDEA OWNERS ////////////////////
+
+class NotesForIdeaOwnersAPIVIEW(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, idea_id):
+
+        notes = (
+            EvaluationService
+            .get_rejected_idea_notes_for_owner(
+                user=request.user,
+                idea_id=idea_id
+            )
+        )
+
+        serializer = RejectedIdeaNoteSerializer(
+            notes,
+            many=True
+        )
+
+        return Response(serializer.data)
 
 
 # ////////////////////////////////// MY EVALUATION DETAIL //////////////////////////////////

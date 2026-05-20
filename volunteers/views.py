@@ -304,7 +304,7 @@ class ConsultationRequestDecisionAPIView(APIView):
             return Response({"detail": str(e)}, status=400)
         
 
-        return Response(ConsultationRequestSerializer(consultation).data)
+        return Response(status=status.HTTP_200_OK)
     
 
     
@@ -313,10 +313,15 @@ class ConsultationRequestDecisionAPIView(APIView):
 class CreateConsultationRequestAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def post(self, request,volunteer_user_id):
+
         serializer = CreateConsultationRequestSerializer(
             data=request.data,
-            context={"request": request}
+            context={
+                "request": request,
+                "volunteer_user_id": volunteer_user_id,
+                
+                }
         )
         serializer.is_valid(raise_exception=True)
 
@@ -335,7 +340,7 @@ class CreateConsultationRequestAPIView(APIView):
         
 
         return Response(
-            ConsultationRequestSerializer(consultation).data,
+            {"detail": "طلبك قيد المراجعة من قبل المتطوع"},
             status=201
         )
  
@@ -343,16 +348,20 @@ class CreateConsultationRequestAPIView(APIView):
 #/////////////////////////////////// CREATE JOIN REQUEST ////////////////////////
 
 class CreateJoinRequestAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanSendJoinRequest]
 
-    def post(self, request):
+    def post(self, request,volunteer_user_id):
+
         serializer = CreateJoinRequestSerializer(
             data=request.data,
-            context={"request": request}
+            context={
+                "request": request,
+                "volunteer_user_id": volunteer_user_id,
+            }
         )
         serializer.is_valid(raise_exception=True)
 
-        join_request = serializer.save(requester=request.user)
+        join_request = serializer.save()
 
         EventBus.emit(
             "join_request_sent",
@@ -360,7 +369,10 @@ class CreateJoinRequestAPIView(APIView):
             actor=request.user,
         )
 
-        return Response(JoinRequestSerializer(join_request).data, status=201)
+        return Response(
+            {"detail": "طلبك قيد المراجعة من قبل المتطوع"}, 
+            status=201
+        )
     
 #//////////////////////////////////// JOIN REQUEST (GET LIST) ///////////////////////
 
@@ -428,7 +440,9 @@ class JoinRequestDecisionAPIView(APIView):
         except Exception as e:
             return Response({"detail": str(e)}, status=400)
 
-        return Response(JoinRequestSerializer(jr).data)
+        return Response(
+             status=status.HTTP_200_OK
+        )
     
 #////////////////////////////////// ALL VOLUNTEER REQUESTS /////////////////////////////
 
@@ -468,7 +482,7 @@ class MyAllRequestsAPIView(APIView):
 #//////////////////////////////////// Assigned Projects APIView  ////////////////////////////////////////
 
 class AssignedProjectsAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanSendMessage]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         profile = request.user.volunteer_profile

@@ -67,6 +67,19 @@ class EvaluationNoteSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
+
+#//////////////////// REJECTED IDEA NOTES ////////////////////
+
+class RejectedIdeaNoteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = EvaluationNote
+
+        fields = [
+            "note",
+        ]
+
+        read_only_fields = fields
         
 
 #//////////////////////////// LATEST INCUBATION NOTES ////////////////////////

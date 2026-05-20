@@ -33,25 +33,7 @@ class TeamService:
 
         idea.save()
 
-        #  EVENT
-        EventBus.emit(
-            "team_member_added",
-            payload={
-                "idea": idea,
-                "member": user,
-            },
-            actor=added_by or user
-        )
 
-        #  EVENT (team completed)
-        if idea.team_status == TeamStatus.TEAM_FULL:
-            EventBus.emit(
-                "team_completed",
-                payload={
-                    "idea": idea,
-                },
-                actor=added_by or user
-            )
 
      
         return idea

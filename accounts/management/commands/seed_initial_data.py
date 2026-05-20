@@ -166,6 +166,7 @@ class Command(BaseCommand):
                 "team.request_completion",
                 "incubation_reviews.notes.view",
                 "incubation.team_candidates.view",
+                "incubation.join_request.send",
             ]
         }
 

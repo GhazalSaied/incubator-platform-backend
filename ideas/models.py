@@ -305,7 +305,7 @@ class TeamRequest(models.Model):
 
     title = models.CharField(max_length=255)
 
-    skill_required = models.CharField(max_length=255)
+    skill_required = models.JSONField(default=list,blank=True)
 
     members_needed = models.PositiveIntegerField()
 

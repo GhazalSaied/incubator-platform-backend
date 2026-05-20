@@ -17,7 +17,8 @@ from evaluations.models import (
 )
 
 from ideas.services.season_phase_service import SeasonPhaseService
-from ideas.models import Idea
+from ideas.models import Idea,IdeaStatus
+from ideas.services.idea_service import IdeaService
 from django.db.models import Max
 from django.db.models.functions import TruncDate
 from django.utils import timezone
@@ -723,3 +724,30 @@ class EvaluationService:
             "meeting_date": meeting_date,
             "status": evaluation_status,
         }
+    
+    #//////////////////// REJECTED IDEA EVALUATION NOTES ////////////////////
+
+    @staticmethod
+    def get_rejected_idea_notes_for_owner(user, idea_id):
+
+        idea = IdeaService.get_dashboard_idea(user)
+
+        if idea.id != idea_id:
+            raise ValidationError("لا تملك صلاحية الوصول لهذه الفكرة")
+
+        if idea.status != IdeaStatus.REJECTED:
+            raise ValidationError(
+                "ملاحظات اللجنة متاحة فقط للأفكار المرفوضة"
+            )
+
+        return (
+            EvaluationNote.objects
+            .filter(
+                evaluation__idea=idea,
+                evaluation__is_submitted=True
+            )
+            .only(
+                "note",
+            )
+            .order_by("-created_at")
+        )

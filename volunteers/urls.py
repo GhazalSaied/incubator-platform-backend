@@ -56,7 +56,7 @@ urlpatterns = [
 
     # ================== CONSULTATIONS ==================
     path("consultations/", MyConsultationRequestsAPIView.as_view()),
-    path("consultations/create/", CreateConsultationRequestAPIView.as_view()),
+    path("consultations/create/<int:volunteer_user_id>/", CreateConsultationRequestAPIView.as_view()),
     path("consultations/<int:request_id>/decision/", ConsultationRequestDecisionAPIView.as_view()),
 
     path("all_requests/",MyAllRequestsAPIView.as_view()), #GET > both consultations & join requests
@@ -65,7 +65,7 @@ urlpatterns = [
 
     #================== JOIN =====================
 
-    path("join/create/",CreateJoinRequestAPIView.as_view()),
+    path("join/create/<int:volunteer_user_id>/",CreateJoinRequestAPIView.as_view()),
     path("join-requests/",JoinRequestsAPIView.as_view()), #get
     path("join-requests/<int:request_id>/decision/",JoinRequestDecisionAPIView.as_view()),
     path("join-request-details/<int:request_id>/",JoinRequestDetailAPIView.as_view()),
