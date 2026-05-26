@@ -125,38 +125,63 @@ class ExhibitionSubmissionQueryService:
         project = submission.project
         form = submission.form
 
-        questions = form.questions.all().order_by("order")
+        questions = form.questions.all()
 
         answers = submission.data or {}
 
-        return {
-            # =========================
-            # PROJECT INFO
-            # =========================
-            "project": {
-                "name": project.title,
-                "image": project.exhibition_image.url if project.exhibition_image else None,
-                "owner_name": project.owner.full_name,
-            },
+    # -------------------------
+    # helper للبحث عن جواب سؤال
+    # -------------------------
+        def get_answer_by_label(label):
 
-            # =========================
-            # FORM + ANSWERS
-            # =========================
-            "fields": [
-                {
-                    "label": q.label,
-                    "type": q.type,
-                    "answer": ExhibitionSubmissionQueryService._format_answer(
-                        q,
-                        answers.get(q.key)
-                    )
-                }
-                for q in questions
+            question = questions.filter(
+               label__icontains=label
+            ).first()
+
+            if not question:
+                return None
+
+            return ExhibitionSubmissionQueryService._format_answer(
+                question,
+                answers.get(question.key)
+            )
+
+        return {
+            "id": submission.id,
+
+            "title": project.title,
+
+            "sector": project.sector,
+
+            "team_members": [
+                member.full_name
+                for member in project.team_members.all()
             ],
 
-            "status": submission.status
-        }
+        # من أجوبة الفورم
+            "project_goal": get_answer_by_label("هدف المشروع"),
 
+        # من أجوبة الفورم
+            "project_services": get_answer_by_label("خدمات المشروع"),
+
+            "emails": [
+                member.email
+                for member in project.team_members.all()
+                    if member.email
+                ], 
+
+            "owner_email": (
+                project.owner.email
+                if project.owner
+                else None
+            ),
+
+            "owner_id": (
+                project.owner.id
+                if project.owner
+                else None
+            ),
+    }
     # =========================
     # FORMAT ANSWER ( مهم)
     # =========================
