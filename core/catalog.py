@@ -1,5 +1,16 @@
 EVENTS = {
 
+
+    "message_sent": {
+    "target": "USER",
+    "payload": [
+        "message",
+        "conversation",
+        "sender",
+    ],
+    "action_url": "/messages/{conversation}/"
+    },
+
     # ===============================
     # VOLUNTEER LIFECYCLE
     # ===============================

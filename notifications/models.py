@@ -29,11 +29,6 @@ class Notification(models.Model):
     ]
 
 
-    TARGET_ROLE_CHOICES = [
-    ("VOLUNTEER", "Volunteer"),
-    ("IDEA_OWNER", "Idea Owner"),
-    ("TEAM_MEMBER", "Team Member"),
-    ]
 
 
     user = models.ForeignKey(
@@ -62,9 +57,9 @@ class Notification(models.Model):
 
     target_role = models.CharField(
     max_length=20,
-    choices=TARGET_ROLE_CHOICES,
     null=True,
-    blank=True
+    blank=True,
+    db_index=True
     )
 
 

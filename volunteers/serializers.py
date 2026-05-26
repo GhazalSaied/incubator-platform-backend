@@ -146,8 +146,9 @@ class CreateConsultationRequestSerializer(serializers.ModelSerializer):
 class ConsultationRequestSerializer(serializers.ModelSerializer):
     requester_name = serializers.CharField(source="requester.full_name", read_only=True)
     requester_email = serializers.EmailField(source="requester.email", read_only=True)
+    requester_id = serializers.IntegerField(source="requester.id",read_only=True)
     idea_title = serializers.CharField(source="idea.title", read_only=True)
-    conversation_id = serializers.SerializerMethodField()
+
 
     class Meta:
         model = ConsultationRequest
@@ -157,24 +158,13 @@ class ConsultationRequestSerializer(serializers.ModelSerializer):
             "help_type",
             "description",
             "requester_name",
-            "requester_email",
+            "requester_id",
             "idea_title",
             "conversation_id",
             "status",
             "created_at",
         ]
 
-    def get_conversation_id(self, obj):
-        if obj.status != ConsultationRequest.ACCEPTED:
-            return None
-
-        conversation = Conversation.objects.filter(
-            participants=obj.volunteer.user
-        ).filter(
-            participants=obj.requester
-        ).first()
-
-        return conversation.id if conversation else None
 
 #////////////////////////// CREATE JOIN REQUEST //////////////////////
 

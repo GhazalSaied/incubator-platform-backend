@@ -506,11 +506,7 @@ class AssignedProjectsAPIView(APIView):
                 "requester_email": c.requester.email if c.requester else None,
                 "required_skill": c.required_skill,
                 "help_type": c.help_type,
-                "conversation_id": Conversation.objects.filter(
-                    participants=request.user
-                ).filter(
-                    participants=c.requester
-                ).values_list("id", flat=True).first()
+                "requester_id": c.requester.id if c.requester else None,
             }
             for c in consultations
         ]
@@ -532,11 +528,7 @@ class AssignedProjectsAPIView(APIView):
             "requester_email": c.requester.email if c.requester else None,
             "required_skill": c.required_skill,
             "help_type": c.help_type,
-            "conversation_id": Conversation.objects.filter(
-                participants=request.user
-            ).filter(
-                participants=c.requester
-            ).values_list("id", flat=True).first()
+            "requester_id": c.requester.id if c.requester else None,
         }
         for c in ongoing
     ]

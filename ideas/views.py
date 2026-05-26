@@ -366,7 +366,7 @@ class IdeaTeamAPIView(APIView):
             "has_team": idea.team_members.exists(),
             "current_team": [
                 {
-                    "id": m.user.id,
+                    "user_id": m.user.id,
                     "name": m.user.full_name,
                     "email": m.user.email,
                     "can_message": True

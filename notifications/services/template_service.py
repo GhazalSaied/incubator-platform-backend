@@ -1,5 +1,11 @@
 TEMPLATES = {
 
+    "message_sent": {
+    "title": "رسالة جديدة",
+    "message": lambda obj, actor=None, extra=None:
+        f"لديك رسالة جديدة من {actor.full_name}",
+    },
+
     # ===============================
     # CONSULTATIONS
     # ===============================

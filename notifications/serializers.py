@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.utils.timesince import timesince
-from django.utils.timezone import now
 
+from django.utils.timezone import localtime, now
 from .models import Notification
 
 
@@ -9,19 +9,46 @@ from .models import Notification
 
 class NotificationSerializer(serializers.ModelSerializer):
     time_since = serializers.SerializerMethodField()
+    formatted_created_at = serializers.SerializerMethodField()
+    has_action = serializers.SerializerMethodField()
 
     class Meta:
         model = Notification
         fields = [
             "id",
-            "title",
             "message",
             "type",
+            "has_action",
             "action_url",
+            "target_role",
             "is_read",
-            "created_at",
+            "formatted_created_at",
             "time_since",
         ]
 
     def get_time_since(self, obj):
        return timesince(obj.created_at, now())
+    
+    
+    def get_formatted_created_at(self, obj):
+        local_date = localtime(obj.created_at)
+
+        return local_date.strftime("%A %I:%M %p")
+    
+
+    def get_has_action(self, obj):
+
+        return (
+            obj.type != Notification.INFO
+            and bool(obj.action_url)
+        )
+    
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+
+        # HIDE ACTION URL FOR INFO NOTIFICATIONS
+        if not data["has_action"]:
+            data["action_url"] = None
+
+        return data
