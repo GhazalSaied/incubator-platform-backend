@@ -36,34 +36,26 @@ class CreateExhibitionView(APIView):
         
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\انشاء بطاقة المعرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-class CreateFormView(APIView):
-    permission_classes = [IsAuthenticated,CanDecideExhibition]
+
+class ExhibitionFormBuilderView(APIView):
 
     def post(self, request):
+
         title = request.data.get("title")
+        questions = request.data.get("questions", [])
 
-        try:
-            form = ExhibitionAdminService.create_form(title=title)
-        except ValidationError as e:
-            return Response({"error": str(e)}, status=400)
+        form = ExhibitionAdminService.save_form(
+            title=title,
+            questions_data=questions
+        )
 
-        return Response({"id": form.id, "title": form.title})
-    
-#\\\\\\\\\\\\\\\\\\\\\\\\\انشاء سؤال  للمعرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-
-class ExhibitionFormBuilderAPIView(APIView):
-    
-    permission_classes = [IsAuthenticated,CanDecideExhibition]
-    def put(self, request, form_id):
-        form = get_object_or_404(ExhibitionForm, id=form_id)
-
-        questions_data = request.data.get("questions", [])
-
-        ExhibitionAdminService.sync_form(form, questions_data)
-
-        return Response({
-            "message": "تم حفظ الفورم بنجاح"
-        })
+        return Response(
+            {
+                "message": "تم حفظ البطاقة بنجاح",
+                "form_id": form.id
+            },
+            status=status.HTTP_200_OK
+        )
 #\\\\\\\\\\\\\\\\\\\\\\\\\معاينة بطاقة المعرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class ExhibitionFormPreviewAPIView(APIView):

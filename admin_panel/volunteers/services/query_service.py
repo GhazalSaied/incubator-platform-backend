@@ -40,7 +40,8 @@ class VolunteerQueryService:
                 "name": user.full_name,
                 "avatar": avatar,
                 "specialization": v.specialization,
-                "availability": times
+                "availability": times,
+                "status": v.status
             })
 
         return data
@@ -105,7 +106,9 @@ class VolunteerQueryService:
             #  بيانات المستخدم
             "email": user.email,
             "is_evaluator": has_accepted_invitation,
-            "status": v.status,
+            "roles": [r.role.code for r in user.userrole_set.filter(is_active=True)],
+            "user_id": user.id,
+            
         }
         
         
@@ -220,3 +223,38 @@ class VolunteerQueryService:
                 "idea_id": tr.idea.id,
             }
         }
+
+    @staticmethod
+    def get_available_approved_volunteers():
+
+        volunteers = VolunteerProfile.objects.filter(
+            status="APPROVED"
+        ).exclude(
+            user__userrole__role__code__in=[
+                SystemRoles.IDEA_OWNER,
+                SystemRoles.INCUBATOR
+            ],
+            user__userrole__is_active=True
+        ).select_related("user").distinct()
+        data = []
+        for v in volunteers :
+            user = v.user
+            avatar = None
+            if hasattr(user, "avatar") and user.avatar:
+                try:
+                    avatar = user.avatar.url
+                except:
+                    avatar = None
+            times = []
+            for a in v.availabilities.all():
+                times.append(f"{a.day}: {a.start_time} - {a.end_time}")
+
+            data.append({
+                "id": v.id,
+                "name": user.full_name,
+                "avatar": avatar,
+                "specialization": v.specialization,
+                "availability": times
+            })
+
+        return data

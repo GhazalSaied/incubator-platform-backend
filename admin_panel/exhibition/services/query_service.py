@@ -21,7 +21,7 @@ class ExhibitionQueryService:
             "title": form.title,
             "is_active": getattr(form, "is_active", False),
 
-            #  مهم للـ frontend
+            
             "mode": "preview",
 
             "questions": [
@@ -43,8 +43,6 @@ class ExhibitionQueryService:
             "type": question.type,
             "required": question.required,
             "order": question.order,
-
-            #  مهم جداً للـ frontend rendering
             "component": ExhibitionQueryService._map_component(question.type),
 
             # options only if needed
@@ -211,7 +209,6 @@ class ExhibitionHistoryQueryService:
                 "title": f"معرض خريجين {season.name}",
                 "date": season.exhibition_datetime.strftime("%d/%m/%Y"),
 
-                #  الجديد
                 "year": season.exhibition_datetime.year,
 
                 "projects_count": projects_count
@@ -246,7 +243,7 @@ class ExhibitionHistoryQueryService:
 
         return [
             {
-                "submission_id": s.id,  #  المهم
+                "submission_id": s.id, 
 
                 "project_name": s.project.title,
                 "sector": s.project.sector,

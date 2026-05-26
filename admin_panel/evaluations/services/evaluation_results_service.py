@@ -68,13 +68,11 @@ class EvaluationResultsService:
             "owner"
         )
 
-        # ✅ فلترة قطاع
         if sector:
             ideas = ideas.filter(
                 sector=sector
             )
 
-        # ✅ preload evaluations
         evaluations_qs = Evaluation.objects.filter(
             is_submitted=True
         ).prefetch_related("scores")
@@ -92,7 +90,6 @@ class EvaluationResultsService:
 
             evaluations = idea.evaluations.all()
 
-            # ✅ حالة التقييم
             is_fully_evaluated = (
                 EvaluationStatusService.is_fully_evaluated(idea)
             )
@@ -103,7 +100,6 @@ class EvaluationResultsService:
                 else "قيد التقييم"
             )
 
-            # ✅ حساب النتيجة
             total_scores = [
                 sum(score.score for score in ev.scores.all())
                 for ev in evaluations
@@ -114,7 +110,6 @@ class EvaluationResultsService:
                 if total_scores else 0
             )
 
-            # ✅ فلترة حسب الحالة
             if status and status != evaluation_status:
                 continue
 
@@ -131,7 +126,6 @@ class EvaluationResultsService:
 
                 "evaluation_status": evaluation_status,
 
-                # ✅ فقط إذا اكتمل التقييم
                 "evaluation_result": (
                     round(average_score, 2)
                     if is_fully_evaluated
@@ -145,7 +139,6 @@ class EvaluationDetailsService:
     @staticmethod
     def get_idea_evaluation_details(*, idea):
 
-        # 🟢 جلب التقييمات مع المقيم + البروفايل
         evaluations = Evaluation.objects.filter(
             idea=idea,
             is_submitted=True
@@ -154,7 +147,6 @@ class EvaluationDetailsService:
             "evaluator__volunteer_profile"
         )
 
-        # 🟢 mapping سريع للـ meeting_date
         assignments_map = {
             a.evaluator_id: a.meeting_date
             for a in EvaluationAssignment.objects.filter(idea=idea)

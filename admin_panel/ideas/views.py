@@ -20,7 +20,6 @@ class IdeaDetailsAPIView(APIView):
 
         serializer = ProjectDetailsSerializer(idea)
 
-        # 🔥 جلب أعضاء الفريق
         team_members = idea.team_members.select_related("user").all()
         team_data = [
             {
@@ -30,7 +29,6 @@ class IdeaDetailsAPIView(APIView):
             for member in team_members
         ]
         expected_duration = idea.answers.get("expected_duration")
-        # 🔥 دمج البيانات
         response_data = serializer.data
         response_data["team_members"] = team_data
         response_data["expected_duration"] = expected_duration or "غير محدد"

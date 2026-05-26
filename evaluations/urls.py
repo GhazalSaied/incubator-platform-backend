@@ -12,9 +12,9 @@ from .views import (
     EvaluationNotesAPIView,
     IncubationReviewAPIView,
     NextUpcomingSessionAPIView,
-    IncubationLatestNotesAPIView,
-    EvaluationSessionStatusAPIView,
-    IncubationOverviewAPIView,
+    #IncubationLatestNotesAPIView,
+    #EvaluationSessionStatusAPIView,
+    #IncubationOverviewAPIView,
 )
 
 urlpatterns = [
@@ -38,11 +38,11 @@ urlpatterns = [
     #=========================== NOTES =====================================
     path("evaluation-notes/<int:idea_id>/",EvaluationNotesAPIView.as_view()),#post + get
     path("incubation-review/<int:idea_id>/",IncubationReviewAPIView.as_view()),
-    path("incubation/<int:idea_id>/latest-notes/",IncubationLatestNotesAPIView.as_view()),
+    #path("incubation/<int:idea_id>/latest-notes/",IncubationLatestNotesAPIView.as_view()),
 
     #========================== PHASES IN INCUBATION PHASES TAB  ==========================
-    path("ideas/<int:idea_id>/evaluation-session-status/",EvaluationSessionStatusAPIView.as_view()), #EVALUATION
-    path("incubation/<int:idea_id>/overview/",IncubationOverviewAPIView.as_view()), #INCUBATION
+    #path("ideas/<int:idea_id>/evaluation-session-status/",EvaluationSessionStatusAPIView.as_view()), #EVALUATION
+    #path("incubation/<int:idea_id>/overview/",IncubationOverviewAPIView.as_view()), #INCUBATION
 
 
          

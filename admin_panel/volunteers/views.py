@@ -112,8 +112,10 @@ class SendInvitationToVolunteerView(APIView):
         try:
             invitation = VolunteerManagementService.send_invitation_to_volunteer(
                 volunteer_id=volunteer_id,
+                description=request.data.get("description"),
                 expected_duration=request.data.get("expected_duration"),
-                task=request.data.get("task")
+                task=request.data.get("task"),
+                actor=request.user
             )
 
         except ValidationError as e:
@@ -199,7 +201,17 @@ class TeamRequestDetailsAPIView(APIView):
         )
 
         return Response(data)
-    
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض المتطوعين لاقتراحهم لطلب فريق \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   
+class AvailableApprovedVolunteersView(APIView):
+
+    def get(self, request):
+
+        data = (
+            VolunteerQueryService
+            .get_available_approved_volunteers()
+        )
+
+        return Response(data)
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\اقتراح متطوعين لطلب فريق \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   
 class SuggestVolunteersAPIView(APIView):
 

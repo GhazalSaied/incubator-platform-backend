@@ -9,6 +9,7 @@ from .views import (
 
 urlpatterns = [
     path("", SeasonListAPIView.as_view(), name="season-list"),
+    #\\\\\\\\\\\\\\\\\\\\\\\\انشاء موسم \\\\\\\\\\\\\\\\\\\\\
     path("create/", CreateSeasonAPIView.as_view(), name="season-create"),
     path("<int:pk>/", SeasonDetailsAPIView.as_view(), name="season-detail"),
     path("<int:pk>/publish/", PublishSeasonAPIView.as_view(), name="season-publish"),

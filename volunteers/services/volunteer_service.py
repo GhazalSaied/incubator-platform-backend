@@ -151,7 +151,7 @@ class VolunteerService:
             )
 
             join_request.status = JoinRequest.ACCEPTED
-
+            join_request.save(update_fields=["status"])
             RoleService.assign_role(
                 user=user,
                 role_code=SystemRoles.INCUBATOR 

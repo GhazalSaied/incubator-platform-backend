@@ -431,14 +431,7 @@ class IdeaService:
         )
 
         # Notification
-        EventBus.emit(
-            "team_request_created",
-            payload={
-                "team_request": team_request,
-                "idea": idea.id,
-            },
-            actor=user,
-        )
+        EventBus.emit( "team_request_created", team_request=team_request, actor=user, )
             
 
         return team_request

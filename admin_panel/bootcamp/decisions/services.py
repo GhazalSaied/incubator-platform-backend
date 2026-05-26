@@ -22,7 +22,7 @@ class BootcampIdeaQueryService:
         qs = Idea.objects.filter(
             status=IdeaStatus.BOOTCAMP
         ).select_related("owner")
-
+        
         #  Search
         if search:
             qs = qs.filter(
@@ -42,7 +42,7 @@ class BootcampIdeaQueryService:
         }
 
         result = []
-
+        
         for idea in qs:
             stats = attendance_map.get(idea.id, {})
 
@@ -51,11 +51,11 @@ class BootcampIdeaQueryService:
 
             absence_percentage = (absent / total * 100) if total > 0 else 0
             commitment = 100 - absence_percentage
-
+            
             result.append({
                 "idea_id": idea.id,
                 "idea_title": idea.title,
-
+                
                 "absence_percentage": round(absence_percentage, 2),
                 "commitment_status": "ملتزم" if commitment >= 75 else "غير ملتزم"
             })

@@ -13,20 +13,33 @@ def handle_meeting_scheduled(payload):
         "meeting_datetime": meeting_datetime
     }
 
+    # -----------------------------
     # إشعار صاحب الفكرة
+    # -----------------------------
     NotificationService.send(
         user=idea.owner,
         event_name="evaluation_meeting_scheduled_owner",
-        extra=data
+        extra=data,
+        target_role="IDEA_OWNER"
     )
 
+    # -----------------------------
     # إشعار المقيمين
+    # -----------------------------
+    notified_users = set()
+
     for assignment in assignments:
+
+        if assignment.evaluator_id in notified_users:
+            continue
+
+        notified_users.add(assignment.evaluator_id)
 
         NotificationService.send(
             user=assignment.evaluator,
             event_name="evaluation_meeting_scheduled_evaluator",
-            extra=data
+            extra=data,
+            target_role="EVALUATOR"
         )
 
 
@@ -51,7 +64,8 @@ def evaluation_accepted_handler(payload, actor=None):
         event_name="idea_accepted",
         obj=idea,
         extra={"message": message},
-        actor=actor
+        actor=actor,
+        target_role="IDEA_OWNER"
     )
     
     
@@ -60,14 +74,20 @@ EventBus.register("idea_accepted", evaluation_accepted_handler)
 
 
 def evaluation_rejected_handler(payload, actor=None):
+
     idea = payload.get("idea")
-    message = payload.get("message", "تم رفض فكرتك في التقييم , لا تيأس وحاول مرة أخرى في المستقبل!")
+    action_url = payload.get("action_url")
+
     NotificationService.send(
         user=idea.owner,
         event_name="idea_rejected",
         obj=idea,
-        extra={"message": message},
-        actor=actor
+        actor=actor,
+        action_url=action_url,
+        target_role="IDEA_OWNER"
     )
-    
-EventBus.register("idea_rejected", evaluation_rejected_handler)
+
+EventBus.register(
+    "idea_rejected",
+    evaluation_rejected_handler
+)

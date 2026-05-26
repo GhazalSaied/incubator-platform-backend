@@ -8,7 +8,6 @@ class EvaluationsConfig(AppConfig):
 
     def ready(self):
 
-        # ✅ handler الجديد للـ workflow
         from evaluations.handlers.evaluation_workflow_handlers import (
             handle_evaluation_completed
         )

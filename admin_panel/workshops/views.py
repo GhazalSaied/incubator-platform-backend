@@ -9,7 +9,7 @@ from .services import (
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\كل الورشات \\\\\\\\\\\\\\\\\\\\\\\\\
 class WorkshopListAPIView(APIView):
-    permission_classes = [IsAuthenticated, CanManageWorkshops]
+    #permission_classes = [IsAuthenticated, CanManageWorkshops]
     def get(self, request):
 
         data = WorkshopQueryService.list_workshops()
@@ -38,25 +38,20 @@ class ApproveWorkshopAPIView(APIView):
             workshop_id=workshop_id
         )
 
-        return Response({
-            "message": "تم قبول الورشة بنجاح"
-        })
-#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\رفض ورشة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+        return Response({"message": "تم قبول الورشة بنجاح"})
+
+
 class RejectWorkshopAPIView(APIView):
 
     permission_classes = [IsAuthenticated, CanManageWorkshops]
 
     def post(self, request, workshop_id):
 
-        rejection_reason = request.data.get(
-            "rejection_reason"
-        )
+        rejection_reason = request.data.get("rejection_reason")
 
         WorkshopManagementService.reject_workshop(
             workshop_id=workshop_id,
             rejection_reason=rejection_reason
         )
 
-        return Response({
-            "message": "تم رفض الورشة"
-        })
+        return Response({"message": "تم رفض الورشة"})

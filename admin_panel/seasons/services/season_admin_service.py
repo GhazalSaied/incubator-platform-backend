@@ -79,11 +79,11 @@ class SeasonAdminService:
     @staticmethod
     def publish_season(season):
 
-        if not hasattr(season, "form"):
-            raise Exception("لا يمكن نشر الموسم بدون نموذج")
+       # if not hasattr(season, "form"):
+           # raise Exception("لا يمكن نشر الموسم بدون نموذج")
 
-        if season.form.questions.count() == 0:
-            raise Exception("النموذج فارغ")
+        #if season.form.questions.count() == 0:
+          #  raise Exception("النموذج فارغ")
 
         if season.status != SeasonStatus.DRAFT:
             raise Exception("الموسم منشور مسبقاً")
@@ -139,6 +139,6 @@ class SeasonAdminService:
             IdeaStateService.change_status(idea=idea,to_status=IdeaStatus.PRE_ACCEPTED,user=None)
         
 
-        
+        EventBus.emit("bootcamp_started",season=season)
         return season
 

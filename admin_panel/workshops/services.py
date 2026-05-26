@@ -86,6 +86,10 @@ class WorkshopQueryService:
         
 
 
+from django.db import transaction
+from django.core.exceptions import ValidationError
+
+
 class WorkshopManagementService:
 
     @staticmethod
@@ -93,27 +97,17 @@ class WorkshopManagementService:
     def approve_workshop(*, workshop_id):
 
         try:
-            workshop = Workshop.objects.select_related(
-                "created_by"
-            ).get(id=workshop_id)
-
+            workshop = Workshop.objects.select_related("created_by").get(id=workshop_id)
         except Workshop.DoesNotExist:
             raise ValidationError("الورشة غير موجودة")
 
         if workshop.status != "PENDING":
-            raise ValidationError(
-                "لا يمكن قبول هذه الورشة"
-            )
+            raise ValidationError("لا يمكن قبول هذه الورشة")
 
         workshop.status = "ACCEPTED"
         workshop.rejection_reason = ""
 
-        workshop.save(
-            update_fields=[
-                "status",
-                "rejection_reason"
-            ]
-        )
+        workshop.save(update_fields=["status", "rejection_reason"])
 
         EventBus.emit(
             "workshop_approved",
@@ -121,49 +115,31 @@ class WorkshopManagementService:
         )
 
         return workshop
-    
 
     @staticmethod
     @transaction.atomic
-    def reject_workshop(
-        *,
-        workshop_id,
-        rejection_reason
-    ):
+    def reject_workshop(*, workshop_id, rejection_reason):
 
         try:
-            workshop = Workshop.objects.select_related(
-                "created_by"
-            ).get(id=workshop_id)
-
+            workshop = Workshop.objects.select_related("created_by").get(id=workshop_id)
         except Workshop.DoesNotExist:
             raise ValidationError("الورشة غير موجودة")
 
-        
         if workshop.status != "PENDING":
-            raise ValidationError(
-                "لا يمكن رفض هذه الورشة"
-            )
+            raise ValidationError("لا يمكن رفض هذه الورشة")
 
-        if not rejection_reason:
-            raise ValidationError(
-                "سبب الرفض مطلوب"
-            )
+        if not rejection_reason or not rejection_reason.strip():
+            raise ValidationError("سبب الرفض مطلوب")
 
         workshop.status = "REJECTED"
+        workshop.rejection_reason = rejection_reason.strip()
 
-        workshop.rejection_reason = rejection_reason
+        workshop.save(update_fields=["status", "rejection_reason"])
 
-        workshop.save(
-            update_fields=[
-                "status",
-                "rejection_reason"
-            ]
-        )
-        EventBus.emit(
+        transaction.on_commit(lambda: EventBus.emit(
             "workshop_rejected",
             workshop=workshop,
             rejection_reason=rejection_reason
-        )
+        ))
 
         return workshop
