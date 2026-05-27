@@ -1,19 +1,53 @@
+
 from django.db import transaction
+from django.core.exceptions import ValidationError
 
 from ideas.models import (
     IdeaForm,
     FormStep,
     FormQuestion,
     FormQuestionChoice,
+    Season,
     SeasonStatus
 )
 
+ 
 
 class FormBuilderService:
 
-    # =====================================================
-    # MAIN ENTRY
-    # =====================================================
+    # ==========================================
+    # STATIC QUESTIONS CONFIG
+    # ==========================================
+
+    STATIC_QUESTIONS = {
+        "title": {
+            "key": "title",
+            "label": "عنوان الفكرة",
+            "type": FormQuestion.TEXT,
+        },
+
+        "description": {
+            "key": "description",
+            "label": "وصف الفكرة",
+            "type": FormQuestion.TEXT,
+        },
+
+        "target_audience": {
+            "key": "target_audience",
+            "label": "الفئة المستهدفة",
+            "type": FormQuestion.TEXT,
+        },
+
+        "sector": {
+            "key": "sector",
+            "label": "القطاع",
+            "type": FormQuestion.TEXT,
+        },
+    }
+
+    # ==========================================
+    # MAIN
+    # ==========================================
 
     @staticmethod
     @transaction.atomic
@@ -31,6 +65,7 @@ class FormBuilderService:
         )
 
         form.title = data["title"]
+
         form.save(update_fields=["title"])
 
         FormBuilderService._sync_steps(
@@ -40,21 +75,21 @@ class FormBuilderService:
 
         return form
 
-    # =====================================================
+    # ==========================================
     # VALIDATE
-    # =====================================================
+    # ==========================================
 
     @staticmethod
     def _validate_editable(season):
 
         if season.status != SeasonStatus.DRAFT:
-            raise Exception(
+            raise ValidationError(
                 "لا يمكن تعديل الفورم بعد نشر الموسم"
             )
 
-    # =====================================================
-    # STEP SYNC
-    # =====================================================
+    # ==========================================
+    # STEPS
+    # ==========================================
 
     @staticmethod
     def _sync_steps(form, steps_data):
@@ -73,7 +108,10 @@ class FormBuilderService:
                 None
             )
 
-            # UPDATE
+            # ==========================
+            # UPDATE STEP
+            # ==========================
+
             if step_id:
 
                 step = FormStep.objects.get(
@@ -81,20 +119,28 @@ class FormBuilderService:
                     form=form
                 )
 
-                for field, value in step_data.items():
-                    setattr(step, field, value)
+                step.title = step_data["title"]
+                step.order = step_data["order"]
 
                 step.save()
 
-            # CREATE
+            # ==========================
+            # CREATE STEP
+            # ==========================
+
             else:
 
                 step = FormStep.objects.create(
                     form=form,
-                    **step_data
+                    title=step_data["title"],
+                    order=step_data["order"]
                 )
 
             kept_step_ids.append(step.id)
+
+            # ==========================
+            # QUESTIONS
+            # ==========================
 
             FormBuilderService._sync_questions(
                 form=form,
@@ -102,19 +148,23 @@ class FormBuilderService:
                 questions_data=questions_data
             )
 
+        # ==========================
         # DELETE REMOVED STEPS
+        # ==========================
+
         FormStep.objects.filter(
             form=form
         ).exclude(
             id__in=kept_step_ids
         ).delete()
 
-    # =====================================================
-    # QUESTION SYNC
-    # =====================================================
+    # ==========================================
+    # QUESTIONS
+    # ==========================================
 
     @staticmethod
     def _sync_questions(
+        *,
         form,
         step,
         questions_data
@@ -134,50 +184,142 @@ class FormBuilderService:
                 None
             )
 
-            # UPDATE
-            if question_id:
+            is_static = question_data.pop(
+                "is_static",
+                False
+            )
 
-                question = FormQuestion.objects.get(
-                    id=question_id,
-                    step=step
+            # ======================================
+            # STATIC QUESTION
+            # ======================================
+
+            if is_static:
+
+                static_field = question_data["static_field"]
+
+                if static_field not in (
+                    FormBuilderService.STATIC_QUESTIONS
+                ):
+                    raise ValidationError(
+                        "حقل static غير صالح"
+                    )
+
+                config = (
+                    FormBuilderService
+                    .STATIC_QUESTIONS[static_field]
                 )
 
-                for field, value in question_data.items():
-                    setattr(question, field, value)
+                question, _ = (
+                    FormQuestion.objects.get_or_create(
+                        form=form,
+                        static_field=static_field,
+                        defaults={
+                            "step": step,
+                            "source": FormQuestion.STATIC,
+                            "key": config["key"],
+                            "label": config["label"],
+                            "type": config["type"],
+                            "required": question_data.get(
+                                "required",
+                                False
+                            ),
+                            "order": question_data.get(
+                                "order",
+                                0
+                            )
+                        }
+                    )
+                )
+
+                # move between steps
+                question.step = step
+
+                question.required = (
+                    question_data.get(
+                        "required",
+                        False
+                    )
+                )
+
+                question.order = (
+                    question_data.get(
+                        "order",
+                        0
+                    )
+                )
 
                 question.save()
 
-            # CREATE
+            # ======================================
+            # DYNAMIC QUESTION
+            # ======================================
+
             else:
 
-                question = FormQuestion.objects.create(
-                    form=form,
-                    step=step,
-                    **question_data
-                )
+                # UPDATE
+                if question_id:
+
+                    question = FormQuestion.objects.get(
+                        id=question_id,
+                        form=form
+                    )
+
+                    for field, value in (
+                        question_data.items()
+                    ):
+                        setattr(
+                            question,
+                            field,
+                            value
+                        )
+
+                    question.step = step
+
+                    question.save()
+
+                # CREATE
+                else:
+
+                    question = (
+                        FormQuestion.objects.create(
+                            form=form,
+                            step=step,
+                            source=FormQuestion.DYNAMIC,
+                            **question_data
+                        )
+                    )
 
             kept_question_ids.append(
                 question.id
             )
+
+            # ======================================
+            # CHOICES
+            # ======================================
 
             FormBuilderService._sync_choices(
                 question=question,
                 choices_data=choices_data
             )
 
+        # ======================================
         # DELETE REMOVED QUESTIONS
+        # ======================================
+
         FormQuestion.objects.filter(
+            form=form,
             step=step
         ).exclude(
             id__in=kept_question_ids
         ).delete()
 
-    # =====================================================
-    # CHOICES SYNC
-    # =====================================================
+    # ==========================================
+    # CHOICES
+    # ==========================================
 
     @staticmethod
     def _sync_choices(
+        *,
         question,
         choices_data
     ):
@@ -191,32 +333,51 @@ class FormBuilderService:
                 None
             )
 
+            # ==========================
             # UPDATE
+            # ==========================
+
             if choice_id:
 
-                choice = FormQuestionChoice.objects.get(
-                    id=choice_id,
-                    question=question
+                choice = (
+                    FormQuestionChoice.objects.get(
+                        id=choice_id,
+                        question=question
+                    )
                 )
 
-                for field, value in choice_data.items():
-                    setattr(choice, field, value)
+                for field, value in (
+                    choice_data.items()
+                ):
+                    setattr(
+                        choice,
+                        field,
+                        value
+                    )
 
                 choice.save()
 
+            # ==========================
             # CREATE
+            # ==========================
+
             else:
 
-                choice = FormQuestionChoice.objects.create(
-                    question=question,
-                    **choice_data
+                choice = (
+                    FormQuestionChoice.objects.create(
+                        question=question,
+                        **choice_data
+                    )
                 )
 
             kept_choice_ids.append(
                 choice.id
             )
 
+        # ==========================
         # DELETE REMOVED CHOICES
+        # ==========================
+
         FormQuestionChoice.objects.filter(
             question=question
         ).exclude(

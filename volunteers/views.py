@@ -585,45 +585,86 @@ class MyWorkshopsAPIView(APIView):
 
 #/////////////////////// MY WORKSHOPS DETAILS ///////////////////
 
+
 class MyWorkshopDetailAPIView(APIView):
 
-    permission_classes = [IsAuthenticated,CanManageUsers,CanManageWorkshop ]
-
+    permission_classes = [
+        IsAuthenticated,
+        CanManageWorkshop
+    ]
 
     def get(self, request, workshop_id):
-        w = get_object_or_404(
-            Workshop,
-            id=workshop_id,
-            created_by=request.user
+
+        user = request.user
+
+        # تحقق هل المستخدم أدمن
+        is_admin = (
+            user.userrole_set
+            .filter(
+                role__code="ADMIN",
+                is_active=True
+            )
+            .exists()
         )
-    
+
+        # الأدمن يشوف أي ورشة
+        if is_admin:
+            workshop = get_object_or_404(
+                Workshop,
+                id=workshop_id
+            )
+
+        # المتطوع يشوف فقط ورشاته
+        else:
+            workshop = get_object_or_404(
+                Workshop,
+                id=workshop_id,
+                created_by=user
+            )
 
         data = {
-            "title": w.title,
-            "description": w.description,
-            "objectives": w.objectives,
-            "target_audience": w.target_audience,
-            "start_date": w.start_date,
-            "end_date": w.end_date,
-            "days": w.days,
-            "time_from": w.time_from,
-            "time_to": w.time_to,
-            "category": w.category,
-            "sessions":w.sessions,
-            "status": w.status,
+            "id": workshop.id,
+            "title": workshop.title,
+            "description": workshop.description,
+            "objectives": workshop.objectives,
+            "target_audience": workshop.target_audience,
+            "start_date": workshop.start_date,
+            "end_date": workshop.end_date,
+            "days": workshop.days,
+            "time_from": workshop.time_from,
+            "time_to": workshop.time_to,
+            "category": workshop.category,
+            "sessions": workshop.sessions,
+            "status": workshop.status,
+
+            # معلومات المتطوع
+            "volunteer_name":
+                workshop.created_by.full_name,
+
+            "volunteer_email":
+                workshop.created_by.email,
         }
 
-        if w.status == "ACCEPTED":
+        if workshop.image:
+            data["image"] = (
+                request.build_absolute_uri(
+                    workshop.image.url
+                )
+            )
+
+        if workshop.status == "ACCEPTED":
             data["registrations"] = [
                 {
                     "name": r.name,
-                    "email": r.email
+                    "email": r.email,
                 }
-                for r in w.registrations.all()
+                for r in workshop.registrations.all()
             ]
 
-        elif w.status == "REJECTED":
-            data["rejection_reason"] = w.rejection_reason
+        elif workshop.status == "REJECTED":
+            data["rejection_reason"] = (
+                workshop.rejection_reason
+            )
 
         return Response(data)
     

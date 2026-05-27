@@ -13,6 +13,9 @@ from ideas.models import FormQuestionChoice, Season,IdeaForm
 
 class FormBuilderAPIView(APIView):
 
+    # ==========================================
+    # GET
+    # ==========================================
 
     def get(self, request, season_id):
 
@@ -28,6 +31,7 @@ class FormBuilderAPIView(APIView):
         )
 
         if not form:
+
             return Response(
                 {
                     "form": None
@@ -43,9 +47,9 @@ class FormBuilderAPIView(APIView):
             serializer.data
         )
 
-    # =====================================
+    # ==========================================
     # PUT
-    # =====================================
+    # ==========================================
 
     def put(self, request, season_id):
 
@@ -75,7 +79,6 @@ class FormBuilderAPIView(APIView):
             response_serializer.data,
             status=status.HTTP_200_OK
         )
-
         
 
     

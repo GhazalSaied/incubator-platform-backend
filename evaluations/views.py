@@ -113,6 +113,12 @@ class RespondToInvitationAPIView(APIView):
                 actor=request.user,
             )
 
+            EventBus.emit( 
+                "evaluation_joined_committee",
+                 invitation=invitation, 
+                 actor=request.user, 
+            )
+
         else:
             invitation.status = "REJECTED"
             

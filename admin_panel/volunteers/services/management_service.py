@@ -111,13 +111,6 @@ class VolunteerManagementService:
                 role_code=SystemRoles.EVALUATOR
             )
 
-    #  الإشعار
-        EventBus.emit(
-            "evaluator_role_removed",
-            user=user,
-            actor=actor
-        )
-
         return {
             "success": True,
             "volunteer_id": volunteer.id
@@ -131,9 +124,10 @@ class VolunteerManagementService:
     def send_invitation_to_volunteer(
         *,
         volunteer_id,
+        description,
         expected_duration,
         task,
-        actor=None
+        actor,
     ):
         season = SeasonPhaseService.get_current_season()
 
@@ -145,11 +139,11 @@ class VolunteerManagementService:
 
     #  جلب المتطوع أولاً
         try:
-            v = VolunteerProfile.objects.select_related("user").get(id=volunteer_id)
+            v = VolunteerProfile.objects.select_related("user").get(user_id=volunteer_id)
         except VolunteerProfile.DoesNotExist:
             raise ValidationError("المتطوع غير موجود")
         
-        v = VolunteerProfile.objects.select_related("user").get(id=volunteer_id)
+        v = VolunteerProfile.objects.select_related("user").get(user_id=volunteer_id)
     # تحقق أنه متطوع
         if SystemRoles.VOLUNTEER not in v.user.role_codes:
             raise ValidationError("هذا المستخدم ليس متطوعاً")
@@ -170,8 +164,10 @@ class VolunteerManagementService:
         invitation = EvaluationInvitation.objects.create(
             user=v.user,
             season=season,
+            description = description,
             expected_duration=expected_duration,
-            task=task
+            task=task,
+            created_by=actor
         )
 
         EventBus.emit(
@@ -206,6 +202,10 @@ class TeamSuggestionService:
                 volunteer = VolunteerProfile.objects.get(id=vid)
             except VolunteerProfile.DoesNotExist:
                 continue
+            forbidden_roles = [SystemRoles.IDEA_OWNER,SystemRoles.INCUBATOR,]
+            if any(role in volunteer.user.role_codes
+                   for role in forbidden_roles):
+                raise ValidationError( f"لا يمكن اقتراح المتطوع {volunteer.user.full_name} لأنه صاحب فكرة أو محتضن")
 
             suggestion = SuggestedVolunteer.objects.create(
                 team_request=team_request,

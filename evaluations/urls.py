@@ -16,6 +16,7 @@ from .views import (
     EvaluationSessionStatusAPIView,
     IncubationOverviewAPIView,
     NotesForIdeaOwnersAPIVIEW
+
 )
 
 urlpatterns = [
@@ -46,5 +47,6 @@ urlpatterns = [
     path("incubation/<int:idea_id>/overview/",IncubationOverviewAPIView.as_view()), #INCUBATION
 
 
-    path("ideas/<int:idea_id>/notes/",NotesForIdeaOwnersAPIVIEW.as_view()),     
+    path("ideas/<int:idea_id>/notes/",NotesForIdeaOwnersAPIVIEW.as_view()),   
+    path("next-upcoming-session/",NextUpcomingSessionAPIView.as_view()),  
 ]

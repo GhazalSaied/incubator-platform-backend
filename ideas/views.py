@@ -320,7 +320,7 @@ class PublicExhibitionProjectDetailsAPIView(APIView):
 #//////////////////////////// CREATE TEAM REQUEST VIEW ////////////////////////
 
 class CreateTeamRequestAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanRequestTeamCompletion]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
 

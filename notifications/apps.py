@@ -22,4 +22,5 @@ class NotificationsConfig(AppConfig):
         import notifications.handlers.admin_volunteer_handlers
         import notifications.handlers.manage_users
         import notifications.handlers.admin_broadcast
+        import notifications.handlers.idea_events_handlers
         

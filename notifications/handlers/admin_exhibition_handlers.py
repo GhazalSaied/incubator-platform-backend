@@ -1,15 +1,17 @@
 #create exhibition handler
 from core.events import EventBus
 from django.contrib.auth import get_user_model
-from ideas.models import IdeaStatus
+from ideas.models import IdeaStatus,Idea
 from notifications.services.notification_service import NotificationService
+
+
 User = get_user_model()
 def exhibition_scheduled_handler(payload):
     season_id = payload.get("season_id")
     exhibition_datetime = payload.get("exhibition_datetime")
     
     # إشعار جميع المستخدمين النشطين
-    users = User.objects.filter(is_active=True)
+    users = User.objects.filter(is_active=True,is_staff=False)
 
     for user in users.iterator():
         NotificationService.send(
@@ -27,12 +29,6 @@ EventBus.register("exhibition_scheduled", exhibition_scheduled_handler)
 
 #\\\\\\\\\\\\\\\\هاندلر نشر نموذج المعرض\\\\\\\\\\\\\\\\
 #الاشعار يصل فقط لاصحاب الافكار المتخرجة تخريج ايجابي 
-from ideas.models import Idea, IdeaStatus
-
-from notifications.services.notification_service import (
-    NotificationService
-)
-
 
 def handle_exhibition_form_published(payload):
 
@@ -63,7 +59,9 @@ def handle_exhibition_form_published(payload):
         NotificationService.send(
             user=idea.owner,
             event_name="exhibition_form_published",
-            obj=idea
+            obj=idea,
+            action_url="ideas/exhibition/dashboard/",
+            target_role= "INCUBATOR"
         )
 EventBus.register("exhibition_form_published",handle_exhibition_form_published )
 
@@ -74,48 +72,68 @@ EventBus.register("exhibition_form_published",handle_exhibition_form_published )
 
 
 #\\\\\\\\\\\\\\\\\\\\\القرار\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-from notifications.services.notification_service import (
-    NotificationService
-)
-
-
 def handle_exhibition_submission_decided(payload):
 
     submission = payload.get("submission")
     decision = payload.get("decision")
-    message = payload.get("message")
+    admin_message = payload.get("message")
 
     if not submission:
         return
 
     owner = submission.project.owner
 
-    # fallback messages
-    if not message:
+    # =========================
+    # TITLES
+    # =========================
 
-        if decision == "approved":
-            message = (
-                "تم قبول بطاقة المعرض الخاصة بمشروعك"
-            )
+    if decision == "approved":
 
-        else:
-            message = (
-                "تم رفض بطاقة المعرض الخاصة بمشروعك"
-            )
+        title = "قبول بطاقة المعرض"
 
-    title = (
-        "قبول بطاقة المعرض"
-        if decision == "approved"
-        else "رفض بطاقة المعرض"
-    )
+        base_message = (
+            f"تم قبول بطاقة المعرض الخاصة "
+            f"بمشروعك ({submission.project.title})."
+        )
+
+    else:
+
+        title = "رفض بطاقة المعرض"
+
+        base_message = (
+            f"تم رفض بطاقة المعرض الخاصة "
+            f"بمشروعك ({submission.project.title})."
+        )
+
+    # =========================
+    # ADMIN MESSAGE
+    # =========================
+
+    if admin_message:
+
+        final_message = (
+            f"{base_message}\n\n"
+            f"ملاحظات الإدارة:\n"
+            f"{admin_message}"
+        )
+
+    else:
+        final_message = base_message
+
+    # =========================
+    # SEND
+    # =========================
 
     NotificationService.send(
         user=owner,
         title=title,
-        message=message,
-        related_object=submission.project
+        message=final_message,
+        related_object=submission.project,
+        target_role= "INCUBATOR"
     )
+
+
 EventBus.register(
-            "exhibition_submission_decided",
-            handle_exhibition_submission_decided
-        )
+    "exhibition_submission_decided",
+    handle_exhibition_submission_decided
+)

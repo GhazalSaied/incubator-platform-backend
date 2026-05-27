@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import ListAPIView, ValidationError
 
 from bootcamp.models import BootcampSession
-from bootcamp.serializers import BootcampSessionsTableSerializer
+from bootcamp.serializers import BootcampSessionsTableSerializer,BootcampSessionCreateSerializer
 from core.permissions import CanManageBootcamp, CanManageCandidateBootcamp
 from ideas.models import Season
 from admin_panel.bootcamp.sessions.services import create_bootcamp_session
@@ -21,7 +21,7 @@ class BootcampSessionCreateView(APIView):
         except Season.DoesNotExist:
             raise ValidationError("الموسم غير موجود")
 
-        serializer = BootcampSessionsTableSerializer(data=request.data)
+        serializer = BootcampSessionCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         session = create_bootcamp_session(serializer, season)

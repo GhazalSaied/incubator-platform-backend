@@ -1,3 +1,4 @@
+from core.events import EventBus
 from ideas.models import (
     Idea,
     IdeaStatus,
@@ -70,15 +71,12 @@ class ExhibitionService:
         }
 
     @staticmethod
-    def create_submission(
-        *,
-        idea,
-        form,
-        submitted_data,
-    ):
-        return ExhibitionSubmission.objects.create(
+    def create_submission( *, idea, form, submitted_data, ):
+        submission = ExhibitionSubmission.objects.create(
             project=idea,
             form=form,
             data=submitted_data,
-            status="pending",
-        )
+            status="pending", )
+        # ========================= # NOTIFICATION EVENT # =========================
+        EventBus.emit( "exhibition_submission_created", submission=submission, actor=idea.owner )
+        return submission

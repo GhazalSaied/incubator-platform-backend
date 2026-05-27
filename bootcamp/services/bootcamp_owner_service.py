@@ -109,7 +109,7 @@ class BootcampOwnerService:
             user=user
         )
 
-        session = BootcampOwnerService.get_next_session()
+        session = BootcampOwnerService.get_next_session( idea=idea)
 
         if not session:
             raise ValueError(
@@ -137,10 +137,6 @@ class BootcampOwnerService:
             )
         )
 
-        EventBus.emit(
-            "bootcamp_absence_request_submitted",
-            absence_request=absence_request,
-            actor=user,
-        )
+        EventBus.emit("bootcamp_absence_request_submitted",absence_request=absence_request,actor=user,)
 
         return absence_request

@@ -3,7 +3,7 @@ from core.events import EventBus
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from datetime import datetime
-
+from django.utils.text import slugify
 from ideas.models import Season
 from ideas.phases import SeasonPhase as PhaseEnum
 from ideas.services.season_phase_service import SeasonPhaseService
@@ -13,7 +13,14 @@ from ideas.models import ExhibitionForm, ExhibitionQuestion, ExhibitionQuestionO
 
 
 class ExhibitionAdminService:
-    
+    FIELD_TYPES = {
+        "short_text": "text",
+        "long_text": "textarea",
+        "single_choice": "select",
+        "multiple_choice": "select_multiple",
+        "yes_no": "yes_no",
+    }
+
     @staticmethod
     def _parse_datetime(date, time):
         if not date or not time:
@@ -67,191 +74,134 @@ class ExhibitionAdminService:
     # FORM
     # =========================
 
+   
     @staticmethod
-    def create_form(*, title):
+    @transaction.atomic
+    def save_form(*, title, questions_data):
 
         season = SeasonPhaseService.get_current_season()
+
         if not season:
             raise ValidationError("لا يوجد موسم فعال")
 
-        if hasattr(season, "exhibition_form"):
-            raise ValidationError("الفورم موجود مسبقاً")
-
-        form = ExhibitionForm.objects.create(
+        form, _ = ExhibitionForm.objects.get_or_create(
             season=season,
-            title=title,
-            is_active=False
+            defaults={
+                "title": title,
+                "is_active": False
+            }
         )
 
-        return form
-
-
-    @staticmethod
-    @transaction.atomic
-    def sync_form(form, questions_data):
         ExhibitionAdminService.check_not_published(form)
-        # =========================
-        # VALIDATION (REQUEST LEVEL)
-        # =========================
-        incoming_keys = set()
 
-        for q in questions_data:
-            key = q.get("key")
+        form.title = title
+        form.save()
 
-            if not key:
-                raise ValidationError("كل سؤال لازم يكون له key")
-
-            if key in incoming_keys:
-                raise ValidationError(f"Duplicate key in request: {key}")
-
-            incoming_keys.add(key)
-
-        # =========================
-        # EXISTING DATA
-        # =========================
         existing_questions = {
             q.id: q for q in form.questions.all()
         }
 
         incoming_ids = set()
 
-        # =========================
-        # SYNC QUESTIONS
-        # =========================
-        for q_data in questions_data:
+        for index, q_data in enumerate(questions_data):
 
             q_id = q_data.get("id")
-            key = q_data["key"]
+
+            ui_type = q_data.get("type")
+
+            if ui_type not in ExhibitionAdminService.FIELD_TYPES:
+                raise ValidationError("نوع الحقل غير صالح")
+
+            db_type = ExhibitionAdminService.FIELD_TYPES[ui_type]
+
+            label = q_data.get("label")
+
+            if not label:
+                raise ValidationError("عنوان السؤال مطلوب")
+
+            required = q_data.get("required", False)
+
+            # توليد key تلقائي
+            key = slugify(label, allow_unicode=True)
+
+            # yes/no options auto
+            options = q_data.get("options", [])
+
+            if ui_type == "yes_no":
+                options = [
+                    {"label": "نعم", "value": "yes"},
+                    {"label": "لا", "value": "no"},
+                ]
 
             # =========================
-            # UPDATE QUESTION
+            # UPDATE
             # =========================
             if q_id and q_id in existing_questions:
 
                 question = existing_questions[q_id]
 
-                #  check DB duplicate key (exclude self)
-                if form.questions.exclude(id=q_id).filter(key=key).exists():
-                    raise ValidationError(f"Key already exists: {key}")
-
+                question.label = label
+                question.type = db_type
+                question.required = required
+                question.order = index
                 question.key = key
-                question.label = q_data["label"]
-                question.type = q_data["type"]
-                question.required = q_data.get("required", False)
-                question.order = q_data.get("order", 0)
                 question.save()
 
-                # sync options
-                ExhibitionAdminService._sync_options(
-                    question,
-                    q_data.get("options", [])
-                )
-
-                incoming_ids.add(q_id)
-
             # =========================
-            # CREATE QUESTION
+            # CREATE
             # =========================
             else:
 
-                #  DB check before create
-                if form.questions.filter(key=key).exists():
-                    raise ValidationError(f"Key already exists: {key}")
-
                 question = form.questions.create(
+                    label=label,
+                    type=db_type,
+                    required=required,
+                    order=index,
                     key=key,
-                    label=q_data["label"],
-                    type=q_data["type"],
-                    required=q_data.get("required", False),
-                    order=q_data.get("order", 0)
                 )
 
-                ExhibitionAdminService._sync_options(
-                    question,
-                    q_data.get("options", [])
-                )
+            ExhibitionAdminService._sync_options(
+                question,
+                options
+            )
 
-                incoming_ids.add(question.id)
+            incoming_ids.add(question.id)
 
-        # =========================
-        # DELETE REMOVED QUESTIONS
-        # =========================
-        to_delete = set(existing_questions.keys()) - incoming_ids
+        # حذف الأسئلة المحذوفة من الواجهة
+        deleted_ids = (
+            set(existing_questions.keys()) - incoming_ids
+        )
 
-        if to_delete:
-            form.questions.filter(id__in=to_delete).delete()
+        if deleted_ids:
+            form.questions.filter(
+                id__in=deleted_ids
+            ).delete()
 
-        return True
+        return form
 
-    # ==================================================
-    # OPTIONS SYNC
-    # ==================================================
     @staticmethod
-    def _sync_options(question, options_data):
-        
+    def _sync_options(question, options):
 
-        if question.type not in ["select", "select_multiple"]:
+        if question.type not in [
+            "select",
+            "select_multiple"
+        ]:
             question.options.all().delete()
             return
 
-        existing_options = {
-            o.id: o for o in question.options.all()
-        }
+        question.options.all().delete()
 
-        incoming_ids = set()
-        incoming_values = set()
+        for opt in options:
 
-        # =========================
-        # VALIDATION (duplicate values)
-        # =========================
-        for opt in options_data:
-            value = opt.get("value")
+            label = opt.get("label")
 
-            if not value:
-                raise ValidationError("كل خيار لازم يكون له value")
+            if not label:
+                continue
 
-            if value in incoming_values:
-                raise ValidationError(f"Duplicate option value: {value}")
-
-            incoming_values.add(value)
-
-        # =========================
-        # SYNC OPTIONS
-        # =========================
-        for opt in options_data:
-
-            opt_id = opt.get("id")
-            value = opt["value"]
-
-            # UPDATE OPTION
-            if opt_id and opt_id in existing_options:
-
-                option = existing_options[opt_id]
-
-                option.value = value
-                option.label = opt["label"]
-                option.save()
-
-                incoming_ids.add(opt_id)
-
-            # CREATE OPTION
-            else:
-
-                new_opt = question.options.create(
-                    value=value,
-                    label=opt["label"]
-                )
-
-                incoming_ids.add(new_opt.id)
-
-        # =========================
-        # DELETE REMOVED OPTIONS
-        # =========================
-        to_delete = set(existing_options.keys()) - incoming_ids
-
-        if to_delete:
-            question.options.filter(id__in=to_delete).delete()
-
+            question.options.create(
+                label=label,
+                value=slugify(label)
+            )
 
     # =========================
     #  CHECK LOCK
@@ -329,7 +279,6 @@ class ExhibitionSubmissionManagementService:
                 "قرار غير صالح"
             )
 
-        # تنظيف الرسالة
         admin_message = (
             admin_message.strip()
             if admin_message

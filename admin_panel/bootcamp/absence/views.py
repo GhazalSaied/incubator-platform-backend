@@ -35,7 +35,7 @@ class AbsenceDecisionView(APIView):
         serializer.is_valid(raise_exception=True)
 
         absence = process_absence_decision(
-            request_id=pk,  # ✅ من URL
+            request_id=pk,  
             decision=serializer.validated_data["decision"],
             actor=request.user
         )

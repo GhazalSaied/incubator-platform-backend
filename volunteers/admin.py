@@ -1,10 +1,12 @@
 from django.contrib import admin
+
 from .models import( VolunteerProfile,
                     VolunteerAvailability,
                     ConsultationRequest,
                     Workshop,WorkshopRegistration,
                     JoinRequest
                     )
+
 # Register your models here.
 admin.site.register(VolunteerProfile)
 admin.site.register(VolunteerAvailability)

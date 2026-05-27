@@ -51,7 +51,7 @@ def process_absence_decision(request_id, decision, actor=None):
 
     absence.save(update_fields=["status"])
 
-    # 🔥 EventBus بدل Notification مباشر
+
     EventBus.emit(
         "absence_decision_made",
         absence=absence,

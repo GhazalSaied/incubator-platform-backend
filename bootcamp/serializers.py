@@ -11,14 +11,29 @@ from bootcamp.services.bootcamp_owner_service import BootcampOwnerService
 #/////////////////////////// BOOTCAMP SESSION ////////////////////////
 class BootcampSessionSerializer(serializers.ModelSerializer):
     trainer_name = serializers.SerializerMethodField()
+class BootcampSessionCreateSerializer(serializers.ModelSerializer):
 
+    class Meta:
+        model = BootcampSession
+        fields = [
+            "title",
+            "trainer",
+            "location",
+            "tasks",
+            "date",
+            "start_time",
+            "end_time",
+        ]
 
 class BootcampSessionsTableSerializer(serializers.ModelSerializer):
+
     trainer_name = serializers.CharField(
         source="trainer.full_name",
-        default=None
+        read_only=True
     )
-    time_range = serializers.SerializerMethodField()
+
+    
+
     session_status = serializers.SerializerMethodField()
 
     class Meta:
@@ -28,17 +43,12 @@ class BootcampSessionsTableSerializer(serializers.ModelSerializer):
             "title",
             "date",
             "trainer_name",
-            "time_range",
+            "start_time",
+            "end_time",
             "tasks",
             "session_status",
         ]
-
-    def get_time_range(self, obj):
-        if not obj.start_time or not obj.end_time:
-            return None
-
-        return f"{obj.start_time.strftime('%H:%M')} - {obj.end_time.strftime('%H:%M')}"
-
+    
     def get_session_status(self, obj):
 
         is_finished = (

@@ -1,10 +1,17 @@
 TEMPLATES = {
+    #===============================
+    # IDEAS
+    #===============================
+    "idea_submitted": {
+        "title": "تم تقديم فكرة جديدة",
+        "message": lambda obj, actor=None, extra=None: (
+            f"قام المستخدم " f"{actor.full_name if actor else obj.owner.full_name} " f"بتقديم فكرة جديدة بعنوان " f"({obj.title}) " f"ضمن موسم {obj.season.name}" ) },
 
-    "message_sent": {
-    "title": "رسالة جديدة",
-    "message": lambda obj, actor=None, extra=None:
-        f"لديك رسالة جديدة من {actor.full_name}",
-    },
+
+    "exhibition_submission_created": {
+        "title": "تم إرسال بطاقة مشروع جديدة",
+        "message": lambda obj, actor=None, extra=None: (
+            f"قام المستخدم " f"{actor.full_name if actor else obj.project.owner.full_name} " f"بإكمال تعبئة بطاقة المشروع الخاصة بفكرته " f"({obj.project.title}) " f"وهي الآن بانتظار المراجعة." ) },
 
     # ===============================
     # CONSULTATIONS
@@ -23,16 +30,16 @@ TEMPLATES = {
     },
 
     "consultation_accepted": {
-    "title": "تم قبول طلب الاستشارة",
-    "message": lambda obj, actor=None, extra=None:
-        f"تم قبول طلب الاستشارة من المستشار {actor.full_name}",
-    },
+        "title": "تم قبول طلب الاستشارة",
+        "message": lambda obj, actor=None, extra=None: (
+            f"وافق المستشار " f"{actor.full_name if actor else obj.volunteer.user.full_name} "
+            f"على طلب الاستشارة الخاص بمشروعك " f"({obj.idea.title})" ) },
 
     "consultation_rejected": {
         "title": "تم رفض طلب الاستشارة",
-        "message": lambda obj, actor=None, extra=None:
-            f"اعتذر المستشار {actor.full_name} عن قبول طلبك. يمكنك اختيار مستشار اخر",
-    },
+        "message": lambda obj, actor=None, extra=None: (
+            f"اعتذر المستشار " f"{actor.full_name if actor else obj.volunteer.user.full_name} "
+            f"عن تقديم الاستشارة لمشروعك " f"({obj.idea.title}). " f"يمكنك اختيار مستشار آخر." ) },
 
     # ===============================
     # WORKSHOPS
@@ -47,13 +54,16 @@ TEMPLATES = {
     "workshop_registered": {
         "title": "تسجيل جديد",
         "message": lambda obj, actor=None, extra=None:
-            f"تسجيل جديد في ورشتك {obj.title} - العدد الحالي: {(extra or {}).get('registrations_count')}"
+            f"تسجيل جديد في ورشتك {obj.title} "
     },
 
     # ===============================
     # TEAM
     # ===============================
-
+    "team_request_created": {
+        "title": "طلب فريق جديد",
+        "message": lambda obj, actor=None, extra=None: ( f"قام المستخدم " f"{actor.full_name if actor else obj.idea.owner.full_name} " f"بتقديم طلب تشكيل فريق " f"لفكرته ({obj.idea.title})" ) },
+    
     "join_request_sent": {
         "title": "طلب انضمام",
         "message": lambda obj, actor=None, extra=None:
@@ -68,39 +78,51 @@ TEMPLATES = {
 
 
     "join_request_accepted": {
-    "title": "تم انضمام متطوع",
-    "message": lambda obj, actor=None, extra=None:
-        f"تم انضمام {actor.full_name} إلى فريق مشروعك",
-    },
+        "title": "تم قبول طلب الانضمام",
+        "message": lambda obj, actor=None, extra=None: (
+            f"وافق المتطوع " f"{actor.full_name if actor else obj.volunteer.user.full_name} "
+            f"على الانضمام إلى فريق مشروعك " f"({obj.idea.title})" ) },
 
     "join_request_rejected": {
-        "title": "تم رفض الطلب",
-        "message": lambda obj, actor=None, extra=None:
-            f"رفض المتطوع {actor.full_name} الانضمام إلى فريقك",
-    },
+        "title": "تم رفض طلب الانضمام",
+        "message": lambda obj, actor=None, extra=None: (
+            f"اعتذر المتطوع " f"{actor.full_name if actor else obj.volunteer.user.full_name} "
+            f"عن الانضمام إلى فريق مشروعك " f"({obj.idea.title})" ) },
 
 
 
     # ===============================
     # EVALUATION
     # ===============================
+    "evaluation_joined_committee": {
+        "title": "مرحباً بك في لجنة التقييم",
+        "message": lambda obj, actor=None, extra=None:
+            f"شكراً لك على الموافقة لطلب الانضمام "
+            f"إلى لجنة تقييم موسم "
+            f"{obj.season.name}. "
+            f"أنت الآن عضو في لجنة التقييم." },
 
-    "evaluation_invitation_sent": {
-        "title": "دعوة لجنة تقييم",
-        "message":lambda obj, actor=None, extra=None: 
-            f"تم دعوتك للانضمام إلى لجنة تقييم ({obj.season.name})",
-    },
 
     "evaluation_invitation_accepted": {
-        "title": "قبول دعوة لجنة التقييم",
-        "message": lambda obj, actor=None, extra=None:
-            f"تم قبول طلب الانضمام إلى لجنة التقييم لموسم {obj.season.name} من قبل المقيم {actor.full_name if actor else obj.user.full_name}"
+        "title": "تم قبول دعوة لجنة التقييم",
+
+        "message": lambda obj, actor=None, extra=None: (
+        f"قام المقيم "
+        f"{actor.full_name if actor else obj.user.full_name} "
+        f"بقبول دعوة الانضمام إلى لجنة تقييم "
+        f"موسم {obj.season.name}"
+        )
     },
 
     "evaluation_invitation_rejected": {
-        "title": "رفض دعوة لجنة التقييم",
-        "message": lambda obj, actor=None, extra=None:
-            f"رفض المقيم {actor.full_name if actor else obj.user.full_name} الانضمام إلى لجنة التقييم لموسم {obj.season.name}"
+        "title": "تم رفض دعوة لجنة التقييم",
+
+        "message": lambda obj, actor=None, extra=None: (
+        f"قام المقيم "
+        f"{actor.full_name if actor else obj.user.full_name} "
+        f"برفض دعوة الانضمام إلى لجنة تقييم "
+        f"موسم {obj.season.name}"
+        )
     },
 
     #==============================
@@ -108,20 +130,12 @@ TEMPLATES = {
     #==============================
 
     "bootcamp_absence_request_submitted": {
-    "title": "طلب غياب جديد",
-    "message": lambda obj, actor=None, extra=None:
-        f'تقدم {actor.full_name} بطلب غياب عن جلسة المعسكر التدريبية "{obj.session.title}"',
-    },
+        "title": "طلب غياب جديد",
 
-
-    #==============================
-    #IDEA
-    #==============================
-
-    "idea_submitted": {
-    "title": "تقديم مشروع جديد",
-    "message": lambda obj, actor=None, extra=None:
-        f'تم تقديم طلب مشروع جديد "{obj.title}" يمكنك عرض تفاصيل المشروع'
+        "message": lambda obj, actor=None, extra=None: (
+            f'المستخدم {actor.full_name if actor else "غير معروف"} '
+            f'قدّم طلب غياب عن جلسة: "{obj.session.title}"'
+        )
     },
 
     
@@ -159,9 +173,6 @@ TEMPLATES = {
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     
     #-----------------season------------------------------
-    
-    
-    # notifications/services/template_service.py
 
     "season_published": {
 
@@ -174,12 +185,18 @@ TEMPLATES = {
         )
     },
     
-    "submission_closed": {
-        "title": "تم إغلاق التقديم",
-        "message": lambda season: f"تم إغلاق التقديم لموسم {season.name}، سيتم الانتقال إلى المرحلة التالية."
+    #----------------bootcamp------------------------------
+    
+    "bootcamp_started": {
+        "title": "انطلاق المعسكر التدريبي",
+
+        "message": lambda season: (
+        f"انطلق المعسكر التدريبي لموسم ({season.name}). "
+        f"ستقوم الإدارة بإرسال مواعيد الجلسات قريباً."
+    )
     },
     
-    
+     
     "absence_approved": {
         "title": "طلب الغياب",
         "message": lambda obj: "تم قبول طلب الغياب الخاص بك "
@@ -191,27 +208,48 @@ TEMPLATES = {
     
     "bootcamp_session_scheduled": {
         "title": "جلسة جديدة في المعسكر",
-        "message": lambda session, extra=None: f"تم جدولة جلسة جديدة في المعسكر بتاريخ {session.date}"
+
+        "message": lambda session: (
+            f"تمت إضافة جلسة جديدة في المعسكر "
+            f"بتاريخ {session.date}"
+        )
     },
+
     "bootcamp_session_assigned": {
         "title": "تم تعيينك كمدرب",
-        "message": lambda session, extra=None: f"تم تعيينك كمدرب للجلسة بتاريخ {session.date}"
+
+        "message": lambda session: (
+            f"تم تعيينك كمدرب لجلسة المعسكر "
+            f"بتاريخ {session.date}"
+        )
     },
     "idea_approved": {
         "title": "تم قبول فكرتك 🎉",
-    "message": lambda idea, actor: f"مبروك! تم قبول فكرتك '{idea.title}' والانتقال للمرحلة التالية "
 
-},
+        "message": lambda idea, actor=None: (
+            f"مبروك! تم قبول فكرتك "
+            f"({idea.title}) "
+            f"والانتقال إلى المرحلة التالية."
+        )
+    },
 
     "idea_rejected": {
         "title": "تم رفض الفكرة",
-    "message": lambda idea, actor: f"نأسف! تم رفض فكرتك لعدم التزامك بحضور المعسكر يمكنك المحاولة مرة اخرى'{idea.title}'"
-},
+
+        "message": lambda idea, actor=None: (
+            f"نأسف، تم رفض فكرتك "
+            f"({idea.title}) "
+            f"بسبب عدم الالتزام بحضور المعسكر. "
+            f"يمكنك المحاولة مرة أخرى في موسم قادم."
+        )
+    },
     "bootcamp_sessions_ended": {
-    "title": "انتهاء جلسات المعسكر",
-    "message": lambda season: f"تم انتهاء جلسات المعسكر لهذا الموسم ، انتظر قرار الادارة  بشأن الانتقال للمرحلة التالية."
-},
+        "title": "انتهاء جلسات المعسكر",
+        "message": lambda season: f"تم انتهاء جلسات المعسكر لهذا الموسم ، انتظر قرار الادارة  بشأن الانتقال للمرحلة التالية."
+    },
     
+    
+    #===================evaluation==========================
     "evaluation_meeting_scheduled_owner": {
         "title": "تم تحديد موعد اللجنة",
         "message": lambda data: (
@@ -235,119 +273,161 @@ TEMPLATES = {
         "title": "تم قبول فكرتك 🎉",
         "message": lambda idea, actor=None, extra=None: f"مبروك! تم قبول فكرتك '{idea.title}' اهلا بك في مرحلة الاحتضان "
     },
+    
     "idea_rejected": {
-        "title": "تم رفض الفكرة",
-        "message": lambda idea, actor=None, extra=None: f"نأسف! تم رفض فكرتك....لا تيأس يمكنك المحاولة في موسم أخر"
+        "title": "لم يتم قبول المشروع",
+        "message": lambda idea, actor=None, extra=None:
+            (
+            f"لم يتم قبول مشروعك "
+            f"({idea.title}) "
+            f"في هذا الموسم. "
+            f"يمكنك الاطلاع على ملاحظات اللجنة لتحسين فكرتك."
+            )
     },
     
+    
+    #=====================incubation==============================
     "incubation_meeting_scheduled_owner": {
-    "title": "موعد لجنة الاحتضان",
+        "title": "موعد لجنة الاحتضان",
 
-    "message": lambda data: (
-        f"تم تحديد موعد لجنة الاحتضان "
-        f"لفكرتك بتاريخ "
-        f"{data['meeting_date']}"
-    )
-},
+        "message": lambda data: (
+            f"تم تحديد موعد لجنة الاحتضان "
+            f"لفكرتك ({data['idea_title']}) "
+            f"بتاريخ {data['meeting_date']}"
+        )
+    },
+
     "incubation_meeting_scheduled_mentor": {
-    "title": "جلسة احتضان جديدة",
+        "title": "جلسة احتضان جديدة",
 
-    "message": lambda data: (
-        f"تمت إضافتك إلى جلسة احتضان "
-        f"بتاريخ {data['meeting_date']}"
-    )
-},
-    "idea_Exhibition_graduated": {
-    "title": "مبروك التخرج 🎉",
+        "message": lambda data: (
+            f"تمت إضافتك إلى جلسة احتضان "
+            f"لفكرة ({data['idea_title']}) "
+            f"بتاريخ {data['meeting_date']}"
+        )
+    },
+    
+    
+    "idea_exhibition_graduated": {
+        "title": "مبروك التخرج 🎉",
 
-    "message": lambda idea: (
-        f"مبروك! تم تخريج فكرتك "
-        f"({idea.title}) بنجاح من الحاضنة， "
-        f"يرجى البدء بتجهيز بطاقة المعرض الخاصة بمشروعك."
-    )
-},
+        "message": lambda idea: (
+            f"مبروك! تم تخريج فكرتك "
+            f"({idea.title}) بنجاح من الحاضنة."
+        )
+    },
+
     "idea_graduated_negative": {
-    "title": "إشعار تخريج",
+        "title": "إشعار تخريج",
 
-    "message": lambda idea: (
-        f"مع الأسف تم تخريج فكرتك "
-        f"({idea.title}) من الحاضنة بشكل سلبي "
-        f"نظراً لعدم الالتزام بمتطلبات البرنامج."
-    )
-},
+        "message": lambda idea: (
+            f"مع الأسف تم تخريج فكرتك "
+            f"({idea.title}) من الحاضنة بشكل سلبي "
+            f"نظراً لعدم الالتزام بمتطلبات البرنامج."
+        )
+    },
+    
+    #===============exhibition=========================
     "exhibition_scheduled": {
-    "title": "تم تحديد موعد المعرض",
-    "message": lambda data: (
-        f"تم تحديد موعد معرض الموسم {data['season_id']} "
-        f"بتاريخ {data['exhibition_datetime']}"
-    )
+        "title": "موعد معرض المشاريع",
+    
+        "message": lambda data: (
+            f"ندعوكم لحضور معرض المشاريع المتخرجة لهذا العام "
+            f"بتاريخ {data['exhibition_datetime'].strftime('%Y-%m-%d %H:%M')} "
+            f"في حاضنة تقانة المعلومات والاتصالات."
+        )
     },
     
     
     "exhibition_form_published": {
 
-    "title": "تم نشر فورم المعرض ",
+        "title": "بطاقة المعرض النهائي",
 
-    "message": lambda idea: (
-        f"تم نشر فورم المعرض الخاص بمشروعك "
-        f"({idea.title})، "
-        f"يرجى تعبئة بيانات بطاقة المعرض."
-    )
-},
-     "volunteer_approved": {
-        "title": "تم قبول طلب التطوع 🎉",
-        "message": "مبروك! تم قبول طلبك كمتطوع عدل ملفك الشخصي واضف معلوماتك."
+        "message": lambda idea: (
+            f"حان وقت إعداد بطاقة مشروعك للمعرض النهائي "
+            f"لمشروع ({idea.title})، "
+            f"يرجى تعبئة بيانات المعرض المطلوبة."
+        )
     },
+    
+    #=====================volunteer=======================================
+    "volunteer_approved": {
+        "title": "تم قبول طلب التطوع ",
+
+        "message": lambda user: (
+            "مرحباً بك كمتطوع في الحاضنة  "
+            "يرجى تعديل ملفك الشخصي وإضافة معلوماتك."
+        )
+    },
+
     "volunteer_rejected": {
         "title": "تم رفض طلب التطوع",
-        "message": lambda user : ( "نعتذر، تم رفض طلب التطوع الخاص بك. يمكنك المحاولة مرة أخرى لاحقاً.")
+
+        "message": lambda user: (
+            "نقدر اهتمامك بالتطوع معنا، "
+            "ولكن نأسف لإبلاغك بأنه لن يتم قبول طلب التطوع "
+            "في الوقت الحالي."
+        )
     },
     
     "evaluation_invitation_sent": {
-        "title": "دعوة تقييم جديدة",
+        "title": "دعوة للانضمام إلى لجنة التقييم",
 
         "message": lambda invitation: (
-            f"تمت دعوتك كمقيم.\n"
-            f"المهمة: {invitation.task}\n"
-            f"المدة: {invitation.expected_duration} دقيقة"
+            f"نود دعوتكم رسمياً للانضمام إلى لجنة تقييم المشاريع "
+            f"لموسم {invitation.season.name} "
+            f" والمطلوب:"
+            f"{invitation.task}."
         )
     },
-    
-    "evaluator_role_removed": {
-        "title": "إزالة دور المقيم",
-        "message": lambda user: (
-            "تمت إزالة دورك كمقيم من النظام.\n"
-            "لم تعد قادراً على تقييم المشاريع حالياً."
-        )
-    },
-    
     
     "volunteers_suggested": {
-        "title": "تم اقتراح متطوعين ",
+        "title": "اقتراح متطوعين لفريق المشروع",
+
         "message": lambda obj: (
-        f"تم اقتراح متطوعين من قبل الإدارة لفكرتك \"{obj['idea'].title}\". "
-        f"يمكنك الآن الاطلاع عليهم واختيار المناسب."
-    )
-},
-    
+            f"تم اقتراح مجموعة من المتطوعين "
+            f"لدعم مشروعك ({obj['idea'].title}). "
+            f"يمكنك الآن الاطلاع عليهم واختيار "
+            f"المناسب للانضمام إلى فريقك."
+        )
+    },
     
     #------------------admin_workshops-------------
     "workshop_approved": {
 
-    "title": "تم قبول الورشة",
+        "title": "تم اعتماد ورشة العمل",
 
-    "message": lambda workshop:
-        f"تم قبول ورشة العمل ({workshop.title}) بنجاح"
-},
+        "message": lambda workshop: (
+            f"تم اعتماد ورشة عملك بعنوان "
+            f"({workshop.title}) "
+            f"وتم نشرها ضمن قائمة الفعاليات."
+        )
+    },
+    "new_workshop_published": {
+
+        "title": "ورشة عمل جديدة",
+
+        "message": lambda workshop: (
+            f"ورشة عمل جديدة بعنوان "
+            f"({workshop.title}). "
+            f"سارع بالتسجيل، المقاعد محدودة."
+        )
+    },
     
     "workshop_rejected": {
 
-    "title": "تم رفض الورشة",
+        "title": "تم رفض ورشة العمل",
 
-    "message": lambda data:
-        f"تم رفض ورشة ({data['workshop'].title}) بسبب: {data['rejection_reason']}"
-},
+        "message": lambda data: (
+            f"تم رفض ورشة عملك بعنوان "
+            f"({data.title}). "
+            f"يرجى مراجعة سبب الرفض: "
+            f"{data.rejection_reason}"
+        )
+    },
     
+    
+
     "admin_manual_notification": {
         "title": "رسالة من الإدارة",
         "message": lambda data: data.get("message")

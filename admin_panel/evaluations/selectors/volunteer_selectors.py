@@ -11,7 +11,7 @@ def get_available_season_evaluators(
     Returns accepted evaluators for current season
     with optional filtering by specialization and skills
     """
-
+    print("SEASON IN AVAILABLE:", season)
     queryset = (
         EvaluationInvitation.objects
         .filter(

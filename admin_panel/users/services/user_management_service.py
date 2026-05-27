@@ -211,8 +211,8 @@ class TeamMemberAdminService:
 
         RoleService.assign_role(
             user=user,
-            role_code="IDEA_OWNER",
-            #assigned_by=added_by
+            role_code="INCUBATOR",
+            assigned_by=added_by
         )
 
         idea.team_status = TeamStatus.IN_PROGRESS

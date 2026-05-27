@@ -40,11 +40,12 @@ class SeasonEvaluatorSerializer(serializers.ModelSerializer):
     specialization = serializers.SerializerMethodField()
     primary_skills = serializers.SerializerMethodField()
     additional_skills = serializers.SerializerMethodField()
-
+    user_id = serializers.IntegerField(source="user.id")
     class Meta:
         model = EvaluationInvitation
         fields = [
             "id",
+            "user_id",
             "season",
             "full_name",
             "specialization",
@@ -105,7 +106,7 @@ class MeetingDashboardSerializer(serializers.ModelSerializer):
         ]
 
         if not dates:
-            return "لم يحدد"
+            return " "
 
         # رجع أقرب موعد
         return min(dates).strftime("%Y/%m/%d %H:%M")

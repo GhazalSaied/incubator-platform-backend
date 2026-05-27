@@ -32,3 +32,43 @@ def idea_status_changed_handler(payload):
 
 
 EventBus.register("idea_status_changed", idea_status_changed_handler)
+
+
+
+from django.contrib.auth import get_user_model
+User = get_user_model()
+def idea_submitted_handler(payload):
+    idea = payload.get("idea")
+    actor = payload.get("actor")
+    if not idea:
+        return
+    admins = User.objects.filter( is_staff=True, is_active=True )
+    for admin in admins.iterator():
+        NotificationService.send(
+            user=admin,
+            event_name="idea_submitted",
+            obj=idea,
+            actor=actor,
+            target_role="ADMIN",
+            action_url=f"/api/admin/ideas/{idea.id}/details/"
+            )
+EventBus.register( "idea_submitted", idea_submitted_handler )
+
+
+
+def exhibition_submission_created_handler(payload):
+    submission = payload.get("submission")
+    actor = payload.get("actor")
+    if not submission:
+        return
+    admins = User.objects.filter( is_staff=True, is_active=True )
+    for admin in admins.iterator():
+        NotificationService.send(
+            user=admin,
+            event_name="exhibition_submission_created",
+            obj=submission,
+            actor=actor,
+            target_role="ADMIN",
+            action_url="/api/admin/exhibition/submissions/"
+        )
+EventBus.register( "exhibition_submission_created", exhibition_submission_created_handler )

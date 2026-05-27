@@ -50,10 +50,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'channels',
+    'corsheaders',
     'rest_framework',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -176,6 +178,7 @@ CHANNEL_LAYERS = {
     },
 }
 
+
 # REDIS CACHE
 
 CACHES = {
@@ -218,3 +221,6 @@ LOGGING = {
         "level": "INFO",
     },
 }
+
+CORS_ALLOW_ALL_ORIGINS = True
+

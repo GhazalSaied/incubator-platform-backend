@@ -157,12 +157,20 @@ class IncubationQueryService:
             fields=fields
         )
 
+
         data = []
 
         for inv in invitations:
             user = inv.user
             profile = user.volunteer_profile
+            print("AVAILABLE EVALUATORS SEASON:", season)
 
+            print(
+            "AVAILABLE USERS:",
+            list(
+                inv.values_list("user_id", flat=True)
+             )
+           )
             data.append({
                 "user_id": user.id,
                 "name": user.full_name,
@@ -223,7 +231,23 @@ class IncubationAssignmentService:
             status="ACCEPTED",
             user_id__in=mentor_user_ids
         ).select_related("user", "user__volunteer_profile")
+        print("season:", season)
+        print("mentor_user_ids:", mentor_user_ids)
 
+        print(
+           "ALL ACCEPTED USERS:",
+        list(
+           EvaluationInvitation.objects.filter(
+            season=season,
+            status="ACCEPTED"
+        ).values_list("user_id", flat=True)
+    )
+)
+
+        print(
+            "MATCHED:",
+        list(invitations.values_list("user_id", flat=True))
+        )
         if not invitations.exists():
             raise ValidationError("لا يوجد مقيمون مقبولون بهذه المعطيات")
 
@@ -473,6 +497,7 @@ class IncubationNotesService:
         return {
             "meeting_date": latest_date.strftime("%d/%m/%Y"),
             "reviews": data
+            
         }
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تخريج الفكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 from django.db import transaction
@@ -522,11 +547,7 @@ class GraduationService:
         # EVENT
         # ----------------------------------
 
-        EventBus.emit(
-            "idea_EXhibition_graduated",
-            idea=idea,
-            actor=actor
-        )
+        EventBus.emit("idea_exhibition_graduated",idea=idea,actor=actor)
 
         return idea
 
@@ -612,6 +633,7 @@ class GraduationQueryService:
                 "category": idea.sector,
 
                 "status": idea.status,
+                "year": idea.season.start_date.year,
             })
 
         return data

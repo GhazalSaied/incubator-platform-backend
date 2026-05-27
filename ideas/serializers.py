@@ -514,14 +514,25 @@ class SeasonReviewSerializer(serializers.Serializer):
 
 from rest_framework import serializers
 
+from ideas.models import (
+    IdeaForm,
+    FormStep,
+    FormQuestion,
+    FormQuestionChoice
+)
 
-# =========================================
+
+# =====================================================
 # CHOICES
-# =========================================
+# =====================================================
 
-class FormChoicePayloadSerializer(serializers.Serializer):
+class FormChoicePayloadSerializer(
+    serializers.Serializer
+):
 
-    id = serializers.IntegerField(required=False)
+    id = serializers.IntegerField(
+        required=False
+    )
 
     value = serializers.CharField()
 
@@ -530,40 +541,59 @@ class FormChoicePayloadSerializer(serializers.Serializer):
     order = serializers.IntegerField()
 
 
-# =========================================
+# =====================================================
 # QUESTIONS
-# =========================================
+# =====================================================
 
-class FormQuestionPayloadSerializer(serializers.Serializer):
+class FormQuestionPayloadSerializer(
+    serializers.Serializer
+):
 
-    id = serializers.IntegerField(required=False)
-
-    source = serializers.ChoiceField(
-        choices=["STATIC", "DYNAMIC"]
+    id = serializers.IntegerField(
+        required=False
     )
 
-    static_field = serializers.CharField(
+    # الجديد يلي شغال عليه السيرفيس
+    is_static = serializers.BooleanField(
+        default=False
+    )
+
+    # فقط للستاتيك
+    static_field = serializers.ChoiceField(
+        choices=[
+            "title",
+            "description",
+            "target_audience",
+            "sector"
+        ],
         required=False,
-        allow_null=True,
-        allow_blank=True
+        allow_null=True
     )
 
-    key = serializers.CharField()
+    # فقط للديناميك
+    key = serializers.CharField(
+        required=False
+    )
 
-    label = serializers.CharField()
+    label = serializers.CharField(
+        required=False
+    )
 
     type = serializers.ChoiceField(
         choices=[
             "text",
             "number",
             "select",
-            "select_multiple",
             "boolean",
+            "select_multiple",
             "list_text"
-        ]
+        ],
+        required=False
     )
 
-    required = serializers.BooleanField()
+    required = serializers.BooleanField(
+        default=False
+    )
 
     order = serializers.IntegerField()
 
@@ -584,14 +614,71 @@ class FormQuestionPayloadSerializer(serializers.Serializer):
         required=False
     )
 
+    # =================================================
+    # VALIDATION
+    # =================================================
 
-# =========================================
+    def validate(self, attrs):
+
+        is_static = attrs.get(
+            "is_static",
+            False
+        )
+
+        # =============================================
+        # STATIC QUESTION
+        # =============================================
+
+        if is_static:
+
+            if not attrs.get(
+                "static_field"
+            ):
+                raise serializers.ValidationError({
+                    "static_field":
+                    "هذا الحقل مطلوب"
+                })
+
+            # منع إرسال هالحقول
+            attrs.pop("key", None)
+            attrs.pop("label", None)
+            attrs.pop("type", None)
+
+        # =============================================
+        # DYNAMIC QUESTION
+        # =============================================
+
+        else:
+
+            required_fields = [
+                "key",
+                "label",
+                "type"
+            ]
+
+            for field in required_fields:
+
+                if not attrs.get(field):
+
+                    raise serializers.ValidationError({
+                        field:
+                        "هذا الحقل مطلوب"
+                    })
+
+        return attrs
+
+
+# =====================================================
 # STEPS
-# =========================================
+# =====================================================
 
-class FormStepPayloadSerializer(serializers.Serializer):
+class FormStepPayloadSerializer(
+    serializers.Serializer
+):
 
-    id = serializers.IntegerField(required=False)
+    id = serializers.IntegerField(
+        required=False
+    )
 
     title = serializers.CharField()
 
@@ -602,24 +689,24 @@ class FormStepPayloadSerializer(serializers.Serializer):
     )
 
 
-# =========================================
+# =====================================================
 # ROOT
-# =========================================
+# =====================================================
 
-class FormBuilderSerializer(serializers.Serializer):
+class FormBuilderSerializer(
+    serializers.Serializer
+):
 
     title = serializers.CharField()
 
     steps = FormStepPayloadSerializer(
         many=True
     )
-    
-    
 
 
-# =========================================
-# CHOICES
-# =========================================
+# =====================================================
+# READ SERIALIZERS
+# =====================================================
 
 class FormChoiceReadSerializer(
     serializers.ModelSerializer
@@ -637,9 +724,9 @@ class FormChoiceReadSerializer(
         ]
 
 
-# =========================================
-# QUESTIONS
-# =========================================
+# =====================================================
+# QUESTION READ
+# =====================================================
 
 class FormQuestionReadSerializer(
     serializers.ModelSerializer
@@ -650,12 +737,16 @@ class FormQuestionReadSerializer(
         read_only=True
     )
 
+    # يرجع للفرونت إذا السؤال static
+    is_static = serializers.SerializerMethodField()
+
     class Meta:
 
         model = FormQuestion
 
         fields = [
             "id",
+            "is_static",
             "source",
             "static_field",
             "key",
@@ -668,10 +759,17 @@ class FormQuestionReadSerializer(
             "choices"
         ]
 
+    def get_is_static(self, obj):
 
-# =========================================
-# STEPS
-# =========================================
+        return (
+            obj.source ==
+            FormQuestion.STATIC
+        )
+
+
+# =====================================================
+# STEP READ
+# =====================================================
 
 class FormStepReadSerializer(
     serializers.ModelSerializer
@@ -694,9 +792,9 @@ class FormStepReadSerializer(
         ]
 
 
-# =========================================
-# FORM
-# =========================================
+# =====================================================
+# FORM READ
+# =====================================================
 
 class FormReadSerializer(
     serializers.ModelSerializer
