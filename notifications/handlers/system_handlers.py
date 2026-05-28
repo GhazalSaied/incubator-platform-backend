@@ -6,6 +6,7 @@ def account_suspended_handler(payload):
 
     NotificationService.send(
         user=payload["user"],
+         actor = payload.get("actor"),
         event_name=payload["event_name"],
         action_url=payload.get("action_url"),
         target_role="USER"

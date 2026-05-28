@@ -38,7 +38,11 @@ class TestFullNotificationFlow:
             is_staff=True,
         )
 
-        admin_access_token = access_token
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        refresh = RefreshToken.for_user(admin)
+
+        admin_access_token = str(refresh.access_token)
 
         # =====================================
         # CONNECT WEBSOCKET

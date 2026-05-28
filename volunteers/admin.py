@@ -4,7 +4,8 @@ from .models import( VolunteerProfile,
                     VolunteerAvailability,
                     ConsultationRequest,
                     Workshop,WorkshopRegistration,
-                    JoinRequest
+                    JoinRequest,
+                    VolunteerVacation
                     )
 
 # Register your models here.
@@ -14,3 +15,4 @@ admin.site.register(ConsultationRequest)
 admin.site.register(Workshop)
 admin.site.register(WorkshopRegistration)
 admin.site.register(JoinRequest)
+admin.site.register(VolunteerVacation)
