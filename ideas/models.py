@@ -367,7 +367,7 @@ class ExhibitionForm(models.Model):
         related_name="exhibition_form"
     )
 
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, default="بطاقة المعرض")
     is_active = models.BooleanField(default=False)
     
     

@@ -1,3 +1,5 @@
+import re
+
 from django.core.exceptions import ValidationError
 
 from ideas.models import ExhibitionSubmission, IdeaStatus, Season
@@ -133,42 +135,33 @@ class ExhibitionSubmissionQueryService:
     # helper للبحث عن جواب سؤال
     # -------------------------
         def get_answer_by_label(label):
+            print("ANSWERS:", answers)
+            def normalize(text):
+                text = str(text).strip()
+                text = text.replace("-", " ")
+                text = text.replace("_", " ")
+                text = re.sub(r"\s+", " ", text)
+                return text
+                    
+                
+            target = normalize(label)
 
-            question = questions.filter(
-               label__icontains=label
-            ).first()
+            for key, value in answers.items():
+                print("COMPARE:", normalize(key), "==", target)
 
-            if not question:
-                return None
+                if normalize(key) == target:
+                    return value
 
-            return ExhibitionSubmissionQueryService._format_answer(
-                question,
-                answers.get(question.key)
-            )
 
+            return None
         return {
             "id": submission.id,
 
-            "title": project.title,
-
-            "sector": project.sector,
-
-            "team_members": [
-                member.full_name
-                for member in project.team_members.all()
-            ],
-
-        # من أجوبة الفورم
-            "project_goal": get_answer_by_label("هدف المشروع"),
-
-        # من أجوبة الفورم
-            "project_services": get_answer_by_label("خدمات المشروع"),
-
-            "emails": [
-                member.email
-                for member in project.team_members.all()
-                    if member.email
-                ], 
+            "owner_name": (
+                project.owner.full_name
+                if project.owner
+                    else None
+                ),
 
             "owner_email": (
                 project.owner.email
@@ -176,12 +169,50 @@ class ExhibitionSubmissionQueryService:
                 else None
             ),
 
+            "title": project.title,
+
+            "sector": project.sector,
+
+            "avatar": (
+                project.owner.avatar.url
+                if (
+            project.owner
+            and project.owner.avatar
+           )
+                else None
+            ),
+
+            "team_members": [
+                member.user.full_name
+                for member in project.team_members.all()
+            ],
+
+    # ======================
+    # goal from form
+    # ======================
+            "project_goal": get_answer_by_label("اهداف-المشروع"),
+                
+
+    # ======================
+    # services from form
+    # ======================
+            "project_services": get_answer_by_label("خدمات المشروع"),
+                
+            "emails": [
+                member.user.email
+                for member in project.team_members.all()
+                if member.user.email
+            ],
+
             "owner_id": (
                 project.owner.id
                 if project.owner
                 else None
             ),
-    }
+
+            "status": submission.status
+}
+    
     # =========================
     # FORMAT ANSWER ( مهم)
     # =========================
@@ -268,14 +299,16 @@ class ExhibitionHistoryQueryService:
 
         return [
             {
+                
                 "submission_id": s.id, 
+                "year": season.exhibition_datetime.year,
 
-                "project_name": s.project.title,
-                "sector": s.project.sector,
+                "title": s.project.title,
+                "category": s.project.sector,
 
                 "owner_name": s.project.owner.full_name,
 
-                "team": [
+                "team_members": [
                     member.user.full_name
                     for member in s.project.team_members.all()
                 ]

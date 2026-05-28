@@ -206,7 +206,7 @@ class GraduateIdeaView(APIView):
         }, status=status.HTTP_200_OK)
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-class NegativeGraduatedProjectsView(APIView):
+class GraduatedProjectsView(APIView):
 
     permission_classes = [IsAuthenticated,CanManageIncubation]
     def get(self, request):
@@ -216,7 +216,7 @@ class NegativeGraduatedProjectsView(APIView):
 
         data = (
             GraduationQueryService
-            .list_negative_graduated_projects(
+            .list_graduated_projects(
                 search=search,
                 category=category
             )

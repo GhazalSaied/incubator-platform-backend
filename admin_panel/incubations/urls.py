@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import GraduateIdeaView, IncubationProjectsView,IdeaMentorsView, NegativeGraduatedProjectsView,RemoveMentorsView,AssignMentorsView,ScheduleMeetingView,IdeaLatestReviewView
+from .views import GraduateIdeaView, GraduatedProjectsView, IncubationProjectsView,IdeaMentorsView,RemoveMentorsView,AssignMentorsView,ScheduleMeetingView,IdeaLatestReviewView
 
 urlpatterns = [
     #\\\\\\\\\\\\\\\\\\\\\\\\\\عرض المشاريع المحتضنة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -17,6 +17,6 @@ urlpatterns = [
     #\\\\\\\\\\\\\\\\\تخرج فكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("ideas/<int:idea_id>/graduate/", GraduateIdeaView.as_view()),
     #\\\\\\\\\\\\\\\\\\\\\\\\\\
-    path("negative-projects/",NegativeGraduatedProjectsView.as_view(),name="negative-graduated-projects"),
+    path("graduated-projects/",GraduatedProjectsView.as_view(),name="graduated-projects"),
 
 ]

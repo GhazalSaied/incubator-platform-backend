@@ -77,7 +77,7 @@ class ExhibitionAdminService:
    
     @staticmethod
     @transaction.atomic
-    def save_form(*, title, questions_data):
+    def save_form(*, questions_data):
 
         season = SeasonPhaseService.get_current_season()
 
@@ -87,14 +87,13 @@ class ExhibitionAdminService:
         form, _ = ExhibitionForm.objects.get_or_create(
             season=season,
             defaults={
-                "title": title,
                 "is_active": False
             }
         )
 
         ExhibitionAdminService.check_not_published(form)
 
-        form.title = title
+        
         form.save()
 
         existing_questions = {

@@ -1,13 +1,12 @@
 from django.urls import path
-from .views import  CreateExhibitionView,ExhibitionFormBuilderView,ExhibitionFormPreviewAPIView,PublishExhibitionFormAPIView,SubmissionListAPIView,SubmissionDetailsAPIView,ExhibitionSubmissionDecisionAPIView,ExhibitionHistoryAPIView,ExhibitionProjectsAPIView 
+from .views import  CreateExhibitionView,ExhibitionFormBuilderView,ExhibitionFormPreviewAPIView, ExhibitionSubmissionDetailsAPIView,PublishExhibitionFormAPIView,SubmissionListAPIView,ExhibitionSubmissionDecisionAPIView,ExhibitionHistoryAPIView,ExhibitionProjectsAPIView 
 
 
 urlpatterns = [
     #\\\\\\\\\\\\\\\\\\\\\\\\\انشاء معرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("create/", CreateExhibitionView.as_view()),
     #\\\\\\\\\\\\\\\\\\\\\\\\\\انشاء فورم المعرض\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-    path("form/create/", ExhibitionFormBuilderView.as_view()),
-    
+    path("form/create/", ExhibitionFormBuilderView.as_view()),  
     #\\\\\\\\\\\\\\\\\\\\\\\\\معاينة بطاقة المعرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("form/<int:form_id>/preview/", ExhibitionFormPreviewAPIView.as_view()),
     #\\\\\\\\\\\\\\\\\\\\\\\\\نشر بطاقة المعرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -15,7 +14,7 @@ urlpatterns = [
     #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\طلبات البطاقات \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("submissions/", SubmissionListAPIView.as_view()),
     #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تفاصيل الطلب \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-    path("submissions/<int:submission_id>/", SubmissionDetailsAPIView.as_view()),
+    path("submissions/<int:submission_id>/", ExhibitionSubmissionDetailsAPIView.as_view()),
     #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\قبول او رفض الطلب \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("submissions/<int:submission_id>/decision/", ExhibitionSubmissionDecisionAPIView.as_view()),
     #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\سجل المعارض\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
