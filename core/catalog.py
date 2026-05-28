@@ -1,6 +1,7 @@
 EVENTS = {
 
 
+
     # ===============================
     # WORKSHOPS
     # ===============================
@@ -15,7 +16,7 @@ EVENTS = {
     "workshop_registered": {
         "target": "VOLUNTEER",
         "payload": ["workshop", "actor"],
-        "action_url": "/workshop-details/{workshop.id}/"
+        "action_url": "api/volunteers/workshop-details/{workshop.id}/"
     },
 
     # ===============================
@@ -309,7 +310,7 @@ EVENTS = {
     "exhibition_form_published" : {
         "target": "INCUBATOR",
         "payload": ["form_id", "season_id"],
-        "action_url": "ideas/exhibition/dashboard/"
+        "action_url": "api/ideas/exhibition/dashboard/"
     },
     
     
@@ -360,7 +361,7 @@ EVENTS = {
     "new_workshop_published": {
         "target": "USER",
         "payload": ["workshop"],
-        "action_url": "/api/ideas/public-workshops-details/{workshop.id}/"
+        "action_url": "/api/volunteers/public-workshops/"
     },
     
 
@@ -370,7 +371,7 @@ EVENTS = {
             "workshop",
             "rejection_reason"
         ],
-        "action_url": None
+        "action_url": "api/volunteers/workshop-details/{workshop.id}"
     },
     
 # ==============================

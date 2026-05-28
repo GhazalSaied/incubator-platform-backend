@@ -7,16 +7,28 @@ from rest_framework.response import Response
 
 from django.utils import timezone
 from django.core.exceptions import ValidationError
-from accounts.constants import SystemRoles
-from accounts.constants import SystemRoles
-from accounts.role_service import RoleService
 from core.events import EventBus
+from accounts.role_service import RoleService
+from accounts.constants import SystemRoles
 
 from .models import EvaluationInvitation, EvaluationCriterion ,  EvaluationAssignment
-from .serializers import EvaluationSerializer ,EvaluationNoteSerializer,IncubationReviewSerializer
+from .serializers import (EvaluationSerializer ,
+                          EvaluationNoteSerializer,
+                          IncubationReviewSerializer,
+                          IncubationLatestNotesSerializer,
+                          EvaluationSessionStatusSerializer,
+                          IncubationOverviewSerializer,
+                          RejectedIdeaNoteSerializer
+
+                        )
 from ideas.models import Idea
 from evaluations.services.evaluation_service import EvaluationService
 from ideas.serializers import ProjectDetailsSerializer
+from core.permissions import (CanViewEvaluationCenter,
+                              CanViewEvaluationNotes,
+                              CanEvaluateIdea,
+                              CanViewIncubationReviewsNotes,
+                              )
 
 
 
@@ -24,7 +36,7 @@ from ideas.serializers import ProjectDetailsSerializer
 # ////////////////////////////////// CREATE OR UPDATE EVALUATION //////////////////////////////////
 
 class EvaluationCreateUpdateAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanEvaluateIdea]
 
     def post(self, request, idea_id):
         idea = get_object_or_404(Idea, id=idea_id)
@@ -45,7 +57,7 @@ class EvaluationCreateUpdateAPIView(APIView):
 # ////////////////////////////////// SUBMIT EVALUATION //////////////////////////////////
 
 class EvaluationSubmitAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanEvaluateIdea]
 
     def post(self, request, idea_id):
         idea = get_object_or_404(Idea, id=idea_id)
@@ -87,10 +99,12 @@ class RespondToInvitationAPIView(APIView):
             invitation.status = "ACCEPTED"
             invitation.responded_at = timezone.now()
             invitation.save()
+
             RoleService.assign_role(
                 user=request.user,
                 role_code=SystemRoles.EVALUATOR
             )
+
 
             # اشعار بقبول الانصمام 
             EventBus.emit(
@@ -98,7 +112,12 @@ class RespondToInvitationAPIView(APIView):
                 invitation=invitation,
                 actor=request.user,
             )
-            EventBus.emit( "evaluation_joined_committee", invitation=invitation, actor=request.user, )
+
+            EventBus.emit( 
+                "evaluation_joined_committee",
+                 invitation=invitation, 
+                 actor=request.user, 
+            )
 
         else:
             invitation.status = "REJECTED"
@@ -119,7 +138,7 @@ class RespondToInvitationAPIView(APIView):
 # ////////////////////////////////// MY ASSIGNMENTS > (Evaluation Center) //////////////////////////////////
 
 class MyAssignmentsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanViewEvaluationCenter]
 
     def get(self, request):
         data = EvaluationService.get_user_assignments_data(request.user)
@@ -130,7 +149,7 @@ class MyAssignmentsAPIView(APIView):
 
 
 class AssignmentProjectDetailsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanViewEvaluationCenter]
 
     def get(self, request, assignment_id):
         resolved_data = EvaluationService.get_assignment_detail(
@@ -163,7 +182,7 @@ class EvaluationDashboardAPIView(APIView):
 # ////////////////////////////////// CRITERIA //////////////////////////////////
 
 class EvaluationCriteriaAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanViewEvaluationCenter]
 
     def get(self, request):
         criteria = EvaluationCriterion.objects.filter(
@@ -208,7 +227,7 @@ class InvitationDetailsAPIView(APIView):
 #///////////////////////// OPEN EVALUATION FORM ////////////////////
 
 class EvaluationFormAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanViewEvaluationCenter]
 
     def get(self, request, idea_id):
         idea = get_object_or_404(Idea, id=idea_id)
@@ -231,7 +250,7 @@ class EvaluationFormAPIView(APIView):
 
 
 class EvaluationNotesAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanViewEvaluationNotes,CanViewEvaluationCenter]
 
     def get(self, request, idea_id):
         idea = get_object_or_404(Idea, id=idea_id)
@@ -251,17 +270,18 @@ class EvaluationNotesAPIView(APIView):
         serializer = EvaluationNoteSerializer(note)
         return Response(serializer.data)
     
+
 #/////////////////////// INCUBATION REVIEW API ///////////////////////
 
 
 class IncubationReviewAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanViewEvaluationNotes,CanViewEvaluationCenter]
 
     def get(self, request, idea_id):
         idea = get_object_or_404(Idea, id=idea_id)
         reviews = EvaluationService.get_incubation_reviews(request.user, idea)
-        serializer = IncubationReviewSerializer(reviews, many=True)
-        return Response(serializer.data)
+        return Response( reviews)
+
 
     def post(self, request, idea_id):
         idea = get_object_or_404(Idea, id=idea_id)
@@ -272,11 +292,73 @@ class IncubationReviewAPIView(APIView):
         )
         serializer = IncubationReviewSerializer(review)
         return Response(serializer.data)
+
+
+#///////////////////////// LATEST INCUBATION REVIEWS FOR ALL EVALUATORS ////////////////
+
+class IncubationLatestNotesAPIView(APIView):
+
+    permission_classes = [IsAuthenticated,CanViewIncubationReviewsNotes]
+
+    def get(self, request, idea_id):
+
+        idea = get_object_or_404(
+            Idea,
+            id=idea_id
+        )
+
+        reviews = (
+            EvaluationService
+            .get_latest_incubation_notes_for_incubatee(
+                user=request.user,
+                idea=idea
+            )
+        )
+
+        serializer = IncubationLatestNotesSerializer(
+            reviews,
+            many=True
+        )
+
+        return Response(serializer.data)
     
+
+#/////////////////// INCUBATION PHASE > تاب مراحل الاحتضان  (NOTES + MEETING DATE )//////////////////////
+
+class IncubationOverviewAPIView(APIView):
+
+    permission_classes = [IsAuthenticated, CanViewIncubationReviewsNotes]
+       
+
+    def get(self, request, idea_id):
+
+        idea = get_object_or_404(
+            Idea,
+            id=idea_id
+        )
+
+        data = (
+            EvaluationService
+            .get_incubation_overview_for_incubatee(
+                user=request.user,
+                idea=idea
+            )
+        )
+
+        serializer = (
+            IncubationOverviewSerializer(
+                data
+            )
+        )
+
+        return Response(
+            serializer.data
+        )
+
 #///////////////////////////// NEXT UPCOMING SESSION API ////////////////////////
 
 class NextUpcomingSessionAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,CanViewEvaluationCenter]
 
     def get(self, request):
         data = EvaluationService.get_next_session(request.user)
@@ -287,8 +369,73 @@ class NextUpcomingSessionAPIView(APIView):
             })
 
         return Response(data)
+
+#////////////////// EVALUATION SESSION STATUS > مرحلة التقييم في تاب مراحل الاحتضان ////////////////
+
+class EvaluationSessionStatusAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, idea_id):
+
+        idea = get_object_or_404(
+            Idea,
+            id=idea_id
+        )
+
+        try:
+
+            data = (
+                EvaluationService
+                .get_idea_evaluation_session_status(
+                    user=request.user,
+                    idea=idea,
+                )
+            )
+
+        except ValidationError as e:
+
+            return Response(
+                {
+                    "detail": str(e)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = (
+            EvaluationSessionStatusSerializer(
+                data
+            )
+        )
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK
+        )
     
 
+#//////////////////// NOTES FOR REJECTED IDEA OWNERS ////////////////////
+
+class NotesForIdeaOwnersAPIVIEW(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, idea_id):
+
+        notes = (
+            EvaluationService
+            .get_rejected_idea_notes_for_owner(
+                user=request.user,
+                idea_id=idea_id
+            )
+        )
+
+        serializer = RejectedIdeaNoteSerializer(
+            notes,
+            many=True
+        )
+
+        return Response(serializer.data)
 
 
 # ////////////////////////////////// MY EVALUATION DETAIL //////////////////////////////////

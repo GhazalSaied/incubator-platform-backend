@@ -3,8 +3,13 @@ from notifications.models import Notification
 from django.shortcuts import get_object_or_404
 from notifications.services.template_service import TEMPLATES
 from notifications.services.preference_service import PreferenceService
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
+from notifications.services.notification_realtime_service import (
+    NotificationRealtimeService,
+)
+from django.db.models import Q
+from django.db import transaction
+
+from accounts.constants import SystemRoles
 
 User = get_user_model()
 
@@ -104,34 +109,9 @@ class NotificationService:
     @staticmethod
     def _dispatch(notification):
 
-        try:
-            channel_layer = get_channel_layer()
-
-            if not channel_layer:
-                return
-
-            group_name = f"user_{notification.user.id}"
-
-            data = {
-                "id": notification.id,
-                "title": notification.title,
-                "message": notification.message,
-                "type": notification.type,
-                "action_url": notification.action_url,
-                "created_at": str(notification.created_at),
-            }
-
-            async_to_sync(channel_layer.group_send)(
-                group_name,
-                {
-                    "type": "send_notification",
-                    "data": data
-                }
-            )
-
-        except Exception:
-            # ما بدنا نكسر النظام لو realtime فشل
-            pass
+        NotificationRealtimeService.broadcast_created(
+            notification=notification
+    )
 
     # --------------------------------------
 
@@ -145,33 +125,75 @@ class NotificationService:
     # --------------------------------------
 
     @staticmethod
-    def get_user_notifications(user):
-        return Notification.objects.filter(user=user).only(
-            "id", "title", "message", "type", "is_read", "created_at"
+    def get_user_notifications(user, role=None):
+        queryset = Notification.objects.filter(user=user)
+
+        # FILTER BY ROLE
+        if role:
+
+            # SECURITY VALIDATION
+            if role not in user.role_codes:
+                raise ValueError("Invalid role filter")
+
+            queryset = queryset.filter(
+                Q(target_role=role) |
+                Q(target_role__isnull=True)
+            )
+
+        return queryset.only(
+            "id",
+            "message",
+            "type",
+            "is_read",
+            "created_at",
+            "target_role",
+            "action_url",
         ).order_by("-created_at")
 
+    # --------------------------------------
+    # MARK SINGLE NOTIFICATION AS READ
     # --------------------------------------
 
     @staticmethod
     def mark_as_read(user, notification_id):
         notification = get_object_or_404(
-            Notification,
+            Notification.objects.only(
+                "id",
+                "user_id",
+                "is_read"
+            ),
             id=notification_id,
             user=user
         )
 
         NotificationService._mark_single_as_read(notification)
+        NotificationRealtimeService.broadcast_read(
+            notification=notification
+        )
+
         return notification
 
     # --------------------------------------
+    # MARK ALL NOTIFICATIONS AS READ
+    # --------------------------------------
 
     @staticmethod
+    @transaction.atomic
     def mark_all_as_read(user):
-        Notification.objects.filter(
+        updated_count = Notification.objects.filter(
             user=user,
             is_read=False
         ).update(is_read=True)
 
+        
+        NotificationRealtimeService.broadcast_all_read(
+            user=user
+        )
+
+        return updated_count
+
+    # --------------------------------------
+    # GET UNREAD BADGE DATA
     # --------------------------------------
 
     @staticmethod
@@ -182,13 +204,22 @@ class NotificationService:
         ).count()
 
         return {
-            "count": unread_count,
-            "has_unread": unread_count > 0
+            "unread_count": unread_count,
+            "has_unread_notifications": unread_count > 0
         }
 
+    # --------------------------------------
+    # INTERNAL SINGLE READ HELPER
     # --------------------------------------
 
     @staticmethod
     def _mark_single_as_read(notification: Notification):
+
+        if notification.is_read:
+            return
+
         notification.is_read = True
-        notification.save(update_fields=["is_read"])
+
+        notification.save(
+            update_fields=["is_read"]
+        )

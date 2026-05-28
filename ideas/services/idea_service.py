@@ -418,9 +418,6 @@ class IdeaService:
 
         team_request = serializer.save(idea=idea)
 
-        # تحديث حالة الفريق
-        idea.team_status = TeamStatus.TEAM_BUILDING
-        idea.save()
 
         # Audit log
         IdeaAuditLog.objects.create(
@@ -431,7 +428,14 @@ class IdeaService:
         )
 
         # Notification
-        EventBus.emit( "team_request_created", team_request=team_request, actor=user, )
+
+        EventBus.emit(
+            "team_request_created",
+            team_request= team_request,
+            idea= idea.id,
+            actor=user,
+        )
+
             
 
         return team_request
@@ -446,39 +450,70 @@ class IdeaService:
 
         idea = IdeaService.get_user_idea(user)
 
-        team_request = TeamRequest.objects.filter(
-            idea=idea,
-            status="APPROVED"
-        ).last()
+        team_request = (
+            TeamRequest.objects.filter(
+                idea=idea,
+                status="APPROVED"
+            )
+            .order_by("-created_at")
+            .first()
+        )
 
         if not team_request:
             return []
 
-        suggested = SuggestedVolunteer.objects.filter(
-            team_request=team_request
-        ).select_related("volunteer__user")
+        suggested = (
+            SuggestedVolunteer.objects.filter(
+                team_request=team_request
+            )
+            .select_related("volunteer__user")
+        )
 
         return [
             {
-                "id": s.volunteer.id,
+                "id": s.volunteer.user.id,
                 "name": s.volunteer.user.full_name,
                 "email": s.volunteer.user.email,
-                "role": s.volunteer.primary_skills,
-                "avatar": s.volunteer.user.avatar.url if s.volunteer.user.avatar else None,
-                "years_of_experience": s.volunteer.years_of_experience,
-                "availability_type": s.volunteer.availability_type,
-                "category": s.volunteer_type,
-                "skills": {
-                    "primary": s.volunteer.primary_skills,
-                    "additional": s.volunteer.additional_skills
-                }
-
+                "primary_skill": s.volunteer.primary_skills,
             }
             for s in suggested
         ]
+    
+
+    #/////////////////// PROJECT DETAILS (VOLUNTEER & INCUBATOR ) //////////////////
+
+    @staticmethod
+    def get_project_details(user):
+
+        idea = (
+            IdeaService.get_dashboard_idea(user)
+        )
+
+        team_members = []
+
+        # owner first
+        team_members.append({
+            "name": idea.owner.full_name
+        })
+
+        members = (
+            idea.team_members
+            .select_related("user")
+            .all()
+        )
+
+        for member in members:
+            team_members.append({
+                "name": member.user.full_name
+            })
+
+        return {
+            "idea": idea,
+            "team_members": team_members
+        }
 
     #//////////////////////// GET CONSULTANTS //////////////////
-
+    #UNUSED
     @staticmethod
     def get_consultants():
 
@@ -501,7 +536,7 @@ class IdeaService:
 
 
     #///////////////////////// TEAM DASHBOARD ///////////////////////
-
+    #UNUSED
     @staticmethod
     def get_team_dashboard(user):
 

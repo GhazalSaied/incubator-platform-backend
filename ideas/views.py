@@ -18,6 +18,7 @@ from .serializers import (
     PublicExhibitionDetailsSerializer,
     SubmissionFormSerializer,
     SaveStepSerializer,
+    ProjectDetailsSerializer,
     
 )
 from notifications.models import Notification
@@ -47,7 +48,7 @@ from django.shortcuts import get_object_or_404
 
 
 #///////////////////////////GET CUURENT IDEA FORM /////////////////////////////////
-
+#UNUSED
 class CurrentIdeaFormAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -179,19 +180,6 @@ class IdeaDashboardAPIView(APIView):
             status=status.HTTP_200_OK
         )
     
-#//////////////////////////// INCUBATION PHASE //////////////////////////
-
-class IncubationPhaseAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-
-        try:
-            data = IdeaService.get_incubation_data(request.user)
-        except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
-
-        return Response(data)
 
 #//////////////////////////////// EXHIBITION DASHBOARD /////////////////////////////
 
@@ -345,7 +333,8 @@ class CreateTeamRequestAPIView(APIView):
             return Response({"detail": str(e)}, status=400)
 
         return Response({"detail": "طلبك قيد المراجعة"})
-    
+
+
 
 #/////////////////////////// SUGGESTED VOLUNTREES ///////////////////////////
 
@@ -356,6 +345,8 @@ class SuggestedVolunteersAPIView(APIView):
 
         data = IdeaService.get_suggested_volunteers(request.user)
         return Response(data)
+
+
 
 #///////////////////////////////// IDEA TEAM //////////////////////////
 
@@ -375,7 +366,7 @@ class IdeaTeamAPIView(APIView):
             "has_team": idea.team_members.exists(),
             "current_team": [
                 {
-                    "id": m.user.id,
+                    "user_id": m.user.id,
                     "name": m.user.full_name,
                     "email": m.user.email,
                     "can_message": True
@@ -385,8 +376,42 @@ class IdeaTeamAPIView(APIView):
         })
 
 
-#/////////////////////////// CONSULTANTS LIST ////////////////////////
 
+#//////////////////// PROJECT DETAILS ///////////////////////
+
+class ProjectDetailsAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        try:
+            data = IdeaService.get_project_details(
+                request.user
+            )
+
+        except ValueError as e:
+            return Response(
+                {"detail": str(e)},
+                status=404
+            )
+
+        serializer = ProjectDetailsSerializer(
+            data["idea"]
+        )
+
+        return Response({
+            **serializer.data,
+            "team_members": data["team_members"]
+        })
+
+
+
+
+
+
+#/////////////////////////// CONSULTANTS LIST ////////////////////////
+#UNUSED
 class ConsultantsAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -488,3 +513,17 @@ class MyIdeasAPIView(APIView):
 
         serializer = MyIdeaListSerializer(ideas, many=True)
         return Response(serializer.data)
+
+#//////////////////////////// INCUBATION PHASE //////////////////////////
+
+class IncubationPhaseAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        try:
+            data = IdeaService.get_incubation_data(request.user)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
+
+        return Response(data)

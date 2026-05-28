@@ -11,7 +11,7 @@ urlpatterns = [
     path('api/evaluations/', include('evaluations.urls')),
     path("api/profile/", include("profiles.urls")),
     path("api/volunteers/", include("volunteers.urls")),
-    path("api/messages/", include("messaging.urls")),
+    path("api/messaging/", include("messaging.api.urls")),
     path("api/notifications/", include("notifications.urls")),
     path('api/bootcamp/',include('bootcamp.urls')),
     path("api/admin/", include("admin_panel.urls")),

@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db import transaction
 from .models import (VolunteerProfile, 
                      VolunteerAvailability , 
                      ConsultationRequest,
@@ -80,7 +81,6 @@ class CreateConsultationRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConsultationRequest
         fields = [
-            "volunteer",
             "required_skill",
             "description",
             "help_type",
@@ -89,22 +89,31 @@ class CreateConsultationRequestSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
 
-        user = self.context["request"].user
-        idea = IdeaService.get_user_idea(user)
+        request = self.context["request"]
+        user = request.user
+
+        volunteer_user_id = self.context["volunteer_user_id"]
+
+        idea = IdeaService.get_dashboard_idea(user)
 
         if not idea:
             raise serializers.ValidationError("يجب أن تكون مرتبطًا بفكرة لإرسال طلب استشارة")
         
-        volunteer = data.get("volunteer")
+        try:
+            volunteer = VolunteerProfile.objects.select_related("user").get(
+                user_id=volunteer_user_id,
+                status=VolunteerProfile.APPROVED
+            )
 
-        if isinstance(volunteer, int):
-            try:
-                volunteer = VolunteerProfile.objects.get(id=volunteer)
-            except VolunteerProfile.DoesNotExist:
-                raise serializers.ValidationError("المتطوع غير موجود")
+        except VolunteerProfile.DoesNotExist:
+            raise serializers.ValidationError(
+                "المتطوع غير موجود"
+            )
 
-        if volunteer.user == user:
-            raise serializers.ValidationError("لا يمكنك إرسال طلب لنفسك")
+        if volunteer.user_id == user.id:
+            raise serializers.ValidationError(
+                "لا يمكنك إرسال طلب لنفسك"
+            )
         
         if not data.get("help_type"):
             raise serializers.ValidationError("نوع المساعدة مطلوب")
@@ -137,8 +146,9 @@ class CreateConsultationRequestSerializer(serializers.ModelSerializer):
 class ConsultationRequestSerializer(serializers.ModelSerializer):
     requester_name = serializers.CharField(source="requester.full_name", read_only=True)
     requester_email = serializers.EmailField(source="requester.email", read_only=True)
+    requester_id = serializers.IntegerField(source="requester.id",read_only=True)
     idea_title = serializers.CharField(source="idea.title", read_only=True)
-    conversation_id = serializers.SerializerMethodField()
+
 
     class Meta:
         model = ConsultationRequest
@@ -147,25 +157,14 @@ class ConsultationRequestSerializer(serializers.ModelSerializer):
             "required_skill",
             "help_type",
             "description",
-            "status",
-            "created_at",
             "requester_name",
-            "requester_email",
+            "requester_id",
             "idea_title",
             "conversation_id",
+            "status",
+            "created_at",
         ]
 
-    def get_conversation_id(self, obj):
-        if obj.status != ConsultationRequest.ACCEPTED:
-            return None
-
-        conversation = Conversation.objects.filter(
-            participants=obj.volunteer.user
-        ).filter(
-            participants=obj.requester
-        ).first()
-
-        return conversation.id if conversation else None
 
 #////////////////////////// CREATE JOIN REQUEST //////////////////////
 
@@ -174,75 +173,98 @@ class CreateJoinRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = JoinRequest
         fields = [
-            "volunteer",
             "description",
             "tasks",
             "required_skill",
         ]
 
-    def validate(self, data):
-        user = self.context["request"].user
+    def validate(self, attrs):
+
+        request = self.context["request"]
+        user = request.user
+
+        volunteer_user_id = self.context["volunteer_user_id"]
+
         idea = IdeaService.get_user_idea(user)
 
         if not idea:
-            raise serializers.ValidationError("لا يوجد فكرة مرتبطة")
+            raise serializers.ValidationError(
+                "لا توجد فكرة مرتبطة بهذا المستخدم"
+            )
 
-        volunteer = data.get("volunteer")
-
-        if isinstance(volunteer, int):
-
-            try:
-                volunteer = VolunteerProfile.objects.get(id=volunteer)
-            except VolunteerProfile.DoesNotExist:
-                raise serializers.ValidationError("المتطوع غير موجود")
-            
-
-        if volunteer.user == user:
-            raise serializers.ValidationError("لا يمكنك إرسال طلب لنفسك") 
-        
-        if not SuggestedVolunteer.objects.filter(
-                team_request=team_request,
-                volunteer=volunteer
-            ).exists():
-                raise serializers.ValidationError("المتطوع غير مقترح لهذا الطلب")
-
-        team_request = idea.team_requests.filter(
-            status="APPROVED"
-        ).order_by("-created_at").first()
+        team_request = (
+            idea.team_requests.filter(
+                status="APPROVED"
+            )
+            .order_by("-created_at")
+            .first()
+        )
 
         if not team_request:
-            raise serializers.ValidationError("لا يوجد طلب فريق فعال")
+            raise serializers.ValidationError(
+                "لا يوجد طلب فريق مقبول"
+            )
 
-        if idea.team_status == TeamStatus.TEAM_FULL:
-            raise serializers.ValidationError("الفريق مكتمل")
 
-        if JoinRequest.objects.filter(
+        try:
+            volunteer = VolunteerProfile.objects.select_related("user").get(
+                user_id=volunteer_user_id,
+                status=VolunteerProfile.APPROVED
+            )
+
+        except VolunteerProfile.DoesNotExist:
+            raise serializers.ValidationError(
+                "المتطوع غير موجود"
+            )
+
+        if volunteer.user_id == user.id:
+            raise serializers.ValidationError(
+                "لا يمكنك إرسال طلب لنفسك"
+            )
+
+        is_suggested = SuggestedVolunteer.objects.filter(
+            team_request=team_request,
+            volunteer=volunteer
+        ).exists()
+
+        if not is_suggested:
+            raise serializers.ValidationError(
+                "المتطوع غير مقترح لهذا الطلب"
+            )
+
+        has_pending_request = JoinRequest.objects.filter(
             requester=user,
             volunteer=volunteer,
-            idea=idea,
-            status=JoinRequest.PENDING
-        ).exists():
-            raise serializers.ValidationError("لديك طلب انضمام قيد الانتظار")
-        
-        if JoinRequest.objects.filter(
+            status=JoinRequest.PENDING,
+        ).exists()
+
+        if has_pending_request:
+            raise serializers.ValidationError(
+                "لديك طلب انضمام قيد الانتظار لهذا المتطوع"
+            )
+
+        has_rejected_request = JoinRequest.objects.filter(
             requester=user,
             volunteer=volunteer,
-            idea=idea,
-            status=JoinRequest.REJECTED
-        ).exists():
-            raise serializers.ValidationError("لا يمكنك إعادة إرسال طلب لهذا المتطوع")
-        
-        if not data.get("required_skill"):
-            raise serializers.ValidationError("المهارة مطلوبة")
+            status=JoinRequest.REJECTED,
+        ).exists()
 
-        if not data.get("tasks"):
-            raise serializers.ValidationError("المهام مطلوبة")
+        if has_rejected_request:
+            raise serializers.ValidationError(
+                "لا يمكن إعادة إرسال الطلب لهذا المتطوع"
+            )
 
-        data["volunteer"] = volunteer
-        data["idea"] = idea
-        data["team_request"] = team_request
+        attrs["volunteer"] = volunteer
+        attrs["idea"] = idea
+        attrs["team_request"] = team_request
+        attrs["requester"] = user
 
-        return data
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+
+        return JoinRequest.objects.create(**validated_data)
 
 #/////////////////////////// JOIN REQUEST (RESPONSE) /////////////////////////////
 
@@ -257,12 +279,11 @@ class JoinRequestSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "status",
-            "description",
-            "created_at",
             "requester_name",
             "requester_email",
             "idea_title",
             "required_skill",
+            "created_at",
         ]
 
 #/////////////////////////////////// VOLUNTEER DASHBOARD  /////////////////////////////////////////////////

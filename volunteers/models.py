@@ -64,9 +64,10 @@ class VolunteerProfile(models.Model):
     additional_skills = models.JSONField(default=list, blank=True)
 
 
-    volunteer_type = models.CharField(
-        max_length=100,
-        help_text="استشارات، تقني، مدرب..."
+    volunteer_type = models.JSONField(
+        default=list,
+        help_text="استشارات، تنفيذ مهام تقنية، مدرب",
+        blank=True
     )
 
     availability_type = models.CharField(
@@ -229,6 +230,17 @@ class JoinRequest(models.Model):
     class Meta:
         ordering = ["-created_at"]
 
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "requester",
+                    "volunteer",
+                ],
+                condition=models.Q(status="PENDING"),
+                name="unique_pending_join_request"
+            )
+        ]
+
 
 #//////////////////////////////// WORKSHOP //////////////////////
 
@@ -248,7 +260,7 @@ class Workshop(BaseModel):
     category = models.CharField(max_length=100)  # تسويق - برمجة...
 
     description = models.TextField()
-    objectives = models.TextField()
+    objectives = models.JSONField(default=list,blank=True)
 
     target_audience = models.TextField()  # لمين مناسبة
 

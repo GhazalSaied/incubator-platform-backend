@@ -5,6 +5,9 @@ from .managers import UserManager
 import random
 from datetime import timedelta
 from django.utils import timezone
+
+
+
 #/////////////////////////// USER MODEL /////////////////////////////////////
 
 class User(AbstractBaseUser, PermissionsMixin, BaseModel):
@@ -16,6 +19,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
 
     bio = models.TextField(null=True, blank=True)
     age = models.PositiveIntegerField(null=True, blank=True)
+    last_seen_at = models.DateTimeField(null=True,blank=True)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
