@@ -15,39 +15,42 @@ class AdminUserService:
     @staticmethod
     @transaction.atomic
     def create_user(
-        *,
-        full_name,
-        email,
-        password,
-        role_code,
-        created_by
-    ):
+    *,
+    full_name,
+    email,
+    password,
+    role_code=None,
+    created_by
+):
 
-        role = Role.objects.filter(
-            code=role_code
-        ).first()
-
-        if not role:
-            raise ValidationError("الدور غير موجود")
-
-        # ✅ إنشاء المستخدم
+    # ✅ إنشاء المستخدم أولاً
         user = User.objects.create_user(
-            email=email.strip().lower(),
-            password=password,
-            full_name=full_name.strip()
-        )
+        email=email.strip().lower(),
+        password=password,
+        full_name=full_name.strip()
+    )
 
         user.must_change_password = True
         user.save(update_fields=["must_change_password"])
 
-        RoleService.assign_role(
+    # ✅ إذا تم اختيار دور فقط
+        if role_code:
+            role = Role.objects.filter(
+            code=role_code
+        ).first()
+
+            if not role:
+               raise ValidationError(
+                "الدور غير موجود"
+            )
+
+            RoleService.assign_role(
             user=user,
             role_code=role_code,
             assigned_by=created_by
         )
 
         return user
-    
     
     
 

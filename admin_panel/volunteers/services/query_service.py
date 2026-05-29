@@ -253,13 +253,17 @@ class VolunteerQueryService:
                     avatar = None
             times = []
             for a in v.availabilities.all():
-                times.append(f"{a.day}: {a.start_time} - {a.end_time}")
-
+                times.append({
+                    "day": a.day,
+                    "start_time": str(a.start_time.strftime("%H:%M")),
+                    "end_time": str(a.end_time.strftime("%H:%M")),
+                })
             data.append({
                 "id": v.id,
+                "request_id": v.id,
                 "name": user.full_name,
                 "avatar": avatar,
-                "specialization": v.specialization,
+                "primary_skills": v.primary_skills,
                 "availability": times
             })
 

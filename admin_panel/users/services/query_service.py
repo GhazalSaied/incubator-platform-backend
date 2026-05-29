@@ -4,9 +4,11 @@ from evaluations.models import Evaluation, EvaluationAssignment, IncubationAssig
 from admin_panel.bootcamp.attendance.services import calculate_absence
 from admin_panel.incubations.services import IncubationNotesService
 from ideas.models import Idea, Season
+from ideas.services.season_phase_service import SeasonPhaseService
 from volunteers.models import Workshop,VolunteerProfile, WorkshopRegistration
 from accounts.models import User,UserRole
 from django.db.models import Q
+from django.core.exceptions import ValidationError
 
 
 class UsersQueryService:
@@ -118,6 +120,11 @@ class UserProfileService:
 
     @staticmethod
     def _get_basic_info(user):
+        users = User.objects.filter(id=user.id)
+        for user in users:
+            volunteer_request = VolunteerProfile.objects.filter(
+            user=user
+        ).first()
 
         return {
             "id": user.id,
@@ -137,6 +144,10 @@ class UserProfileService:
                     flat=True
                 ).distinct()
             ),
+            "volunteer_request_id":
+            volunteer_request.id
+            if volunteer_request
+            else None, 
             
         }
 
@@ -293,6 +304,7 @@ class UserProfileService:
                 {
                     "idea_id": idea.id,
                     "title": idea.title,
+                    "status": "تم الاحتضان" if idea.status == "INCUBATION" else "تخرج بشكل ايجابي" if idea.status == "GRADUATED_POSITIVE" else "تخرج بشكل سلبي" if idea.status == "GRADUATED_NEGATIVE" else "قيد الدراسة",
                     "evaluations": UserProfileService.get_all_evaluations_for_idea(idea),
                     "reviews": [
                         {"note": r.notes}
@@ -302,3 +314,25 @@ class UserProfileService:
                 for idea in ideas
             ]
         }
+        
+        
+        
+class UserAdminQueryService:
+
+    @staticmethod
+    def get_current_season_incubation_ideas():
+
+        season = SeasonPhaseService.get_current_season()
+
+        if not season:
+            raise ValidationError("لا يوجد موسم فعال")
+
+        ideas = Idea.objects.filter(
+            season=season,
+            status="INCUBATION"
+        ).values(
+            "id",
+            "title"
+        )
+
+        return list(ideas)
