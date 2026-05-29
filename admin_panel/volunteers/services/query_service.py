@@ -33,7 +33,7 @@ class VolunteerQueryService:
 
             times = []
             for a in v.availabilities.all():
-                times.append(f"{a.day}: {a.start_time} - {a.end_time}")
+                times.append(f"{a.day}: {a.start_time.strftime("%H:%M")} - {a.end_time.strftime("%H:%M")}")
 
             data.append({
                 "id": v.id,
@@ -71,8 +71,8 @@ class VolunteerQueryService:
         for a in v.availabilities.all():
             availability.append({
                 "day": a.day,
-                "from": a.start_time,
-                "to": a.end_time
+                "from": a.start_time.strftime("%H:%M"),
+                "to": a.end_time.strftime("%H:%M")
             })
         has_accepted_invitation = EvaluationInvitation.objects.filter(
             user=v.user,
@@ -97,11 +97,10 @@ class VolunteerQueryService:
             "availability_type": v.availability_type,
             "motivation": v.motivation,
 
-            #  الملف
-            "cv": v.cv.url if v.cv else None,
-
             #  أوقات التفرغ
             "availability": availability,
+            "bio": v.bio,
+            "residence": v.residence,
 
             #  بيانات المستخدم
             "email": user.email,
@@ -205,11 +204,19 @@ class VolunteerQueryService:
     @staticmethod
     def get_team_request_details(request_id):
 
-        try:
+        tr = TeamRequest.objects.select_related(
+        "idea"
+        ).filter(id=request_id).first()
+
+    # fallback للفرونت الحالي (user id)
+        if not tr:
             tr = TeamRequest.objects.select_related(
-                "idea"
-            ).get(id=request_id)
-        except TeamRequest.DoesNotExist:
+            "idea"
+            ).filter(
+            idea__owner_id=request_id
+            ).first()
+
+        if not tr:
             raise ValidationError("الطلب غير موجود")
 
         return {
@@ -218,11 +225,10 @@ class VolunteerQueryService:
             "skill_required": tr.skill_required,
             "members_needed": tr.members_needed,
             "description": tr.description,
-
             "idea": {
-                "idea_id": tr.idea.id,
-            }
+            "idea_id": tr.idea.id,
         }
+    }
 
     @staticmethod
     def get_available_approved_volunteers():
