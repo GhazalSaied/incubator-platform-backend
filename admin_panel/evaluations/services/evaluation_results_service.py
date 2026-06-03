@@ -2,27 +2,12 @@ from django.db.models import Avg, Sum
 from accounts.constants import SystemRoles
 from accounts.role_service import RoleService
 from core.events import EventBus
-from evaluations.models import Evaluation
-import ideas
 from ideas.models import Idea,IdeaStatus
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
 from ideas.services.state.idea_state_service import IdeaStateService
-from notifications.services.notification_service import NotificationService
-from evaluations.models import EvaluationAssignment
 from django.db import transaction
-
 from django.db.models import Prefetch
 from evaluations.models import Evaluation, EvaluationAssignment, EvaluationScore
-from ideas.models import Idea
-from evaluations.models import EvaluationAssignment, Evaluation
-
-
-from evaluations.models import (
-    Evaluation,
-    EvaluationAssignment,
-)
-
-
 class EvaluationStatusService:
 
     @staticmethod
@@ -187,15 +172,16 @@ class EvaluationDecisionService:
     @transaction.atomic
     @staticmethod
     def _validate_decision(idea):
+        if idea.status in [IdeaStatus.ACCEPTED, IdeaStatus.REJECTED]:
+            raise ValidationError("تم اتخاذ قرار مسبقاً لهذه الفكرة")
+
 
         
         if not idea.status == IdeaStatus.EVALUATED:
             raise ValidationError("لا يمكن اتخاذ قرار قبل اكتمال جميع التقييمات")
 
         #  منع التكرار
-        if idea.status in [IdeaStatus.ACCEPTED, IdeaStatus.REJECTED]:
-            raise ValidationError("تم اتخاذ قرار مسبقاً لهذه الفكرة")
-
+        
     # ----------------------------------------
     @transaction.atomic
     @staticmethod

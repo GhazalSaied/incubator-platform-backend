@@ -1,7 +1,7 @@
 from cmath import phase
 from core.events import EventBus
 from django.utils import timezone
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
 from datetime import datetime
 from django.utils.text import slugify
 from ideas.models import Season
@@ -10,7 +10,7 @@ from ideas.services.season_phase_service import SeasonPhaseService
 from ideas.phases import SeasonPhase
 from django.db import transaction
 from ideas.models import ExhibitionForm, ExhibitionQuestion, ExhibitionQuestionOption, ExhibitionSubmission
-
+from django.shortcuts import get_object_or_404
 
 class ExhibitionAdminService:
     FIELD_TYPES = {
@@ -250,7 +250,7 @@ class ExhibitionSubmissionManagementService:
         actor=None
     ):
 
-        submission = (
+        submission = get_object_or_404(
             ExhibitionSubmission.objects
             .select_for_update()
             .select_related("project", "project__owner")

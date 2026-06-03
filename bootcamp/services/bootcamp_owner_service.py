@@ -8,7 +8,7 @@ from ideas.models import IdeaStatus
 from ideas.services.idea_service import IdeaService
 from core.events import EventBus
 from django.utils import timezone
-
+from rest_framework.exceptions import ValidationError
 
 class BootcampOwnerService:
     @staticmethod
@@ -16,9 +16,9 @@ class BootcampOwnerService:
         idea = IdeaService.get_user_idea(user)
 
         if idea.status != IdeaStatus.BOOTCAMP:
-            raise ValueError(
-                "Your idea is not in BOOTCAMP stage."
-            )
+            raise ValidationError(
+    "الفكرة ليست ضمن مرحلة المعسكر حالياً"
+)
 
         return idea
     
@@ -112,9 +112,9 @@ class BootcampOwnerService:
         session = BootcampOwnerService.get_next_session( idea=idea)
 
         if not session:
-            raise ValueError(
-                "لا يوجد جلسة قادمة حالياً."
-            )
+            raise ValidationError(
+    "لا يوجد جلسة قادمة حالياً"
+)
 
         existing = (
             BootcampAbsenceRequest.objects.filter(
@@ -125,9 +125,9 @@ class BootcampOwnerService:
         )
 
         if existing:
-            raise ValueError(
-                "تم إرسال طلب غياب مسبق لهذه الجلسة."
-            )
+            raise ValidationError(
+    "تم إرسال طلب غياب مسبق لهذه الجلسة"
+)
 
         absence_request = (
             BootcampAbsenceRequest.objects.create(

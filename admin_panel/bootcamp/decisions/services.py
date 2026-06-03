@@ -144,7 +144,9 @@ def end_bootcamp_sessions(season, actor=None):
     ).select_related("owner")
 
     if not ideas.exists():
-        raise Exception("لا يوجد أفكار في المعسكر")
+        raise ValidationError({
+            "ideas": "لا يوجد أفكار في المعسكر"
+        })
 
     EventBus.emit("bootcamp_sessions_ended",season_id=season.id,idea_ids=list(ideas.values_list("id", flat=True)),actor_id=actor.id if actor else None)
 

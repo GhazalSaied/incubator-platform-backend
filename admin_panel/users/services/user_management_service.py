@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
 from accounts.models import Role, UserRole, User
 from django.utils import timezone
 from django.db import transaction

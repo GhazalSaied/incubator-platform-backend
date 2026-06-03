@@ -31,7 +31,7 @@ class VolunteerService:
         try:
             return user.volunteer_profile
         except:
-            raise ValueError("أنت لست متطوعاً")
+            raise ValidationError("أنت لست متطوعاً")
         
 
 
@@ -137,7 +137,7 @@ class VolunteerService:
         )
 
         if join_request.status != JoinRequest.PENDING:
-            raise Exception("تم اتخاذ قرار مسبقاً")
+            raise ValidationError("تم اتخاذ قرار مسبقاً")
 
         idea = join_request.idea
         team_request = join_request.team_request

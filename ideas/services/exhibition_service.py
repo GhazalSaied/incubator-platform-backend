@@ -8,7 +8,7 @@ from ideas.models import (
 )
 
 from django.core.files.storage import default_storage
-
+from rest_framework.exceptions import ValidationError
 
 class ExhibitionService:
     @staticmethod
@@ -39,7 +39,7 @@ class ExhibitionService:
         if member:
             return member.idea, False
 
-        raise ValueError(
+        raise ValidationError(
             "غير مؤهل للوصول إلى مرحلة المعرض"
         )
 
@@ -56,7 +56,7 @@ class ExhibitionService:
         )
 
         if not form or not form.is_active:
-            raise ValueError(
+            raise ValidationError(
                 "نموذج المعرض غير متاح حالياً"
             )
 
