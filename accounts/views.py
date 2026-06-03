@@ -103,22 +103,47 @@ class LoginAPIView(TokenObtainPairView):
 #/////////////////////////// USER PROFILE VIEW //////////////////////////////////////////
 
 class UserProfileAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated
+    ]
 
     def get(self, request):
-        serializer = UserProfileSerializer(request.user)
-        return Response(serializer.data)
+
+        serializer = (
+            UserProfileSerializer(
+                request.user,
+                context={
+                    "request": request
+                }
+            )
+        )
+
+        return Response(
+            serializer.data
+        )
 
     def put(self, request):
-        serializer = UserProfileSerializer(
-            request.user,
-            data=request.data,
-            partial=True
+
+        serializer = (
+            UserProfileSerializer(
+                request.user,
+                data=request.data,
+                partial=True,
+                context={
+                    "request": request
+                }
+            )
         )
-        serializer.is_valid(raise_exception=True)
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
         serializer.save()
-        return Response(serializer.data)
-    
+
+        return Response(
+            serializer.data
+        )
 #///////////////////////// CHANGE PASSWORD VIEW //////////////////////////////
 
 

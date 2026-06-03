@@ -37,6 +37,7 @@ class VolunteerQueryService:
 
             data.append({
                 "id": v.id,
+                "user_id": user.id,
                 "name": user.full_name,
                 "avatar": avatar,
                 "specialization": v.specialization,

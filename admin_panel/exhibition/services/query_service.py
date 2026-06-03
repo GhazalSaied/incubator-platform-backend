@@ -2,6 +2,7 @@ import re
 
 from django.core.exceptions import ValidationError
 
+from core import settings
 from ideas.models import ExhibitionSubmission, IdeaStatus, Season
 
 
@@ -135,7 +136,7 @@ class ExhibitionSubmissionQueryService:
     # helper للبحث عن جواب سؤال
     # -------------------------
         def get_answer_by_label(label):
-            print("ANSWERS:", answers)
+            
             def normalize(text):
                 text = str(text).strip()
                 text = text.replace("-", " ")
@@ -147,13 +148,18 @@ class ExhibitionSubmissionQueryService:
             target = normalize(label)
 
             for key, value in answers.items():
-                print("COMPARE:", normalize(key), "==", target)
+            
 
                 if normalize(key) == target:
                     return value
 
 
             return None
+        # ==========================
+        # get uploaded image answer
+        # ==========================
+        
+                          
         return {
             "id": submission.id,
 
@@ -162,6 +168,12 @@ class ExhibitionSubmissionQueryService:
                 if project.owner
                     else None
                 ),
+            "project_image": ( f"/media/{get_answer_by_label('صورة-المشروع')}"
+                if get_answer_by_label("صورة-المشروع")
+
+                else None
+),
+        
 
             "owner_email": (
                 project.owner.email
@@ -173,14 +185,6 @@ class ExhibitionSubmissionQueryService:
 
             "sector": project.sector,
 
-            "avatar": (
-                project.owner.avatar.url
-                if (
-            project.owner
-            and project.owner.avatar
-           )
-                else None
-            ),
 
             "team_members": [
                 member.user.full_name

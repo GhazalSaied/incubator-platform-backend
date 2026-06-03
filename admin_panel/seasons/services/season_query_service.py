@@ -45,7 +45,7 @@ class SeasonQueryService:
     @staticmethod
     def build_season_response(season):
         phase_name = SeasonQueryService.get_phase_name(season)
-
+        
         return {
             "id": season.id,
             "year": season.start_date.year,

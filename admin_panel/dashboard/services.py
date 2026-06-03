@@ -39,6 +39,7 @@ class KPIRepository:
         return (
             Idea.objects
             .filter(season=season)
+            .exclude(status=IdeaStatus.DRAFT)
             .count()
         )
 
@@ -166,7 +167,7 @@ class OverviewStatisticsService:
     def get():
 
         seasons = KPIRepository.seasons()
-
+        print("عدد ساعات المتطوعين:", OverviewStatisticsService._calculate_volunteer_hours())
         return [
             {
                 "season_id": season.id,
@@ -191,6 +192,7 @@ class OverviewStatisticsService:
                 )
             }
             for season in seasons
+                
         ]
 
     # =====================================================
@@ -203,6 +205,8 @@ class OverviewStatisticsService:
         availabilities = (
             VolunteerAvailability.objects.all()
         )
+        print("COUNT:", availabilities.count())
+
 
         for availability in availabilities:
 
@@ -217,13 +221,13 @@ class OverviewStatisticsService:
             )
 
             duration = end - start
-
-            total_hours += (
-                duration.total_seconds() / 3600
-            )
+            hours = (
+            duration.total_seconds() / 3600)
+            print("HOURS:", hours)
+            total_hours += hours
+        print("TOTAL:", total_hours)
 
         return round(total_hours, 2)
-
 
 # =========================================================
 # LIFECYCLE STATISTICS

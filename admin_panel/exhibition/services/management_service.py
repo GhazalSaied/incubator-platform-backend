@@ -14,12 +14,14 @@ from ideas.models import ExhibitionForm, ExhibitionQuestion, ExhibitionQuestionO
 
 class ExhibitionAdminService:
     FIELD_TYPES = {
-        "short_text": "text",
-        "long_text": "textarea",
-        "single_choice": "select",
-        "multiple_choice": "select_multiple",
-        "yes_no": "yes_no",
-    }
+    "short_text": "text",
+    "long_text": "text",
+    "single_choice": "select",
+    "multiple_choice": "select_multiple",
+    "yes_no": "boolean",
+    "number": "number",
+    "image": "image",
+}
 
     @staticmethod
     def _parse_datetime(date, time):
@@ -126,12 +128,6 @@ class ExhibitionAdminService:
             # yes/no options auto
             options = q_data.get("options", [])
 
-            if ui_type == "yes_no":
-                options = [
-                    {"label": "نعم", "value": "yes"},
-                    {"label": "لا", "value": "no"},
-                ]
-
             # =========================
             # UPDATE
             # =========================
@@ -182,8 +178,8 @@ class ExhibitionAdminService:
     def _sync_options(question, options):
 
         if question.type not in [
-            "select",
-            "select_multiple"
+            ExhibitionQuestion.SELECT,
+            ExhibitionQuestion.SELECT_MULTIPLE,
         ]:
             question.options.all().delete()
             return

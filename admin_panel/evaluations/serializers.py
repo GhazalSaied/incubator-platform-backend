@@ -27,9 +27,12 @@ class AssignmentDashboardSerializer(serializers.ModelSerializer):
             return []
 
         return [
-            assignment.evaluator.full_name
-            for assignment in assignments
-        ]
+        {
+            "id": assignment.evaluator.id,
+            "name": assignment.evaluator.full_name
+        }
+        for assignment in assignments
+    ]
         
         
 #\\\\\\\\\\\\\\\\SeasonEvaluatorSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\

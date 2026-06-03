@@ -23,11 +23,7 @@ urlpatterns = [
     path("<int:user_id>/add-to-team/",AddUserToIdeaAPIView.as_view()),
     #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تفاصيل المستخدم \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("<int:user_id>/profile/",AdminUserProfileAPIView.as_view()),
-    path(
-        "current-season-ideas/",
-        CurrentSeasonIncubationIdeasView.as_view(),
-        name="current-season-ideas"
-    ),
+    path("current-season-incubation-ideas/",CurrentSeasonIncubationIdeasView.as_view(),name="current-season-ideas"),
 ]
 
 

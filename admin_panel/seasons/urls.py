@@ -4,7 +4,8 @@ from .views import (
     CreateSeasonAPIView,
     PublishSeasonAPIView,
     SeasonListAPIView,
-    SeasonDetailsAPIView
+    SeasonDetailsAPIView,
+    SeasonUpdateView
 )
 
 urlpatterns = [
@@ -13,5 +14,6 @@ urlpatterns = [
     path("create/", CreateSeasonAPIView.as_view(), name="season-create"),
     path("<int:pk>/", SeasonDetailsAPIView.as_view(), name="season-detail"),
     path("<int:pk>/publish/", PublishSeasonAPIView.as_view(), name="season-publish"),
-    path("<int:season_id>/close-submissions/",CloseSubmissionAPIView.as_view())
+    path("<int:season_id>/close-submissions/",CloseSubmissionAPIView.as_view()),
+    path("<int:id>/update/",SeasonUpdateView.as_view(),name="season-update",),
 ]

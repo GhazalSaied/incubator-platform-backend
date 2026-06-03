@@ -57,7 +57,7 @@ class BootcampDecisionView(APIView):
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\اعلان انتهاء جلسات المعسكر\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  
 class EndBootcampSessionsView(APIView):
-    permission_classes = [IsAuthenticated, CanManageCandidateBootcamp]
+    
     @transaction.atomic
     def post(self, request, season_id):
         try:

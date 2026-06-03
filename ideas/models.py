@@ -158,6 +158,7 @@ class FormQuestion(models.Model):
     NUMBER = 'number'
     SELECT = 'select'
     BOOLEAN = 'boolean'
+    RADIO = 'radio'
     SELECT_MULTIPLE = 'select_multiple'
     LIST_TEXT = 'list_text'
 
@@ -168,6 +169,7 @@ class FormQuestion(models.Model):
         (SELECT_MULTIPLE, 'Select (multiple)'),
         (BOOLEAN, 'Yes / No'),
         (LIST_TEXT, 'List Text'),
+        (RADIO, 'Radio'),
     ]
 
     STATIC = "STATIC"
@@ -381,6 +383,7 @@ class ExhibitionQuestion(models.Model):
     SELECT = 'select'
     BOOLEAN = 'boolean'
     SELECT_MULTIPLE = 'select_multiple'
+    IMAGE = 'image'
 
     QUESTION_TYPES = [
         (TEXT, 'Text'),
@@ -388,6 +391,7 @@ class ExhibitionQuestion(models.Model):
         (SELECT, 'Select (single)'),
         (SELECT_MULTIPLE, 'Select (multiple)'),
         (BOOLEAN, 'Yes / No'),
+        (IMAGE, 'Image'),
     ]
 
     form = models.ForeignKey(

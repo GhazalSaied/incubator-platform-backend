@@ -56,7 +56,7 @@ class BootcampIdeaQueryService:
                 "idea_id": idea.id,
                 "idea_title": idea.title,
                 
-                "absence_percentage": round(absence_percentage, 2),
+                "absence_percentage": f"{int(absence_percentage)}%",
                 "commitment_status": "ملتزم" if commitment >= 75 else "غير ملتزم"
             })
 

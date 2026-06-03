@@ -4,11 +4,12 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
 from django.shortcuts import get_object_or_404
-
+from rest_framework.generics import UpdateAPIView
+from ideas.serializers import SeasonUpdateSerializer
 from core.permissions import CanManageSeason
 from .services.season_query_service import SeasonQueryService
 from .services.season_admin_service import SeasonAdminService
-from ideas.models import Season
+from ideas.models import Season, SeasonStatus
 
 
 from ideas.serializers import (
@@ -93,3 +94,23 @@ class SeasonDetailsAPIView(APIView):
         serializer = SeasonDetailsSerializer(data)
 
         return Response(serializer.data)
+    
+
+
+from rest_framework.exceptions import ValidationError
+
+class SeasonUpdateView(UpdateAPIView):
+    queryset = Season.objects.all()
+    serializer_class = SeasonUpdateSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = "id"
+
+    def perform_update(self, serializer):
+        season = self.get_object()
+
+        if season.status == SeasonStatus.CLOSED:
+            raise ValidationError({
+            "detail": "لا يمكن تعديل موسم مغلق"
+        })
+
+        serializer.save()

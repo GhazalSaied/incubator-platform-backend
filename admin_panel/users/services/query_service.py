@@ -3,7 +3,7 @@
 from evaluations.models import Evaluation, EvaluationAssignment, IncubationAssignment, IncubationReview
 from admin_panel.bootcamp.attendance.services import calculate_absence
 from admin_panel.incubations.services import IncubationNotesService
-from ideas.models import Idea, Season
+from ideas.models import Idea, IdeaStatus, Season
 from ideas.services.season_phase_service import SeasonPhaseService
 from volunteers.models import Workshop,VolunteerProfile, WorkshopRegistration
 from accounts.models import User,UserRole
@@ -23,6 +23,8 @@ class UsersQueryService:
 
         qs = User.objects.exclude(
             id__in=admin_ids
+        ).exclude(
+            is_superuser=True
         ).prefetch_related(
             "userrole_set__role"
         ).order_by("-created_at")
@@ -317,6 +319,9 @@ class UserProfileService:
         
         
         
+from ideas.models import Idea, IdeaStatus
+
+
 class UserAdminQueryService:
 
     @staticmethod
@@ -329,10 +334,12 @@ class UserAdminQueryService:
 
         ideas = Idea.objects.filter(
             season=season,
-            status="INCUBATION"
+            status=IdeaStatus.INCUBATION
         ).values(
             "id",
             "title"
         )
+
+        print(list(ideas))
 
         return list(ideas)
