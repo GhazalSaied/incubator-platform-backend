@@ -158,11 +158,10 @@ class ConsultationRequestSerializer(serializers.ModelSerializer):
             "help_type",
             "description",
             "requester_name",
+            "requester_email",
             "requester_id",
             "idea_title",
-            "conversation_id",
             "status",
-            "created_at",
         ]
 
 
@@ -283,7 +282,6 @@ class JoinRequestSerializer(serializers.ModelSerializer):
             "requester_email",
             "idea_title",
             "required_skill",
-            "created_at",
         ]
 
 #/////////////////////////////////// VOLUNTEER DASHBOARD  /////////////////////////////////////////////////
@@ -358,11 +356,16 @@ class ConsultantListSerializer(serializers.ModelSerializer):
         source="availabilities",
         many=True
     )
+    user_id = serializers.IntegerField(
+        source="user.id",
+        read_only=True
+    )
 
     class Meta:
         model = VolunteerProfile
         fields = [
-            "id",
+
+            "user_id",
             "full_name",
             "avatar",
             "primary_skills",

@@ -163,6 +163,7 @@ class AssignmentProjectDetailsAPIView(APIView):
         serializer = ProjectDetailsSerializer(idea)
 
         return Response({
+            "idea_id": idea.id,
             "meeting_date": meeting_date,
             "project_details": serializer.data
         })

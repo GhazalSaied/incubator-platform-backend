@@ -725,11 +725,10 @@ class PublicWorkshopsAPIView(APIView):
                 "image": w.image.url if w.image else None,
                 "capacity": w.capacity,
                 "trainer_name": w.created_by.full_name,
-                "available_seats": w.capacity - w.registrations.count(),
                 "status": (
                     "لم تبدأ بعد" if w.start_date > today else
                     "منتهية" if w.end_date < today else
-                    "بدأت حديثا"
+                    "بدأت حديثاً"
                 )
             })
 
@@ -820,7 +819,7 @@ class NearestWorkshopAPIView(APIView):
         return Response({
             "title": workshop.title,
             "date": workshop.start_date.strftime("%A %Y-%m-%d"),
-            "time": f"{workshop.time_from.strftime('%I:%M %p')} - {workshop.time_to.strftime('%I:%M %p')}"
+            "time": f"{workshop.time_from.strftime('%I').lstrip('0')}-{workshop.time_to.strftime('%I %p')}"
         })      
 
 
@@ -897,6 +896,7 @@ class PublicVolunteerProfileAPIView(APIView):
         
 
         return Response({
+            "user_id": user.id,
             "name": user.full_name,
             "residence": profile.residence,
             "avatar": user.avatar.url if user.avatar else None,

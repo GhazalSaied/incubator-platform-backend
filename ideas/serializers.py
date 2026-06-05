@@ -248,7 +248,10 @@ class PublicExhibitionListSerializer(serializers.Serializer):
         return obj.data.get("title")
 
     def get_team_members(self, obj):
-        return obj.data.get("team_members", [])
+        return [
+            member.user.full_name
+            for member in obj.project.team_members.select_related("user")
+        ]
 
     def get_owner(self, obj):
         return obj.project.owner.full_name
@@ -273,7 +276,10 @@ class PublicExhibitionDetailsSerializer(serializers.Serializer):
         return obj.data.get("title")
 
     def get_team_members(self, obj):
-        return obj.data.get("team_members", [])
+        return [
+            member.user.full_name
+            for member in obj.project.team_members.select_related("user")
+        ]
 
     def get_project_goal(self, obj):
         return obj.data.get("project_goal")
@@ -285,7 +291,8 @@ class PublicExhibitionDetailsSerializer(serializers.Serializer):
         return obj.data.get("emails", [])
 
     def get_owner_email(self, obj):
-        return obj.data.get("owner_email")
+        return obj.project.owner.email
+    
 
 
 # ////////////////////////////////////////////////////////////////

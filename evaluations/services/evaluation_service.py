@@ -103,12 +103,9 @@ class EvaluationService:
 
         EventBus.emit(
             "evaluation_submitted", 
-            payload={
-            "evaluation": evaluation,
-            "idea": idea,
-            "user": user,
-        },
-        actor=user,
+            evaluation= evaluation,
+            idea= idea,
+            user= user,
         )
 
         EvaluationAssignment.objects.filter(

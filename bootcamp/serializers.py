@@ -8,7 +8,6 @@ from bootcamp.services.bootcamp_owner_service import BootcampOwnerService
 
 
 
-#/////////////////////////// BOOTCAMP SESSION ////////////////////////
 class BootcampSessionSerializer(serializers.ModelSerializer):
     trainer_name = serializers.SerializerMethodField()
 class BootcampSessionCreateSerializer(serializers.ModelSerializer):
@@ -24,6 +23,9 @@ class BootcampSessionCreateSerializer(serializers.ModelSerializer):
             "start_time",
             "end_time",
         ]
+
+#/////////////////////////// BOOTCAMP SESSION ////////////////////////
+
 
 class BootcampSessionsTableSerializer(serializers.ModelSerializer):
 

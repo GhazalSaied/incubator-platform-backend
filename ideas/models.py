@@ -166,7 +166,7 @@ class FormQuestion(models.Model):
         (NUMBER, 'Number'),
         (SELECT, 'Select (single)'),
         (SELECT_MULTIPLE, 'Select (multiple)'),
-        (BOOLEAN, 'Yes / No'),
+        (BOOLEAN, 'نعم / لا'),
         (LIST_TEXT, 'List Text'),
     ]
 
@@ -381,13 +381,15 @@ class ExhibitionQuestion(models.Model):
     SELECT = 'select'
     BOOLEAN = 'boolean'
     SELECT_MULTIPLE = 'select_multiple'
+    LIST_TEXT = 'list_text'
 
     QUESTION_TYPES = [
         (TEXT, 'Text'),
         (NUMBER, 'Number'),
         (SELECT, 'Select (single)'),
         (SELECT_MULTIPLE, 'Select (multiple)'),
-        (BOOLEAN, 'Yes / No'),
+        (BOOLEAN, 'نعم\لا'),
+        (LIST_TEXT, 'List Text'),
     ]
 
     form = models.ForeignKey(

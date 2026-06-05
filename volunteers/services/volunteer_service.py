@@ -94,22 +94,22 @@ class VolunteerService:
             consultation.status = ConsultationRequest.ACCEPTED
 
             #  إنشاء محادثة
-            conversation = Conversation.objects.filter(
-                participants=user
-            ).filter(
-                participants=consultation.requester
-            ).first()
+            #conversation = Conversation.objects.filter(
+            #    participants=user
+            #).filter(
+            #   participants=consultation.requester
+            #).first()
 
-            if not conversation:
-                conversation = Conversation.objects.create()
-                conversation.participants.add(user, consultation.requester)
+            #if not conversation:
+            #   conversation = Conversation.objects.create()
+             #   conversation.participants.add(user, consultation.requester)
             
 
             EventBus.emit(
                 "consultation_accepted",
                 consultation=consultation,
                 actor=user,
-                action_url=f"/conversations/{conversation.id}"
+                
             )
 
         else:
