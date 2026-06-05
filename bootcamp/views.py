@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-
+from rest_framework.exceptions import ValidationError
 from django.utils.timezone import now
 from core.events import EventBus
 
@@ -33,7 +33,7 @@ class OwnerBootcampSessionsAPIView(APIView):
             BootcampOwnerService.get_user_bootcamp_idea(
                 user=request.user
             )
-        except ValueError as e:
+        except ValidationError as e:
             return Response(
                 {
                     "message": str(e)
@@ -68,7 +68,7 @@ class OwnerNextBootcampSessionAPIView(APIView):
             BootcampOwnerService.get_user_bootcamp_idea(
                 user=request.user
             )
-        except ValueError as e:
+        except ValidationError as e:
             return Response(
                 {
                     "message": str(e)
@@ -113,7 +113,7 @@ class CreateBootcampAbsenceRequestAPIView(APIView):
                 user=request.user,
                 reason=serializer.validated_data["reason"],
             )
-        except ValueError as e:
+        except ValidationError as e:
             return Response(
                 {
                     "message": str(e)

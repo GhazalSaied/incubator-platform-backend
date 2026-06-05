@@ -136,6 +136,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+# ==================================
+# MEDIA FILES (IMAGES)
+# ==================================
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 AUTH_USER_MODEL = 'accounts.User'
 
@@ -204,7 +210,8 @@ EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
+print("EMAIL_USER =", EMAIL_HOST_USER)
+print("EMAIL_PASS =", EMAIL_HOST_PASSWORD)
 
 TEST_RUNNER = "django.test.runner.DiscoverRunner"
 

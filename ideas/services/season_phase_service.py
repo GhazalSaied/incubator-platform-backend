@@ -17,24 +17,18 @@ class SeasonPhaseService:
 
     @staticmethod
     def get_current_season():
-
         now = timezone.now()
 
-        current_phase = SeasonPhase.objects.filter(
+        season = (
+        Season.objects.filter(
             start_date__lte=now
-        ).filter(
-            models.Q(end_date__isnull=True) |
-            models.Q(end_date__gte=now)
-        ).select_related("season").order_by("-order").first()
+        )
+        .exclude(status=SeasonStatus.DRAFT)
+        .order_by("-start_date")
+        .first()
+    )
 
-        if not current_phase:
-            return None
-
-        if current_phase.season.status == SeasonStatus.DRAFT:
-            return None
-
-        return current_phase.season
-        
+        return season
  
     @staticmethod
     def get_current_phase(season=None):

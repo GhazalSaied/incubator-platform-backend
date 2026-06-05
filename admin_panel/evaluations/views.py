@@ -32,6 +32,7 @@ class AssignmentDashboardAPIView(APIView):
         target_audience = request.query_params.get(
             "target_audience"
         )
+        
 
         ideas = get_assignment_dashboard_ideas(
             season=season,

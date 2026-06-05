@@ -1,6 +1,6 @@
 from bootcamp.models import BootcampAbsenceRequest
 from ideas.services.idea_service import IdeaService
-
+from rest_framework.exceptions import ValidationError
 
 class AbsenceService:
 
@@ -15,7 +15,7 @@ class AbsenceService:
         ).exists()
 
         if existing:
-            raise ValueError("تم تقديم طلب غياب مسبقاً لهذه الجلسة")
+            raise ValidationError("تم تقديم طلب غياب مسبقاً لهذه الجلسة")
 
         return BootcampAbsenceRequest.objects.create(
             idea=idea,

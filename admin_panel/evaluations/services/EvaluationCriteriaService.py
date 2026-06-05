@@ -1,4 +1,4 @@
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
 from evaluations.models import EvaluationCriterion
 from .settings_service import SettingsService
 
@@ -37,7 +37,7 @@ class EvaluationCriteriaService:
 
             criteria.title = title
 
-        if max_score:
+        if max_score is not None:
             if max_score <= 0:
                 raise ValidationError("الدرجة يجب أن تكون أكبر من صفر")
 

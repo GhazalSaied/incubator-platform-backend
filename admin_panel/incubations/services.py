@@ -4,7 +4,7 @@ from core.events import EventBus
 from evaluations.models import EvaluationInvitation
 from django.utils import timezone
 from ideas.models import Idea, IdeaStatus
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
 from evaluations.models import IncubationAssignment,IncubationReview
 from notifications.services.notification_service import NotificationService
 from volunteers.models import VolunteerProfile
@@ -496,8 +496,8 @@ class IncubationNotesService:
 
         return {
             "meeting_date": latest_date.strftime("%d/%m/%Y"),
-            "reviews": data
-            
+            "reviews": data,
+            "status": idea.status
         }
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تخريج الفكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 from django.db import transaction
@@ -589,7 +589,7 @@ from ideas.models import Idea, IdeaStatus
 class GraduationQueryService:
 
     @staticmethod
-    def list_negative_graduated_projects(
+    def list_graduated_projects(
         search=None,
         category=None
     ):
@@ -597,7 +597,7 @@ class GraduationQueryService:
         ideas = (
             Idea.objects
             .filter(
-                status=IdeaStatus.GRADUATED_NEGATIVE
+                status__in=[IdeaStatus.GRADUATED_NEGATIVE, IdeaStatus.GRADUATED_POSITIVE]
             )
             .select_related("owner")
             .prefetch_related("team_members")
@@ -609,12 +609,7 @@ class GraduationQueryService:
                 title__icontains=search
             )
 
-        # FILTER
-        if category:
-            ideas = ideas.filter(
-                sector__iexact=category
-            )
-
+    
         data = []
 
         for idea in ideas:
@@ -635,5 +630,7 @@ class GraduationQueryService:
                 "status": idea.status,
                 "year": idea.season.start_date.year,
             })
+            print("PROJECTS:", data);
+    
 
         return data

@@ -1,4 +1,4 @@
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
 from django.db import transaction
 
 from evaluations.models import EvaluationAssignment, EvaluationInvitation
@@ -40,9 +40,9 @@ class EvaluationAssignmentService:
             #  1. منع صاحب الفكرة
             if evaluator.id == idea.owner_id:
                 skipped_users.append({
-                    "user_id": evaluator.id,
-                    "reason": "OWNER_CANNOT_EVALUATE"
-                })
+    "user_id": evaluator.id,
+    "reason": "لا يمكن لصاحب الفكرة تقييم مشروعه"
+})
                 continue
 
             #  2. منع التكرار
@@ -54,9 +54,9 @@ class EvaluationAssignmentService:
 
             if exists:
                 skipped_users.append({
-                    "user_id": evaluator.id,
-                    "reason": "ALREADY_ASSIGNED"
-                })
+    "user_id": evaluator.id,
+    "reason": "تم تعيين هذا المقيم مسبقاً"
+})
                 continue
 
             #  إنشاء التعيين

@@ -56,7 +56,7 @@ class BootcampIdeaQueryService:
                 "idea_id": idea.id,
                 "idea_title": idea.title,
                 
-                "absence_percentage": round(absence_percentage, 2),
+                "absence_percentage": f"{int(absence_percentage)}%",
                 "commitment_status": "ملتزم" if commitment >= 75 else "غير ملتزم"
             })
 
@@ -144,7 +144,9 @@ def end_bootcamp_sessions(season, actor=None):
     ).select_related("owner")
 
     if not ideas.exists():
-        raise Exception("لا يوجد أفكار في المعسكر")
+        raise ValidationError({
+            "ideas": "لا يوجد أفكار في المعسكر"
+        })
 
     EventBus.emit("bootcamp_sessions_ended",season_id=season.id,idea_ids=list(ideas.values_list("id", flat=True)),actor_id=actor.id if actor else None)
 

@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from django.utils import timezone
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
 from core.events import EventBus
 from accounts.role_service import RoleService
 from accounts.constants import SystemRoles

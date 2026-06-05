@@ -1,6 +1,6 @@
 
 from django.urls import path
-from .views import ActivateUserAPIView, AddUserToIdeaAPIView, AdminUserListView, AdminUserProfileAPIView,CreateUserView, CurrentSeasonIdeasAPIView,RoleListAPIView, SendNotificationToUserAPIView,UpdateUserRolesAPIView,FreezeUserAPIView
+from .views import ActivateUserAPIView, AddUserToIdeaAPIView, AdminUserListView, AdminUserProfileAPIView,CreateUserView, CurrentSeasonIdeasAPIView, CurrentSeasonIncubationIdeasView,RoleListAPIView, SendNotificationToUserAPIView,UpdateUserRolesAPIView,FreezeUserAPIView
 
 urlpatterns = [
     #\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض المستخدمين مع الادوار\\\\\\\\\\\\\\\\
@@ -23,4 +23,11 @@ urlpatterns = [
     path("<int:user_id>/add-to-team/",AddUserToIdeaAPIView.as_view()),
     #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تفاصيل المستخدم \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("<int:user_id>/profile/",AdminUserProfileAPIView.as_view()),
+    path("current-season-incubation-ideas/",CurrentSeasonIncubationIdeasView.as_view(),name="current-season-ideas"),
 ]
+
+
+
+
+
+

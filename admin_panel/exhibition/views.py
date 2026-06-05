@@ -1,3 +1,4 @@
+from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -41,11 +42,9 @@ class ExhibitionFormBuilderView(APIView):
 
     def post(self, request):
 
-        title = request.data.get("title")
         questions = request.data.get("questions", [])
 
         form = ExhibitionAdminService.save_form(
-            title=title,
             questions_data=questions
         )
 
@@ -98,14 +97,18 @@ class SubmissionListAPIView(APIView):
     
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض تفاصيل الطلب \\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class ExhibitionSubmissionDetailsAPIView(APIView):
 
-class SubmissionDetailsAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanManageExhibition]
     def get(self, request, submission_id):
 
-        submission = get_object_or_404(ExhibitionSubmission, id=submission_id)
+        submission = get_object_or_404(
+            ExhibitionSubmission,
+            id=submission_id
+        )
 
-        data = ExhibitionSubmissionQueryService.get_submission_details(submission)
+        data = ExhibitionSubmissionQueryService.get_submission_details(
+            submission
+        )
 
         return Response(data)
     
@@ -145,7 +148,6 @@ class ExhibitionHistoryAPIView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تفاصيل معرض معين\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class ExhibitionProjectsAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanManageExhibition]
     
     def get(self, request, exhibition_id):
 

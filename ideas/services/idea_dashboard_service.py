@@ -32,7 +32,7 @@ from ideas.services.exhibition_service import (
 )
 
 from ideas.services.idea_service import IdeaService
-
+from rest_framework.exceptions import ValidationError
 
 class EvaluationStatuses:
     PENDING = "PENDING"
@@ -263,7 +263,7 @@ class IdeaDashboardService:
                 IdeaService.get_dashboard_idea(user)
             )
 
-        except ValueError:
+        except ValidationError :
             return {
                 "current_stage": None,
                 "data": None,

@@ -1,7 +1,7 @@
 from core.events import EventBus
 from ideas.models import TeamMember, TeamStatus
 
-
+from rest_framework.exceptions import ValidationError
 class TeamService:
 
     @staticmethod
@@ -13,7 +13,7 @@ class TeamService:
         current_members = TeamMember.objects.filter(idea=idea).count()
 
         if team_request and current_members >= team_request.members_needed:
-            raise Exception("Team is already full")
+            raise ValidationError("Team is already full")
 
         TeamMember.objects.create(
             idea=idea,

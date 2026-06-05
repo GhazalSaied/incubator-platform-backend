@@ -37,7 +37,8 @@ class BootcampSessionsTableSerializer(serializers.ModelSerializer):
     
 
     session_status = serializers.SerializerMethodField()
-
+    start_time = serializers.TimeField(format="%H:%M")
+    end_time = serializers.TimeField(format="%H:%M")
     class Meta:
         model = BootcampSession
         fields = [
@@ -47,6 +48,7 @@ class BootcampSessionsTableSerializer(serializers.ModelSerializer):
             "trainer_name",
             "start_time",
             "end_time",
+            "location",
             "tasks",
             "session_status",
         ]

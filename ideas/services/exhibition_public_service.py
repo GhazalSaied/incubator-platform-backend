@@ -1,4 +1,4 @@
-
+from rest_framework.exceptions import ValidationError
 
 from ideas.models import Idea, ExhibitionSubmission, IdeaStatus, Season
 
@@ -33,6 +33,6 @@ class ExhibitionPublicService:
                 project__status=IdeaStatus.GRADUATED_POSITIVE
             )
         except ExhibitionSubmission.DoesNotExist:
-            raise ValueError("Project not found")
+            raise ValidationError("Project not found")
 
         return submission

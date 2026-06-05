@@ -28,7 +28,9 @@ class SeasonAdminService:
 
         # validation
         if data["start_date"] >= data["end_date"]:
-            raise Exception("تاريخ النهاية يجب أن يكون بعد البداية")
+            raise ValidationError({
+            "end_date": "تاريخ النهاية يجب أن يكون بعد البداية"
+        })
 
         # 1. create season
         season = Season.objects.create(
@@ -79,20 +81,27 @@ class SeasonAdminService:
     @staticmethod
     def publish_season(season):
 
-       # if not hasattr(season, "form"):
-           # raise Exception("لا يمكن نشر الموسم بدون نموذج")
+        if not hasattr(season, "form"):
+            raise ValidationError({
+                "form": "لا يمكن نشر الموسم بدون نموذج"
+            })
 
-        #if season.form.questions.count() == 0:
-          #  raise Exception("النموذج فارغ")
+        if season.form.questions.count() == 0:
+            raise ValidationError({
+                "form": "النموذج فارغ"
+            })
 
         if season.status != SeasonStatus.DRAFT:
-            raise Exception("الموسم منشور مسبقاً")
+            raise ValidationError({
+                "status": "الموسم منشور مسبقاً"
+            })
 
-        
         current_phase = SeasonPhaseService.get_current_phase()
 
         if current_phase and current_phase.phase != SeasonPhase.EXHIBITION:
-            raise Exception("لا يمكن نشر موسم جديد قبل وصول الموسم الحالي إلى مرحلة المعرض")
+            raise ValidationError({
+                "phase": "لا يمكن نشر موسم جديد قبل وصول الموسم الحالي إلى مرحلة المعرض"
+            })
         
         season.is_open = True
         season.status = SeasonStatus.PUBLISHED
@@ -114,18 +123,28 @@ class SeasonAdminService:
     @staticmethod
     def close_submissions(season):
         if season.status != SeasonStatus.PUBLISHED:
-            raise Exception("الموسم غير منشور")
+            raise ValidationError({
+                "status": "الموسم غير منشور"
+            })
         if not season.is_open:
-            raise Exception("الموسم مغلق بالفعل")
+            raise ValidationError({
+                "is_open": "الموسم مغلق بالفعل"
+            })
         if season.ideas.filter(status=IdeaStatus.SUBMITTED).count() == 0:
-            raise Exception("لا يمكن إغلاق الموسم بدون أفكار مقدمة")
+            raise ValidationError({
+                "ideas": "لا يمكن إغلاق الموسم بدون أفكار مقدمة"
+            })
         phase = SeasonPhaseService.get_current_phase(season)
 
         if not phase:
-            raise Exception("لا توجد مرحلة حالية")
+            raise ValidationError({
+                "phase": "لا توجد مرحلة حالية"
+            })
 
         if phase.phase != SeasonPhase.SUBMISSION:
-            raise Exception("المرحلة الحالية ليست مرحلة التقديم")
+            raise ValidationError({
+                "phase": "المرحلة الحالية ليست مرحلة التقديم"
+            })
         season.is_open = False
         season.status = SeasonStatus.CLOSED
         season.save(update_fields=["is_open", "status"])

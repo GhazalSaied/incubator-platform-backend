@@ -1,5 +1,5 @@
 from django.utils import timezone
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
 from core.events import EventBus
 from django.shortcuts import get_object_or_404
 
@@ -208,7 +208,7 @@ class EvaluationService:
         phase = SeasonPhaseService.get_current_phase(season)
 
         if not season or not phase:
-            raise ValueError("لا يوجد موسم أو مرحلة حالية")
+            raise ValidationError("لا يوجد موسم أو مرحلة حالية")
 
         # =====================================
         # EVALUATION PHASE
@@ -251,7 +251,7 @@ class EvaluationService:
                 "idea": assignment.idea,
             }
 
-        raise ValueError("مرحلة غير مدعومة")
+        raise ValidationError("مرحلة غير مدعومة")
 
     
 

@@ -43,12 +43,17 @@ class LoginSerializer(TokenObtainPairSerializer):
 
 #////////////////////// PROFILE SERIALIZER (display & edit) ////////////////////////////////////////
 
-class UserProfileSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(read_only=True)
-    avatar_url = serializers.SerializerMethodField()
+class UserProfileSerializer(
+    serializers.ModelSerializer
+):
+    
+    avatar_url = (
+        serializers.SerializerMethodField()
+    )
 
     class Meta:
         model = User
+
         fields = [
             "full_name",
             "email",
@@ -60,9 +65,19 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "must_change_password"
         ]
 
-    def get_avatar_url(self, obj):
+    def get_avatar_url(
+        self,
+        obj
+    ):
+        request = self.context.get(
+            "request"
+        )
+
         if obj.avatar:
-            return obj.avatar.url
+            return request.build_absolute_uri(
+                obj.avatar.url
+            )
+
         return None
 
 #//////////////////////// CHANGE PASSWORD SERIALIZER ///////////////////////////////////////

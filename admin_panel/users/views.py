@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from accounts.models import Role, User
 from django.shortcuts import get_object_or_404
 
@@ -59,6 +59,7 @@ class RoleListAPIView(APIView):
         return Response([
             {
                 "id": r.id,
+                "code": r.code,
                 "name": r.name_ar
             }
             for r in roles
@@ -224,3 +225,19 @@ class AdminUserProfileAPIView(APIView):
         data = UserProfileService.get_user_profile(user)
 
         return Response(data)
+    
+    
+
+from .services.query_service import UserAdminQueryService
+
+
+class CurrentSeasonIncubationIdeasView(APIView):
+    permission_classes = [IsAuthenticated,CanManageUsers]
+    def get(self, request):
+
+        data = UserAdminQueryService.get_current_season_incubation_ideas()
+
+        return Response(
+            data,
+            status=status.HTTP_200_OK
+        )

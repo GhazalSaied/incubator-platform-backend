@@ -1,11 +1,14 @@
 from core.events import EventBus
 from ideas.models import (
+    ExhibitionQuestion,
     Idea,
     IdeaStatus,
     TeamMember,
     ExhibitionSubmission,
 )
 
+from django.core.files.storage import default_storage
+from rest_framework.exceptions import ValidationError
 
 class ExhibitionService:
     @staticmethod
@@ -14,7 +17,7 @@ class ExhibitionService:
             Idea.objects
             .filter(
                 owner=user,
-                status=IdeaStatus.EXHIBITION
+                status=IdeaStatus.GRADUATED_POSITIVE
             )
             .select_related("season")
             .first()
@@ -28,7 +31,7 @@ class ExhibitionService:
             .select_related("idea", "idea__season")
             .filter(
                 user=user,
-                idea__status=IdeaStatus.EXHIBITION
+                idea__status=IdeaStatus.GRADUATED_POSITIVE
             )
             .first()
         )
@@ -36,7 +39,7 @@ class ExhibitionService:
         if member:
             return member.idea, False
 
-        raise ValueError(
+        raise ValidationError(
             "غير مؤهل للوصول إلى مرحلة المعرض"
         )
 
@@ -53,7 +56,7 @@ class ExhibitionService:
         )
 
         if not form or not form.is_active:
-            raise ValueError(
+            raise ValidationError(
                 "نموذج المعرض غير متاح حالياً"
             )
 
@@ -70,13 +73,62 @@ class ExhibitionService:
             "is_owner": is_owner,
         }
 
+    
     @staticmethod
-    def create_submission( *, idea, form, submitted_data, ):
-        submission = ExhibitionSubmission.objects.create(
+    def create_submission(
+    *,
+    idea,
+    form,
+    submitted_data,
+    request,
+):
+
+        final_data = submitted_data.copy()
+
+    # ==================================
+    # HANDLE IMAGE QUESTIONS
+    # ==================================
+
+        image_questions = form.questions.filter(
+        type=ExhibitionQuestion.IMAGE
+    )
+
+        for question in image_questions:
+
+            uploaded_file = request.FILES.get(
+            question.key
+        )
+
+            if not uploaded_file:
+                continue
+
+            file_path = default_storage.save(
+            f"exhibition_submissions/"
+            f"{idea.id}/"
+            f"{uploaded_file.name}",
+            uploaded_file
+        )
+
+        # خزّن path داخل JSON
+            final_data[question.key] = file_path
+
+        submission = (
+            ExhibitionSubmission.objects.create(
             project=idea,
             form=form,
-            data=submitted_data,
-            status="pending", )
-        # ========================= # NOTIFICATION EVENT # =========================
-        EventBus.emit( "exhibition_submission_created", submission=submission, actor=idea.owner )
+            data=final_data,
+            status="pending",
+        )
+    )
+
+    # =========================
+    # NOTIFICATION EVENT
+    # =========================
+
+        EventBus.emit(
+        "exhibition_submission_created",
+        submission=submission,
+        actor=idea.owner
+    )
+
         return submission

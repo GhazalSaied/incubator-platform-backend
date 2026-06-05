@@ -197,21 +197,27 @@ class ExhibitionFormDetailsSerializer(serializers.ModelSerializer):
 
 #/////////////////////// EXHIBITION SUBMISSION CREATE /////////////////////////
 
-class ExhibitionSubmissionCreateSerializer(serializers.Serializer):
+class ExhibitionSubmissionCreateSerializer(
+    serializers.Serializer
+):
     data = serializers.JSONField()
 
     def validate(self, attrs):
         idea = self.context["idea"]
-        request_user = self.context["request"].user
+        request_user = (
+            self.context["request"].user
+        )
 
         if idea.owner_id != request_user.id:
             raise serializers.ValidationError(
                 "Only the idea owner can submit exhibition form."
             )
 
-        already_submitted = ExhibitionSubmission.objects.filter(
-            project=idea
-        ).exists()
+        already_submitted = (
+            ExhibitionSubmission.objects.filter(
+                project=idea
+            ).exists()
+        )
 
         if already_submitted:
             raise serializers.ValidationError(
@@ -228,6 +234,37 @@ class ExhibitionSubmissionCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 "No active exhibition form found."
             )
+
+        submitted_data = attrs["data"]
+
+        # ==================================
+        # IMAGE QUESTIONS VALIDATION
+        # ==================================
+
+        image_questions = (
+            form.questions.filter(
+                type=ExhibitionQuestion.IMAGE
+            )
+        )
+
+        request = self.context["request"]
+
+        for question in image_questions:
+
+            uploaded_file = request.FILES.get(
+                question.key
+            )
+
+            if (
+                question.required
+                and not uploaded_file
+            ):
+                raise serializers.ValidationError(
+                    {
+                        question.key:
+                        "الصورة مطلوبة"
+                    }
+                )
 
         attrs["form"] = form
         return attrs
@@ -471,6 +508,32 @@ class SeasonDetailsSerializer(serializers.Serializer):
 
     #  الجديد
     ideas = IdeaRowSerializer(many=True)
+    
+
+
+
+class SeasonUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Season
+        fields = [
+            "name",
+            "description",
+            "start_date",
+            "end_date",
+            "exhibition_datetime",
+            "is_open",
+        ]
+
+    def validate(self, data):
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
+
+        if start_date and end_date and start_date > end_date:
+            raise serializers.ValidationError(
+                "تاريخ بداية الموسم لازم يكون قبل تاريخ النهاية"
+            )
+
+        return data
     
 class ChoiceSerializer(serializers.Serializer):
     id = serializers.IntegerField()

@@ -628,11 +628,11 @@ class MyWorkshopDetailAPIView(APIView):
             "description": workshop.description,
             "objectives": workshop.objectives,
             "target_audience": workshop.target_audience,
-            "start_date": workshop.start_date,
-            "end_date": workshop.end_date,
+            "start_date": workshop.start_date.strftime("%Y/%m/%d"),
+            "end_date": workshop.end_date.strftime("%Y/%m/%d"),
             "days": workshop.days,
-            "time_from": workshop.time_from,
-            "time_to": workshop.time_to,
+            "time_from": workshop.time_from.strftime("%H:%M"),
+            "time_to": workshop.time_to.strftime("%H:%M"),
             "category": workshop.category,
             "sessions": workshop.sessions,
             "status": workshop.status,
@@ -670,27 +670,45 @@ class MyWorkshopDetailAPIView(APIView):
     
 
 #//////////////////////// CREATE WORKSHOP ///////////////////
+from rest_framework.parsers import (
+    MultiPartParser,
+    FormParser
+)
 
 class CreateWorkshopAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanManageWorkshop]
+    permission_classes = [
+        IsAuthenticated,
+        CanManageWorkshop
+    ]
+
+    parser_classes = [
+        MultiPartParser,
+        FormParser
+    ]
 
     def post(self, request):
-        serializer = CreateWorkshopSerializer(data=request.data , context={"request": request})
-        serializer.is_valid(raise_exception=True)
 
-        workshop = serializer.save(created_by=request.user)
-        #اشعار 
-        EventBus.emit(
-            "workshop_submitted",
-            workshop=workshop,
-            user=request.user,
-            actor=request.user
+        print("FILES ===>", request.FILES)
+        print("DATA ===>", request.data)
+
+        serializer = CreateWorkshopSerializer(
+            data=request.data,
+            context={"request": request}
         )
-        return Response({"detail": "تم إنشاء الورشة"})
-    
-    
-    
 
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        workshop = serializer.save(
+            created_by=request.user
+        )
+
+        print("IMAGE SAVED ===>", workshop.image)
+
+        return Response({
+            "detail": "تم إنشاء الورشة"
+        })
 #///////////////////// WORKSHOPS FOR PUBLIC //////////////
 
 class PublicWorkshopsAPIView(APIView):

@@ -2,7 +2,7 @@ from urllib import request
 from datetime import datetime
 from django.utils import timezone
 from dateutil import parser
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
 from django.db import transaction
 from accounts.constants import SystemRoles
 from accounts.role_service import RoleService

@@ -17,20 +17,19 @@ class Command(BaseCommand):
 
     def create_roles(self):
         roles = [
-            (SystemRoles.ADMIN, "Admin"),
-            (SystemRoles.SECRETARY, "Secretary"),
-            (SystemRoles.VOLUNTEER, "Volunteer"),
-            (SystemRoles.EVALUATOR, "Evaluator"),
-            (SystemRoles.IDEA_OWNER, "Idea Owner"),
-            (SystemRoles.INCUBATOR, "Incubator"),   
+            (SystemRoles.ADMIN, "Admin", "مدير"),
+            (SystemRoles.VOLUNTEER, "Volunteer", "متطوع"),
+            (SystemRoles.EVALUATOR, "Evaluator", "مقيم"),
+            (SystemRoles.IDEA_OWNER, "Idea Owner", "صاحب الفكرة"),
+            (SystemRoles.INCUBATOR, "Incubator", "محتضن"),   
         ]
 
-        for code, name in roles:
+        for code, name_en, name_ar in roles:
             Role.objects.update_or_create(
                 code=code,
                 defaults={
-                    "name_en": name,
-                    "name_ar": name,
+                    "name_en": name_en,
+                    "name_ar": name_ar,
                     "is_system_role": True
                 }
             )

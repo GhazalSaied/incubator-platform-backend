@@ -158,6 +158,7 @@ class FormQuestion(models.Model):
     NUMBER = 'number'
     SELECT = 'select'
     BOOLEAN = 'boolean'
+    RADIO = 'radio'
     SELECT_MULTIPLE = 'select_multiple'
     LIST_TEXT = 'list_text'
 
@@ -168,6 +169,7 @@ class FormQuestion(models.Model):
         (SELECT_MULTIPLE, 'Select (multiple)'),
         (BOOLEAN, 'نعم / لا'),
         (LIST_TEXT, 'List Text'),
+        (RADIO, 'Radio'),
     ]
 
     STATIC = "STATIC"
@@ -367,7 +369,7 @@ class ExhibitionForm(models.Model):
         related_name="exhibition_form"
     )
 
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, default="بطاقة المعرض")
     is_active = models.BooleanField(default=False)
     
     
@@ -382,6 +384,8 @@ class ExhibitionQuestion(models.Model):
     BOOLEAN = 'boolean'
     SELECT_MULTIPLE = 'select_multiple'
     LIST_TEXT = 'list_text'
+    IMAGE = 'image'
+
 
     QUESTION_TYPES = [
         (TEXT, 'Text'),
@@ -390,6 +394,7 @@ class ExhibitionQuestion(models.Model):
         (SELECT_MULTIPLE, 'Select (multiple)'),
         (BOOLEAN, 'نعم\لا'),
         (LIST_TEXT, 'List Text'),
+        (IMAGE, 'Image'),
     ]
 
     form = models.ForeignKey(

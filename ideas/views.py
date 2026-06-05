@@ -268,6 +268,7 @@ class CreateExhibitionSubmissionAPIView(APIView):
             idea=idea,
             form=serializer.validated_data["form"],
             submitted_data=serializer.validated_data["data"],
+            request=request,
         )
 
         return Response(
