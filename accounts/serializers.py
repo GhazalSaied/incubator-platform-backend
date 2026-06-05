@@ -46,10 +46,7 @@ class LoginSerializer(TokenObtainPairSerializer):
 class UserProfileSerializer(
     serializers.ModelSerializer
 ):
-    email = serializers.EmailField(
-        read_only=True
-    )
-
+    
     avatar_url = (
         serializers.SerializerMethodField()
     )

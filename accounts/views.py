@@ -253,7 +253,8 @@ class ForgotPasswordAPIView(APIView):
                 email=email,
                 otp=otp
             )
-        except Exception:
+        except Exception as e:
+            print("EMAIL ERROR:", e)
             return Response(
                 {"detail": "فشل إرسال البريد الإلكتروني"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

@@ -4,7 +4,7 @@ from core.events import EventBus
 from evaluations.models import EvaluationInvitation
 from django.utils import timezone
 from ideas.models import Idea, IdeaStatus
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
 from evaluations.models import IncubationAssignment,IncubationReview
 from notifications.services.notification_service import NotificationService
 from volunteers.models import VolunteerProfile
