@@ -157,7 +157,11 @@ class EvaluationDetailsService:
                 if meeting_date else None
                 ),
 
-                "notes": evaluation.notes,
+                "notes": [
+                    note.note
+                    for note in evaluation.evaluation_notes.all()
+                    if note.note
+                ],
             })
 
         return results

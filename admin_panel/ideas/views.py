@@ -28,10 +28,12 @@ class IdeaDetailsAPIView(APIView):
             }
             for member in team_members
         ]
+        idea_id = idea.id
         specialization = idea.answers.get("specialization", "غير محدد")
         expected_duration = idea.answers.get("expected_duration")
         response_data = serializer.data
         response_data["team_members"] = team_data
         response_data["specialization"] = specialization
         response_data["expected_duration"] = expected_duration or "غير محدد"
+        response_data["idea_id"] = idea_id
         return Response(response_data)

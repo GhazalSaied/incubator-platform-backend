@@ -622,7 +622,8 @@ class GraduationQueryService:
             data.append({
                 "id": idea.id,
                 "title": idea.title,
-
+                "owner" : idea.owner.full_name,
+                
                 "team_members": members,
 
                 "category": idea.sector,

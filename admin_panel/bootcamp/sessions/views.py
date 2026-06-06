@@ -13,23 +13,63 @@ from ideas.services.season_phase_service import SeasonPhaseService
 
 #\\\\انشاء جلسة للمعسكر\\\\\\\\
 class BootcampSessionCreateView(APIView):
-    permission_classes = [IsAuthenticated, CanManageCandidateBootcamp]
-    def post(self, request, season_id):
-    
+    permission_classes = [
+        IsAuthenticated,
+        CanManageCandidateBootcamp
+    ]
+
+    def post(
+        self,
+        request,
+        season_id
+    ):
+
         try:
-            season = Season.objects.get(id=season_id)
+            season = (
+                Season.objects.get(
+                    id=season_id
+                )
+            )
+
         except Season.DoesNotExist:
-            raise ValidationError("الموسم غير موجود")
+            return Response(
+                {
+                    "detail":
+                    "الموسم غير موجود"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-        serializer = BootcampSessionCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        session = create_bootcamp_session(serializer, season)
-
-        return Response(
-            BootcampSessionsTableSerializer(session).data,
-            status=status.HTTP_201_CREATED
+        serializer = (
+            BootcampSessionCreateSerializer(
+                data=request.data
+            )
         )
+
+        try:
+            serializer.is_valid(
+                raise_exception=True
+            )
+
+            session = (
+                create_bootcamp_session(
+                    serializer,
+                    season
+                )
+            )
+
+            return Response(
+                BootcampSessionsTableSerializer(
+                    session
+                ).data,
+                status=status.HTTP_201_CREATED
+            )
+
+        except ValidationError as e:
+            return Response(
+                e.detail,
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
 #\\\\\\\عرض الجلسات \\\\\
 class BootcampSessionListView(ListAPIView):

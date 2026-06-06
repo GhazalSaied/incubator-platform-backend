@@ -20,10 +20,11 @@ class WorkshopListAPIView(APIView):
 class WorkshopDetailsAPIView(APIView):
     permission_classes = [IsAuthenticated, CanManageWorkshops]
 
-    def get(self, request, workshop_id):
+    def get(self, request, id):
 
         data = WorkshopQueryService.get_workshop_details(
-            workshop_id=workshop_id
+            workshop_id=id,
+            request=request
         )
 
         return Response(data)

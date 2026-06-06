@@ -131,10 +131,6 @@ class Command(BaseCommand):
                 "workshop.manage",
             ],
 
-            SystemRoles.SECRETARY: [
-                "idea.view",
-                
-            ],
 
             SystemRoles.EVALUATOR: [
                 "evaluation.submit",

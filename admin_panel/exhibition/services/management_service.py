@@ -253,8 +253,11 @@ class ExhibitionSubmissionManagementService:
         submission = get_object_or_404(
             ExhibitionSubmission.objects
             .select_for_update()
-            .select_related("project", "project__owner")
-            .get(id=submission_id)
+            .select_related(
+                "project",
+                "project__owner"
+            ),
+            id=submission_id
         )
 
         # =========================

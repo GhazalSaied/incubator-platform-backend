@@ -94,10 +94,10 @@ class RejectVolunteerView(APIView):
 class ApprovedVolunteersView(APIView):
     
     def get(self, request):
-        specialization = request.query_params.get("specialization")
+        primary_skills = request.query_params.get("primary_skills")
         data = VolunteerQueryService.get_volunteers_by_status(
             status="APPROVED",
-            specialization=specialization
+            primary_skills=primary_skills
         )
 
         return Response(data)

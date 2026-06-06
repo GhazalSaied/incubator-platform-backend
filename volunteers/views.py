@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from core.events import EventBus
 from datetime import datetime, date
-
+from rest_framework.parsers import MultiPartParser, FormParser
 from core.permissions import CanManageUsers
 from messaging.models import Conversation
 
@@ -120,6 +120,7 @@ class VolunteerProfileAPIView(APIView):
 
 class VolunteerProfileUpdateAPIView(APIView):
     permission_classes = [IsAuthenticated,CanManageVolunteerProfile]
+    parser_classes = [MultiPartParser, FormParser]
 
     def put(self, request):
         try:
@@ -134,7 +135,10 @@ class VolunteerProfileUpdateAPIView(APIView):
         user = request.user
         user.full_name = request.data.get("full_name", user.full_name)
         user.phone = request.data.get("phone", user.phone)
-        user.email=request.data.get("email",user.email) 
+        user.email = request.data.get("email",user.email)
+        if request.FILES.get("avatar"):
+            user.avatar = request.FILES.get("avatar")
+ 
         user.save()
 
 
@@ -710,7 +714,6 @@ class CreateWorkshopAPIView(APIView):
             "detail": "تم إنشاء الورشة"
         })
 #///////////////////// WORKSHOPS FOR PUBLIC //////////////
-
 class PublicWorkshopsAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -736,29 +739,49 @@ class PublicWorkshopsAPIView(APIView):
         data = []
 
         for w in workshops:
+
+            image_url = None
+
+            if w.image:
+                image_url = request.build_absolute_uri(
+                    w.image.url
+                )
+
             data.append({
                 "id": w.id,
                 "title": w.title,
                 "description": w.description,
-                "image": w.image.url if w.image else None,
+                "image": image_url,
                 "capacity": w.capacity,
                 "trainer_name": w.created_by.full_name,
                 "status": (
-                    "لم تبدأ بعد" if w.start_date > today else
-                    "منتهية" if w.end_date < today else
-                    "بدأت حديثاً"
+                    "لم تبدأ بعد"
+                    if w.start_date > today
+                    else "منتهية"
+                    if w.end_date < today
+                    else "بدأت حديثاً"
                 )
             })
 
         return Response(data)
-
 #///////////////////// WORKSHOPS DETAILS FOR PUBLIC //////////////
 
 class WorkshopDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, workshop_id):
-        w = get_object_or_404(Workshop, id=workshop_id, status="ACCEPTED")
+        w = get_object_or_404(
+            Workshop,
+            id=workshop_id,
+            status="ACCEPTED"
+        )
+
+        image_url = None
+
+        if w.image:
+            image_url = request.build_absolute_uri(
+                w.image.url
+            )
 
         return Response({
             "title": w.title,
@@ -768,8 +791,8 @@ class WorkshopDetailAPIView(APIView):
             "time_from": w.time_from,
             "time_to": w.time_to,
             "target_audience": w.target_audience,
-            "image": w.image.url if w.image else None,
-        })  
+            "image": image_url,
+        })
 
 #/////////// WORKSHOP REGISTER > PUBLIC  اليوزرات اللي بدن يسجلوا بالورشات ////////
 
@@ -916,6 +939,7 @@ class PublicVolunteerProfileAPIView(APIView):
         return Response({
             "user_id": user.id,
             "name": user.full_name,
+            "email": user.email,
             "residence": profile.residence,
             "avatar": user.avatar.url if user.avatar else None,
             "availability": availability_data,

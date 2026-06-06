@@ -208,7 +208,7 @@ class GraduateIdeaView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class GraduatedProjectsView(APIView):
 
-    permission_classes = [IsAuthenticated,CanManageIncubation]
+    #permission_classes = [IsAuthenticated,CanManageIncubation]
     def get(self, request):
 
         search = request.query_params.get("search")

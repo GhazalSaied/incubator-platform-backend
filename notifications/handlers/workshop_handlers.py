@@ -22,7 +22,7 @@ def workshop_registered_handler(payload):
         obj=workshop,
         actor=payload.get("actor"),
         extra={ "registrations_count": payload.get("registrations_count") },
-        action_url=f"/workshop-details/{workshop.id}/",
+        action_url=f"api/volunteers/workshop-details/{workshop.id}/",
         target_role="VOLUNTEER" )
 
 
