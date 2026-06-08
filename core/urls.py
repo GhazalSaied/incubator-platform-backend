@@ -17,6 +17,10 @@ urlpatterns = [
     path("api/notifications/", include("notifications.urls")),
     path('api/bootcamp/',include('bootcamp.urls')),
     path("api/admin/", include("admin_panel.urls")),
+    path(
+    "api/chatbot/",
+    include("chatbot.urls")
+),
 
 
     # volunteer + ideaOwner | team member 
