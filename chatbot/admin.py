@@ -4,7 +4,7 @@ from .models import ChatSession, ChatMessage
 
 @admin.register(ChatSession)
 class ChatSessionAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "title", "created_at")
+    list_display = ("id", "user", "title", "created_at","consultation_field")
     search_fields = ("user__email", "title")
 
 

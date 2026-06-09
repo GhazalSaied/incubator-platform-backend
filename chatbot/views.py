@@ -69,14 +69,25 @@ class ChatSessionListAPIView(APIView):
 
     def get(self, request):
 
-        sessions = ChatSession.objects.filter(user=request.user)
+        consultation_field = request.GET.get(
+            "consultation_field"
+        )
+
+        sessions = ChatSession.objects.filter(
+            user=request.user
+        )
+
+        if consultation_field:
+            sessions = sessions.filter(
+                consultation_field=consultation_field
+            )
 
         data = [
             {
                 "id": s.id,
                 "title": s.title,
                 "consultation_field": s.consultation_field,
-                "updated_at": s.updated_at
+                "updated_at": s.updated_at,
             }
             for s in sessions
         ]
