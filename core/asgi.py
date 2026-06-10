@@ -1,6 +1,12 @@
-
 import os
+
+os.environ.setdefault(
+    "DJANGO_SETTINGS_MODULE",
+    "core.settings",
+)
+
 import django
+django.setup()
 
 from channels.routing import (
     ProtocolTypeRouter,
@@ -15,28 +21,15 @@ from messaging.websocket.middleware.jwt_auth_middleware import (
     JWTAuthMiddleware,
 )
 
-
 import messaging.websocket.routing
-
-os.environ.setdefault(
-    "DJANGO_SETTINGS_MODULE",
-    "core.settings",
-)
-
-django.setup()
 
 application = ProtocolTypeRouter({
 
     "http": get_asgi_application(),
 
     "websocket": JWTAuthMiddleware(
-
         URLRouter(
-            
             messaging.websocket.routing.websocket_urlpatterns
-
         )
-
     ),
 })
-

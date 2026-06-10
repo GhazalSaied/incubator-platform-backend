@@ -135,6 +135,12 @@ class RealtimeService:
         user_id,
         payload,
     ):
+        
+        print(
+            "GROUP SEND",
+            cls.get_user_group_name(user_id),
+            payload.get("unread_count"),
+        )
 
         channel_layer = get_channel_layer()
 

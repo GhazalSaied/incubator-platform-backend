@@ -90,6 +90,13 @@ class RealtimeConsumer(
 
     async def connect(self):
 
+        print("========== WS CONNECT ==========")
+        print(
+        "WS CONNECT USER",
+        self.scope["user"].id,
+        self.scope["user"].email,
+    )
+
         user = self.scope.get("user")
 
         if not user or user.is_anonymous:
@@ -112,6 +119,16 @@ class RealtimeConsumer(
         await self._connect_user_presence()
 
         await self.accept()
+
+        await self.send_json({
+            "type": "TEST",
+            "message": "CONNECTED"
+        })
+
+        await self.send_json({
+            "type": "DEBUG_TEST",
+            "message": "FROM_CONSUMER"
+        })
 
     # =====================================
     # DISCONNECT
@@ -140,6 +157,10 @@ class RealtimeConsumer(
         content,
         **kwargs,
     ):
+        print(
+            "RAW WS MESSAGE:",
+            content
+        )
 
         event_type = content.get("type")
 
@@ -199,6 +220,10 @@ class RealtimeConsumer(
 
             conversation_id = content.get(
                 "conversation_id"
+            )
+            print(
+                "SUBSCRIBE_CONVERSATION",
+                conversation_id
             )
 
             if not conversation_id:
@@ -349,6 +374,12 @@ class RealtimeConsumer(
         self,
         event,
     ):
+        
+        print(
+            "WS SEND CONVERSATION_UPDATED TO",
+            self.user.id,
+            event["data"].get("unread_count"),
+        )
 
         await self.send_json({
             "type": "CONVERSATION_UPDATED",

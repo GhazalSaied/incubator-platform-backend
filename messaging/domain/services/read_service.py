@@ -59,16 +59,35 @@ class ReadService:
             ]
         )
 
-        if latest_message:
+        def emit_read_events():
 
-            RealtimeService.broadcast_message_read(
-                conversation_id=conversation.id,
+            RealtimeService.broadcast_conversation_updated(
+                user_id=user.id,
                 payload={
                     "conversation_id": conversation.id,
-                    "user_id": user.id,
-                    "message_id": latest_message.id,
-                    "read_at": participant.last_read_at.isoformat(),
+                    "unread_count": 0,
+                    "last_message_at": (
+                        conversation.last_message_at.isoformat()
+                        if conversation.last_message_at
+                        else None
+                    ),
                 },
             )
+
+            if latest_message:
+
+                RealtimeService.broadcast_message_read(
+                    conversation_id=conversation.id,
+                    payload={
+                        "conversation_id": conversation.id,
+                        "user_id": user.id,
+                        "message_id": latest_message.id,
+                        "read_at": participant.last_read_at.isoformat(),
+                    },
+                )
+
+        transaction.on_commit(
+            emit_read_events
+        )
 
         return participant

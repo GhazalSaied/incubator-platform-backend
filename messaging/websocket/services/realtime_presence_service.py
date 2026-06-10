@@ -56,6 +56,17 @@ class RealtimePresenceService:
             timeout=cls.ONLINE_TTL,
         )
 
+        conversations = cache.get(
+            cls.conversations_key(user_id)
+        )
+
+        if conversations is not None:
+            cache.set(
+                cls.conversations_key(user_id),
+                conversations,
+                timeout=cls.ONLINE_TTL,
+            )
+
     @classmethod
     def disconnect_user(cls, user_id):
 
@@ -192,6 +203,13 @@ class RealtimePresenceService:
         conversations = cache.get(
             cls.conversations_key(user_id),
             [],
+        )
+
+        print(
+            "CACHE CHECK",
+            "USER=", user_id,
+            "CONVERSATIONS=", conversations,
+            "LOOKING_FOR=", conversation_id,
         )
 
         return (
