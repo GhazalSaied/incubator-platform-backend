@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.conf import settings
 from .models import (Idea, FormQuestion, 
                      IdeaForm, Season,
                      TeamRequest,
@@ -296,39 +297,95 @@ class PublicExhibitionListSerializer(serializers.Serializer):
 #/////////////////////////////// EXHIBITION DETAILS > عرض التفاصيل في تاب المشاريع /////////////
 
 class PublicExhibitionDetailsSerializer(serializers.Serializer):
-
     id = serializers.IntegerField()
+
     title = serializers.SerializerMethodField()
-    sector = serializers.CharField(source="project.sector")
+    sector = serializers.CharField(
+        source="project.sector"
+    )
 
     team_members = serializers.SerializerMethodField()
+
     project_goal = serializers.SerializerMethodField()
+
     project_services = serializers.SerializerMethodField()
+
     emails = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
     owner_email = serializers.SerializerMethodField()
 
-    owner_id = serializers.IntegerField(source="project.owner.id")
+    owner_id = serializers.IntegerField(
+        source="project.owner.id"
+    )
 
     def get_title(self, obj):
-        return obj.data.get("title")
+        return (
+            obj.data.get("title")
+            or obj.project.title
+        )
+    def get_image(self, obj):
+        print(obj.data)
+        image = (
+            obj.data.get("image")
+            or obj.data.get("project_image")
+            or obj.data.get("logo")
+            or obj.data.get("صورة المشروع")
+             or obj.data.get("لوغو المشروع ")
+             or obj.data.get("صورة-المشروع") 
+        )
+        if not image:
+            return None
+        image = str(image)
+        if image.startswith("/media/"):
+            return image
+        return f"{settings.MEDIA_URL}{image}"
 
     def get_team_members(self, obj):
         return [
             member.user.full_name
-            for member in obj.project.team_members.select_related("user")
+            for member in obj.project.team_members.select_related(
+                "user"
+            )
         ]
 
     def get_project_goal(self, obj):
-        return obj.data.get("project_goal")
+        return (
+            obj.data.get("project_goal")
+            or obj.data.get("goal")
+            or obj.data.get("اهداف المشروع")
+            or obj.data.get("اهداف-المشروع")
+            or obj.data.get("الرؤية والهدف الاساسي")
+            or obj.data.get("الرؤية-والهدف-الاساسي")
+            or ""
+        )
 
     def get_project_services(self, obj):
-        return obj.data.get("project_services", [])
+        return (
+            obj.data.get("project_services")
+            or obj.data.get("services")
+            or obj.data.get("خدمات المشروع")
+            or obj.data.get("خدمات-المشروع")
+            or obj.data.get("المخرجات والخدمات التي يقدمها")
+            or obj.data.get("المخرجات-والخدمات-التي-يقدمها")
+            or ""
+        )
 
     def get_emails(self, obj):
-        return obj.data.get("emails", [])
+        return (
+            obj.data.get("emails")
+            or member.user.email
+                for member in obj.project.team_members.select_related(
+                "user"
+            )
+            or []
+        )
 
     def get_owner_email(self, obj):
-        return obj.project.owner.email
+        return (
+            obj.project.owner.email
+            if obj.project.owner
+            else ""
+        )
     
 
 
@@ -367,6 +424,7 @@ class ProjectDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Idea
         fields = [
+            
             "project_title",
             "editor_name",
             "product_type",

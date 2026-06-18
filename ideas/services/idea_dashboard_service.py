@@ -241,7 +241,7 @@ STAGE_PROVIDERS = {
     IdeaStatus.INCUBATION:
         IncubationDashboardProvider,
 
-    IdeaStatus.EXHIBITION:
+    IdeaStatus.GRADUATED_POSITIVE:
         ExhibitionDashboardProvider,
 
     IdeaStatus.GRADUATED_NEGATIVE:

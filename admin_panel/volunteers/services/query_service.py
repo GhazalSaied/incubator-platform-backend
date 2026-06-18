@@ -1,5 +1,6 @@
 from accounts.constants import SystemRoles
 from accounts.models import UserRole
+from django.conf import settings
 from ideas.models import TeamRequest
 import volunteers
 from volunteers.models import VolunteerProfile
@@ -11,25 +12,25 @@ from django.db.models import F
 class VolunteerQueryService:
 
     @staticmethod
-    def get_volunteers_by_status(*, status,specialization=None):
+    def get_volunteers_by_status(*, status,primary_skills=None):
 
         qs = VolunteerProfile.objects.filter(
             status=status
         ).select_related("user").prefetch_related("availabilities")
-        if specialization:
-            qs = qs.filter(specialization=specialization)
+        if primary_skills:
+            qs = qs.filter(primary_skills__in=primary_skills)
+            qs = qs.filter(primary_skills=primary_skills)
         data = []
 
         for v in qs:
 
             user = v.user
 
-            avatar = None
-            if hasattr(user, "avatar") and user.avatar:
-                try:
-                    avatar = user.avatar.url
-                except:
-                    avatar = None
+            avatar = user.avatar
+            avatar_url = (
+    f"{settings.MEDIA_URL}{avatar}"
+    if avatar else None
+)
 
             times = []
             for a in v.availabilities.all():
@@ -39,8 +40,8 @@ class VolunteerQueryService:
                 "id": v.id,
                 "user_id": user.id,
                 "name": user.full_name,
-                "avatar": avatar,
-                "specialization": v.specialization,
+                "avatar": avatar_url,
+                "primary_skills": v.primary_skills,
                 "availability": times,
                 "status": v.status
             })
@@ -61,12 +62,11 @@ class VolunteerQueryService:
 
         user = v.user
 
-        avatar = None
-        if hasattr(user, "avatar") and user.avatar:
-            try:
-                avatar = user.avatar.url
-            except:
-                avatar = None
+        avatar = user.avatar
+        avatar_url = (
+    f"{settings.MEDIA_URL}{avatar}"
+    if avatar else None
+)
 
         availability = []
         for a in v.availabilities.all():
@@ -84,7 +84,7 @@ class VolunteerQueryService:
             "id": v.id,
             "name": user.full_name,
             "status": v.status,#\\\\\\\\\\\\رح يرجع الحالة لما بتكون (pending) زر قبول ورفض اما لما تكون (approved) .زر ارسال طلب تقييم 
-            "avatar": avatar,
+
 
             #  معلومات الخبرة
             "primary_skills": v.primary_skills,
@@ -108,7 +108,7 @@ class VolunteerQueryService:
             "is_evaluator": has_accepted_invitation,
             "roles": [r.role.code for r in user.userrole_set.filter(is_active=True)],
             "user_id": user.id,
-            
+            "avatar": avatar_url
         }
         
         
@@ -189,7 +189,10 @@ class VolunteerQueryService:
 
         for item in qs:
             avatar = item["avatar"]
-            avatar_url = avatar.url if avatar else None
+            avatar_url = (
+    f"{settings.MEDIA_URL}{avatar}"
+    if avatar else None
+)
 
             data.append({
                 "id": item["user_id"],
@@ -246,7 +249,7 @@ class VolunteerQueryService:
         data = []
         for v in volunteers :
             user = v.user
-            avatar = None
+            avatar = user.avatar
             if hasattr(user, "avatar") and user.avatar:
                 try:
                     avatar = user.avatar.url

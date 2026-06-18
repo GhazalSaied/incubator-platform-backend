@@ -9,7 +9,7 @@ from core.permissions import CanDecideExhibition, CanManageExhibition
 from ideas.models import ExhibitionForm, ExhibitionQuestion, ExhibitionSubmission, Season
 from ideas.services.season_phase_service import SeasonPhaseService
 from .services.management_service import ExhibitionAdminService, ExhibitionSubmissionManagementService
-from .services.query_service import ExhibitionHistoryQueryService, ExhibitionQueryService, ExhibitionSubmissionQueryService
+from .services.query_service import ExhibitionHistoryQueryService, ExhibitionQueryService, ExhibitionSubmissionQueryService, ProjectsService
 
 
 
@@ -163,4 +163,20 @@ class ExhibitionProjectsAPIView(APIView):
         )
 
         return Response(data)
-        
+       
+       
+class GraduatedProjectsAPIView(
+    APIView
+):
+    permission_classes = [
+        IsAuthenticated
+    ]
+
+    def get(self, request):
+
+        projects = (
+            ProjectsService
+            .get_all_graduated_projects()
+        )
+
+        return Response(projects) 

@@ -168,8 +168,12 @@ class UserProfileService:
         return [
             {
                 "evaluator_name": ev.evaluator.full_name,
-                "score": sum(s.score or 0 for s in ev.scores.all()),
-                "note": ev.notes,
+                "score": sum(s.score or 6 for s in ev.scores.all()),
+                "note": [
+                    note.note
+                    for note in ev.evaluation_notes.all()
+                    if note.note
+                ],
             }
             for ev in evaluations
         ]

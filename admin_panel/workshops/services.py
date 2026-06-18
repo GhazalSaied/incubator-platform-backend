@@ -38,7 +38,7 @@ class WorkshopQueryService:
     
 
     @staticmethod
-    def get_workshop_details(*, workshop_id):
+    def get_workshop_details(*, workshop_id,request=None):
 
         try:
             workshop = Workshop.objects.select_related(
@@ -52,7 +52,13 @@ class WorkshopQueryService:
 
         if workshop.image:
             try:
-                image = workshop.image.url
+                image = (
+                request.build_absolute_uri(
+                workshop.image.url
+            )
+                    if request
+                    else workshop.image.url
+        )
             except:
                 image = None
 

@@ -3,7 +3,7 @@ import re
 from django.core.exceptions import ValidationError
 
 from core import settings
-from ideas.models import ExhibitionSubmission, IdeaStatus, Season
+from ideas.models import ExhibitionSubmission, Idea, IdeaStatus, Season
 
 
 class ExhibitionQueryService:
@@ -311,6 +311,54 @@ class ExhibitionHistoryQueryService:
                 "category": s.project.sector,
 
                 "owner_name": s.project.owner.full_name,
+
+                "team_members": [
+                    member.user.full_name
+                    for member in s.project.team_members.all()
+                ]
+            }
+            for s in submissions
+        ]
+        
+class ProjectsService:
+
+    @staticmethod
+    def get_all_graduated_projects():
+
+        submissions = (
+            ExhibitionSubmission.objects.filter(
+                status="approved",
+                project__status=IdeaStatus.GRADUATED_POSITIVE
+            )
+            .select_related(
+                "project__owner",
+                "project__season"
+            )
+            .prefetch_related(
+                "project__team_members__user"
+            )
+        )
+
+        return [
+            {
+                "id": s.id,  # ← صار submission id
+
+                "project_id": s.project.id,
+
+                "year": (
+                    s.project.season.exhibition_datetime.year
+                    if s.project.season
+                    else None
+                ),
+
+                "title": s.project.title,
+                "category": s.project.sector,
+
+                "owner": (
+                    s.project.owner.full_name
+                    if s.project.owner
+                    else ""
+                ),
 
                 "team_members": [
                     member.user.full_name

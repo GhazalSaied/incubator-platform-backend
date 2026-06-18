@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'notifications',   
     'ideas',
     'evaluations',  
-    'profiles',  
+    'profiles', 
+    "chatbot", 
     'volunteers',   
     'bootcamp',
     'admin_panel',
@@ -208,10 +209,9 @@ EMAIL_USE_TLS = True
 
 EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
-
+GEMINI_API_KEY = config("GEMINI_API_KEY")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-print("EMAIL_USER =", EMAIL_HOST_USER)
-print("EMAIL_PASS =", EMAIL_HOST_PASSWORD)
+
 
 TEST_RUNNER = "django.test.runner.DiscoverRunner"
 

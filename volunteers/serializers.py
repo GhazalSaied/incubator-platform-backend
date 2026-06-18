@@ -23,7 +23,7 @@ class VolunteerAvailabilitySerializer(serializers.ModelSerializer):
 class VolunteerProfileSerializer(serializers.ModelSerializer):
     availabilities = VolunteerAvailabilitySerializer(many=True, read_only=True)
     name = serializers.CharField(source="user.full_name", read_only=True)
-    email = serializers.EmailField(source="user.email", read_only=True)
+    email = serializers.EmailField(source="user.email")
 
     class Meta:
         model = VolunteerProfile

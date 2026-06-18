@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import  CreateExhibitionView,ExhibitionFormBuilderView,ExhibitionFormPreviewAPIView, ExhibitionSubmissionDetailsAPIView,PublishExhibitionFormAPIView,SubmissionListAPIView,ExhibitionSubmissionDecisionAPIView,ExhibitionHistoryAPIView,ExhibitionProjectsAPIView 
+from .views import  CreateExhibitionView,ExhibitionFormBuilderView,ExhibitionFormPreviewAPIView, ExhibitionSubmissionDetailsAPIView, GraduatedProjectsAPIView,PublishExhibitionFormAPIView,SubmissionListAPIView,ExhibitionSubmissionDecisionAPIView,ExhibitionHistoryAPIView,ExhibitionProjectsAPIView 
 
 
 urlpatterns = [
@@ -20,5 +20,10 @@ urlpatterns = [
     #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\سجل المعارض\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     path("history/", ExhibitionHistoryAPIView.as_view()),
     #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تفاصيل معرض معين\\\\\\\\\\\\\\\\\\\\\\\\
-    path("<int:exhibition_id>/details/", ExhibitionProjectsAPIView.as_view()),         
+    path("<int:exhibition_id>/details/", ExhibitionProjectsAPIView.as_view()),
+    path(
+        "publicprojects/graduated/",
+        GraduatedProjectsAPIView.as_view(),
+        name="graduated-public-projects"
+    ),         
 ]                 
