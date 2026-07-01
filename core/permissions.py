@@ -29,6 +29,11 @@ PERMISSIONS = {
     "can_decide_exhibition": "Can Decide Exhibition",
     "volunteer.manage": "Manage Volunteers",
     "workshop.manage": "Manage Workshops",
+    "shared_permissions" : "Shared Permissions",
+    "shared_bootcamp_permissions": "Shared Bootcamp Permissions",
+    "shared_evaluation_permissions": "Shared Evaluations Permissions",
+    "shared_incubation_permissions": "Shared Incubation Permissions",
+    "shared_exhibition_permissions": "Shared Exhibition Permissions",
     #VOLUNTEER:
     "workshop.manage": "Manage Workshop",
     "volunteer.requests.manage": "Manage Volunteer Requests",
@@ -65,7 +70,10 @@ PHASE_GATED_PERMISSIONS = {
     "evaluation_decision.manage": SeasonPhase.EVALUATION,
     "incubtion_decision.manage": SeasonPhase.INCUBATION,
     "can_decide_exhibition": SeasonPhase.EXHIBITION,
-
+    "shared_bootcamp_permissions": SeasonPhase.BOOTCAMP,
+    "shared_evaluation_permissions" : SeasonPhase.EVALUATION,
+    "shared_incubation_permissions" : SeasonPhase.INCUBATION,
+    "shared_exhibition_permissions": SeasonPhase.EXHIBITION,
     "bootcamp.view": SeasonPhase.BOOTCAMP,
     "bootcamp.absence.submit": SeasonPhase.BOOTCAMP,
 
@@ -204,6 +212,22 @@ class CanManageVolunteers(HasPermission):
     
 class CanManageWorkshops(HasPermission):
     required_permission = "workshop.manage"
+class sharedBootcampPermissions(HasPermission):
+    required_permission = "shared_bootcamp_permissions"
+    
+class sharedEvaluationPermissions(HasPermission):
+    required_permission = "shared_evaluation_permissions"
+    
+class sharedIncubationPermissions(HasPermission):
+    required_permission = "shared_incubation_permissions"
+
+class sharedExhibitionPermissions(HasPermission):
+    required_permission = "shared_exhibition_permissions"
+
+
+
+class sharedPermissions(HasPermission):
+    required_permission = "shared_permissions"
 
 
 #VOLUNTEER :
@@ -236,4 +260,5 @@ class CanCreateExhibitionCard(HasPermission):
 
 class CanViewExhibitionCard(HasPermission):
     required_permission = "exhibition.card.view"
+    
 

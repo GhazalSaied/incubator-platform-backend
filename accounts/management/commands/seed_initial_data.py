@@ -21,7 +21,8 @@ class Command(BaseCommand):
             (SystemRoles.VOLUNTEER, "Volunteer", "متطوع"),
             (SystemRoles.EVALUATOR, "Evaluator", "مقيم"),
             (SystemRoles.IDEA_OWNER, "Idea Owner", "صاحب الفكرة"),
-            (SystemRoles.INCUBATOR, "Incubator", "محتضن"),   
+            (SystemRoles.INCUBATOR, "Incubator", "محتضن"),  
+            (SystemRoles.SECRETARY, "secretary", "سكرتيرة") 
         ]
 
         for code, name_en, name_ar in roles:
@@ -73,6 +74,13 @@ class Command(BaseCommand):
             ("can_decide_exhibition", "Can Decide Exhibition", "EXHIBITION"),
             ("volunteer.manage", "Manage Volunteers", "VOLUNTEER"),
             ("workshop.manage", "Manage Workshops", "WORKSHOP"),
+            ("shared_permissions", "Shared Permissions", "SHARED"),
+            ("shared_bootcamp_permissions","SharedBootcampPermissions", "SHARED"),
+            ("shared_evaluation_permissions", "SharedEvaluationPermissions", "SHARED"),
+            ("shared_incubation_permissions", "SharedIncubationPermissions", "SHARED"),
+            ("shared_exhibition_permissions", "SharedExhibitionPermissions", "SHARED"),
+            
+            
             
             
 
@@ -129,6 +137,19 @@ class Command(BaseCommand):
                 "can_decide_exhibition",
                 "volunteer.manage",
                 "workshop.manage",
+                "shared_permissions",
+                "shared_bootcamp_permissions",
+                "shared_evaluation_permissions",
+                "shared_incubation_permissions",
+                "shared_exhibition_permissions",
+            ],
+            SystemRoles.SECRETARY: [
+                "shared_permissions",
+                "shared_bootcamp_permissions",
+                "shared_evaluation_permissions",
+                "shared_incubation_permissions",
+                "shared_exhibition_permissions",
+              
             ],
 
 

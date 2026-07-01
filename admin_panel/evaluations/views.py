@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from core.permissions import CanManageEvaluationDecisions, CanManageEvaluations
+from core.permissions import CanManageEvaluationDecisions, CanManageEvaluations,sharedEvaluationPermissions,sharedPermissions
 
 from .services.evaluation_results_service import EvaluationDecisionService, EvaluationDetailsService, EvaluationResultsService
 from .services.EvaluationCriteriaService import EvaluationCriteriaService
@@ -108,7 +108,7 @@ class AssignEvaluatorsToIdeaView(APIView):
         
 #\\\\\\\\\\\\\\\\\\\\\\عرض جدول المشاريع لتحديد موعد اللجنة \\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class MeetingDashboardAPIView(APIView):
-    permission_classes = [IsAuthenticated, CanManageEvaluations]
+    permission_classes = [IsAuthenticated, sharedPermissions]
     def get(self, request):
 
         season = SeasonPhaseService.get_current_season()
@@ -134,7 +134,7 @@ class MeetingDashboardAPIView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض المقيمين المعينين على فكرة معينة في جدول تحديد موعد اللجنة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class IdeaEvaluatorsAPIView(APIView):
 
-    permission_classes = [IsAuthenticated, CanManageEvaluations]
+    permission_classes = [IsAuthenticated, sharedPermissions]
 
     def get(self, request, idea_id):
 
@@ -152,7 +152,7 @@ class IdeaEvaluatorsAPIView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\\\تحديد موعد اللجنة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class SetMeetingAPIView(APIView):
-    permission_classes = [IsAuthenticated, CanManageEvaluationDecisions]    
+    permission_classes = [IsAuthenticated, sharedEvaluationPermissions]    
     def post(self, request,idea_id):
 
         serializer = SetMeetingSerializer(data=request.data)
@@ -173,7 +173,7 @@ class SetMeetingAPIView(APIView):
 
 #\\\\\\\\\\\\\\\\\\\\\\\انشاء معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
 class CriteriaListCreateView(APIView):
-    permission_classes = [IsAuthenticated, CanManageEvaluations]
+    permission_classes = [IsAuthenticated, sharedPermissions]
 
     def get(self, request):
         criteria = EvaluationCriterion.objects.all()
@@ -198,7 +198,7 @@ class CriteriaListCreateView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\تعديل معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
 
 class CriteriaUpdateView(APIView):
-    permission_classes = [IsAuthenticated, CanManageEvaluations]
+    permission_classes = [IsAuthenticated, sharedPermissions]
     def put(self, request, pk):
         criteria = get_object_or_404(EvaluationCriterion, pk=pk)
 
@@ -215,7 +215,7 @@ class CriteriaUpdateView(APIView):
 
 #\\\\\\\\\\\\\\\\\\\\\\\\ حذف معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
 class EvaluationCriteriaDeleteView(APIView):
-    permission_classes = [IsAuthenticated, CanManageEvaluations]
+    permission_classes = [IsAuthenticated, sharedPermissions]
     def delete(self, request, pk):
 
         criteria = get_object_or_404(
@@ -234,7 +234,7 @@ class EvaluationCriteriaDeleteView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\معاينة نموذج التقييم\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class CriteriaPreviewView(APIView):
-    permission_classes = [IsAuthenticated, CanManageEvaluations]
+    permission_classes = [IsAuthenticated, sharedPermissions]
     def get(self, request):
 
         criteria = EvaluationCriteriaService.get_active_criteria()
@@ -246,7 +246,7 @@ class CriteriaPreviewView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\نشر معايير التقييم\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class PublishCriteriaView(APIView):
     
-    permission_classes = [IsAuthenticated, CanManageEvaluations]
+    permission_classes = [IsAuthenticated, sharedPermissions]
     def post(self, request):
 
         EvaluationCriteriaService.publish()
@@ -277,7 +277,7 @@ class EvaluationResultsView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\عرض المقيمين مع ملاحظاتن\\\\\\\\\\\\\\\\\\\
 class EvaluationDetailsView(APIView):
     
-    permission_classes = [IsAuthenticated, CanManageEvaluations]
+    permission_classes = [IsAuthenticated, sharedPermissions]
     def get(self, request, idea_id):
 
         idea = get_object_or_404(Idea, id=idea_id)

@@ -6,7 +6,7 @@ from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
 from django.shortcuts import get_object_or_404
 from rest_framework.generics import UpdateAPIView
 from ideas.serializers import SeasonUpdateSerializer
-from core.permissions import CanManageSeason
+from core.permissions import CanManageSeason,sharedPermissions
 from .services.season_query_service import SeasonQueryService
 from .services.season_admin_service import SeasonAdminService
 from ideas.models import Season, SeasonStatus
@@ -26,7 +26,7 @@ from ideas.phases import SeasonPhase
 
 #\\\\\\\\\\\\\\انشاء موسم\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class CreateSeasonAPIView(APIView):
-    permission_classes = [IsAuthenticated, CanManageSeason]
+    permission_classes = [IsAuthenticated, sharedPermissions]
    
     def post(self, request):
 
@@ -43,7 +43,7 @@ class CreateSeasonAPIView(APIView):
 #\\\\\\Publish Season\\\\
 
 class PublishSeasonAPIView(APIView):
-    permission_classes = [IsAuthenticated, CanManageSeason]
+    permission_classes = [IsAuthenticated, sharedPermissions]
     def post(self, request, pk):
         season = get_object_or_404(Season, pk=pk)
 
@@ -57,7 +57,7 @@ class PublishSeasonAPIView(APIView):
 #\\\\\\\Close Season\\\\
 class CloseSubmissionAPIView(APIView):
     
-    permission_classes = [IsAuthenticated, CanManageSeason]
+    permission_classes = [IsAuthenticated, sharedPermissions]
     def post(self, request, season_id):
 
         season = get_object_or_404(Season, id=season_id)
@@ -70,7 +70,7 @@ class CloseSubmissionAPIView(APIView):
         
 #\\\\\List\\\\
 class SeasonListAPIView(APIView):
-    permission_classes = [IsAuthenticated, CanManageSeason]
+    permission_classes = [IsAuthenticated, sharedPermissions]
     def get(self, request):
 
         data = SeasonQueryService.list_seasons()
@@ -79,7 +79,7 @@ class SeasonListAPIView(APIView):
 #\\\\\Detail\\\\
 class SeasonDetailsAPIView(APIView):
 
-    permission_classes = [IsAuthenticated, CanManageSeason]
+    permission_classes = [IsAuthenticated, sharedPermissions]
 
     def get(self, request, pk):
         season = get_object_or_404(Season, pk=pk)

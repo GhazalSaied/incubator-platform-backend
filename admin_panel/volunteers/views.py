@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import  get_object_or_404
-from core.permissions import CanManageVolunteers
+from core.permissions import CanManageVolunteers,sharedPermissions
 from .services.management_service import TeamSuggestionService, VolunteerManagementService
 from django.core.exceptions import ValidationError
 from ideas.services.season_phase_service import SeasonPhaseService
@@ -34,7 +34,7 @@ class PendingVolunteersView(APIView):
 
 class VolunteerDetailsView(APIView):
   
-    permission_classes = [IsAuthenticated, CanManageVolunteers]
+    permission_classes = [IsAuthenticated, sharedPermissions]
     def get(self, request, volunteer_id):
 
         data = VolunteerQueryService.get_volunteer_details(
@@ -106,7 +106,7 @@ class ApprovedVolunteersView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\إرسال دعوة تقييم \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class SendInvitationToVolunteerView(APIView):
-    permission_classes = [IsAuthenticated, CanManageVolunteers]
+    permission_classes = [IsAuthenticated, sharedPermissions]
     def post(self, request, volunteer_id):
 
         try:
@@ -131,7 +131,7 @@ class SendInvitationToVolunteerView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض المقيمين\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class EvaluatorsView(APIView):
-    permission_classes = [IsAuthenticated, CanManageVolunteers]
+    permission_classes = [IsAuthenticated, sharedPermissions]
     def get(self, request):
 
         try:

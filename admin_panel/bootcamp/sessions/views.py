@@ -6,7 +6,7 @@ from rest_framework.generics import ListAPIView, ValidationError
 
 from bootcamp.models import BootcampSession
 from bootcamp.serializers import BootcampSessionsTableSerializer,BootcampSessionCreateSerializer
-from core.permissions import CanManageBootcamp, CanManageCandidateBootcamp
+from core.permissions import sharedPermissions, sharedBootcampPermissions
 from ideas.models import Season
 from admin_panel.bootcamp.sessions.services import create_bootcamp_session
 from ideas.services.season_phase_service import SeasonPhaseService
@@ -15,7 +15,7 @@ from ideas.services.season_phase_service import SeasonPhaseService
 class BootcampSessionCreateView(APIView):
     permission_classes = [
         IsAuthenticated,
-        CanManageCandidateBootcamp
+        sharedBootcampPermissions
     ]
 
     def post(
@@ -73,7 +73,7 @@ class BootcampSessionCreateView(APIView):
         
 #\\\\\\\عرض الجلسات \\\\\
 class BootcampSessionListView(ListAPIView):
-    permission_classes = [IsAuthenticated, CanManageBootcamp]
+    permission_classes = [IsAuthenticated, sharedPermissions]
     serializer_class = BootcampSessionsTableSerializer
     def get_queryset(self):
         phase_id = self.request.query_params.get("phase_id")

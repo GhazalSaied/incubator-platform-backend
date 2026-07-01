@@ -4,3 +4,4 @@ class SystemRoles:
     EVALUATOR = "EVALUATOR"
     IDEA_OWNER = "IDEA_OWNER"
     INCUBATOR = "INCUBATOR"
+    SECRETARY = "secretary"

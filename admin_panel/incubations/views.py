@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from admin_panel.seasons.services.season_admin_service import SeasonAdminService
-from core.permissions import CanManageIncubation, CanManageIncubationDecisions
+from core.permissions import CanManageIncubation, CanManageIncubationDecisions,sharedIncubationPermissions,sharedPermissions
 from ideas.serializers import IdeaDetailSerializer
 from .services import GraduationQueryService, GraduationService, IncubationDashboardService, IncubationNotesService, IncubationQueryService,IncubationAssignmentService,IncubationMeetingService
 from rest_framework.permissions import IsAuthenticated
@@ -16,7 +16,7 @@ from ideas.services.season_phase_service import SeasonPhaseService
 
 #\\\\\\\\\\\\\\\\\\عرض المشاريع المحتضنة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class IncubationProjectsView(APIView):
-    permission_classes = [IsAuthenticated,CanManageIncubation]
+    permission_classes = [IsAuthenticated,sharedPermissions]
     def get(self, request):
         data = IncubationDashboardService.get_projects()
         return Response(data)
@@ -26,7 +26,7 @@ class IncubationProjectsView(APIView):
 
 
 class IdeaMentorsView(APIView):
-    permission_classes = [IsAuthenticated,CanManageIncubation]
+    permission_classes = [IsAuthenticated,sharedPermissions]
 
     def get(self, request, idea_id):
 
@@ -124,7 +124,7 @@ class AssignMentorsView(APIView):
 
 class  ScheduleMeetingView(APIView):
 
-    permission_classes = [IsAuthenticated,CanManageIncubationDecisions]
+    permission_classes = [IsAuthenticated,sharedIncubationPermissions]
     def post(self, request, idea_id):
         idea = get_object_or_404(
             Idea,
