@@ -1,6 +1,8 @@
 from django.urls import path
 from .views import (  
-                    CurrentSeasonPhaseAPIView,MyIdeasAPIView,
+                    CurrentSeasonPhaseAPIView,
+                    CurrentSeasonAPIView,
+                    MyIdeasAPIView,
                     IdeaDashboardAPIView,
                     ExhibitionDashboardAPIView,
                     CreateExhibitionSubmissionAPIView,
@@ -22,6 +24,7 @@ from .views import (
 urlpatterns=[
 
     path("current-phase/",CurrentSeasonPhaseAPIView.as_view()),
+    path("current-active-season/",CurrentSeasonAPIView.as_view()),
     path("my/", MyIdeasAPIView.as_view()), 
     
     #================== TEAM =========================

@@ -159,6 +159,31 @@ class CurrentSeasonPhaseAPIView(APIView):
         })
 
 
+#
+
+#///////////////////////////////// CURRENT SEASON ////////////////////////////////////////
+
+class CurrentSeasonAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        season = SeasonPhaseService.get_current_season()
+
+        if not season :
+            return Response({
+                "season": None   
+            })
+
+        return Response({
+            "season": {
+                "season_id": season.id,
+                "season_name": season.name
+            }
+
+        })
+
+
+
 
 #////////////////////////////////// IDEA DASHBOARD VIEW  //////////////////////////
 

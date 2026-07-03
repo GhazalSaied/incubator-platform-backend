@@ -387,33 +387,3 @@ class ResetPasswordConfirmAPIView(APIView):
             status=status.HTTP_200_OK
         )
 
-#//////////////////////// CONTACT US ///////////////////////////
-
-class ContactUsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        inquiry_type = request.data.get("type")
-        message = request.data.get("message")
-
-        if not message:
-            return Response({"detail": "message required"}, status=400)
-
-        EventBus.emit(
-            "contact_message_sent",
-            payload={
-                "user": request.user,
-                "message": message,
-                "type": inquiry_type
-            },
-            actor=request.user
-        )
-
-        return Response({"detail": "تم إرسال الرسالة"})   
-        
-        
-        
-
-
-
-

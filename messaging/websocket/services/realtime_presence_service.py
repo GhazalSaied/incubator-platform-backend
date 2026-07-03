@@ -3,6 +3,12 @@ from django.utils import timezone
 
 from accounts.models import User
 
+from messaging.websocket.services.presence_broadcast_service import (
+    PresenceBroadcastService,
+)
+
+from messaging.models import ConversationParticipant
+
 
 class RealtimePresenceService:
 
@@ -21,6 +27,41 @@ class RealtimePresenceService:
         return (
             f"presence:user:{user_id}:conversations"
         )
+    
+
+    # ==========================================
+    # Presence Broadcast
+    # ==========================================
+    
+    @classmethod
+    def _broadcast_presence_to_active_conversations(
+        cls,
+        user_id,
+        is_online,
+    ):
+        """
+        Broadcast the user's latest presence
+        to every conversation he participates in.
+        """
+
+        conversation_ids = (
+            ConversationParticipant.objects.filter(
+                user_id=user_id,
+            )
+            .values_list(
+                "conversation_id",
+                flat=True,
+            )
+            .distinct()
+        )
+
+        for conversation_id in conversation_ids:
+
+            PresenceBroadcastService.broadcast_to_conversation(
+                user_id=user_id,
+                conversation_id=conversation_id,
+                is_online=is_online,
+            )
     
 
 
@@ -47,6 +88,11 @@ class RealtimePresenceService:
             timeout=cls.ONLINE_TTL,
         )
 
+        cls._broadcast_presence_to_active_conversations(
+            user_id=user_id,
+            is_online=True,
+        )
+
     @classmethod
     def refresh_user_presence(cls, user_id):
 
@@ -55,6 +101,17 @@ class RealtimePresenceService:
             True,
             timeout=cls.ONLINE_TTL,
         )
+
+        conversations = cache.get(
+            cls.conversations_key(user_id)
+        )
+
+        if conversations is not None:
+            cache.set(
+                cls.conversations_key(user_id),
+                conversations,
+                timeout=cls.ONLINE_TTL,
+            )
 
     @classmethod
     def disconnect_user(cls, user_id):
@@ -89,6 +146,11 @@ class RealtimePresenceService:
             id=user_id
         ).update(
             last_seen_at=timezone.now()
+        )
+
+        cls._broadcast_presence_to_active_conversations(
+            user_id=user_id,
+            is_online=False,
         )
 
     @classmethod
@@ -192,6 +254,13 @@ class RealtimePresenceService:
         conversations = cache.get(
             cls.conversations_key(user_id),
             [],
+        )
+
+        print(
+            "CACHE CHECK",
+            "USER=", user_id,
+            "CONVERSATIONS=", conversations,
+            "LOOKING_FOR=", conversation_id,
         )
 
         return (

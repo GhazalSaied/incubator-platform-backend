@@ -332,6 +332,7 @@ class PublicExhibitionDetailsSerializer(serializers.Serializer):
             or obj.data.get("صورة المشروع")
              or obj.data.get("لوغو المشروع ")
              or obj.data.get("صورة-المشروع") 
+             or obj.data.get("ارفع صورة لتكون واجهة المشروع") 
         )
         if not image:
             return None
@@ -354,6 +355,7 @@ class PublicExhibitionDetailsSerializer(serializers.Serializer):
             or obj.data.get("goal")
             or obj.data.get("اهداف المشروع")
             or obj.data.get("اهداف-المشروع")
+            or obj.data.get("هدف المشروع")
             or obj.data.get("الرؤية والهدف الاساسي")
             or obj.data.get("الرؤية-والهدف-الاساسي")
             or ""
@@ -439,16 +441,26 @@ class ProjectDetailsSerializer(serializers.ModelSerializer):
         ]
 
     def get_product_type(self, obj):
-        return obj.answers.get("product_type")
+        return (obj.answers.get("product_type")
+                or obj.answers.get("نوع المنتج") )
 
     def get_phone(self, obj):
-        return obj.answers.get("phone")
+        return (obj.answers.get("phone")
+                or obj.answers.get("رقم الهاتف")
+                or obj.answers.get("الرقم")
+                or obj.answers.get("رقم هاتف"))
 
     def get_specialization(self, obj):
-        return obj.answers.get("specialization")
+        return (obj.answers.get("specialization")
+                or obj.answers.get("الاختصاص"))
 
     def get_problem(self, obj):
-        return obj.answers.get("problem")
+        return (obj.answers.get("problem")
+                or obj.answers.get("المشكلة")
+                or obj.answers.get("مشكلة")
+                or obj.answers.get("المشكلة التي يحلها المشروع")
+                or obj.answers.get("المشكلة-التي-يحلها-المشروع"))
+                            
 
 
 #//////////////////////////// EXHIBITION  /////////////////////////////

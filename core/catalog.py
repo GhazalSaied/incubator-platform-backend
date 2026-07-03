@@ -16,7 +16,7 @@ EVENTS = {
     "workshop_registered": {
         "target": "VOLUNTEER",
         "payload": ["workshop", "actor"],
-        "action_url": "api/volunteers/workshop-details/{workshop.id}/"
+        "action_url": "/api/volunteers/workshop-details/{workshop.id}/"
     },
 
     # ===============================
@@ -26,7 +26,7 @@ EVENTS = {
     "consultation_requested": {
         "target": "VOLUNTEER",
         "payload": ["consultation", "actor"],
-        "action_url": "api/volunteers/consultations/"
+        "action_url": "/volunteers/consultations/"
     },
 
     "consultation_accepted": {
@@ -38,7 +38,7 @@ EVENTS = {
     "consultation_rejected": {
         "target": "IDEA_OWNER",
         "payload": ["consultation", "actor"],
-        "action_url": "/api/volunteers/consultants/"
+        "action_url": "/consultants"
     },
 
     # ===============================

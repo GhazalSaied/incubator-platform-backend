@@ -47,8 +47,6 @@ class NotificationSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
 
-        # HIDE ACTION URL FOR INFO NOTIFICATIONS
-        if not data["has_action"]:
-            data["action_url"] = None
+ 
 
         return data

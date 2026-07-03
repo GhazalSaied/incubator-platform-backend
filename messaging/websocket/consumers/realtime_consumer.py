@@ -20,6 +20,10 @@ from messaging.websocket.services.websocket_rate_limit_service import (
     WebsocketRateLimitService,
 )
 
+from messaging.websocket.services.presence_broadcast_service import (
+    PresenceBroadcastService,
+)
+
 
 class RealtimeConsumer(
     AsyncJsonWebsocketConsumer
@@ -74,6 +78,17 @@ class RealtimeConsumer(
         )
 
     @database_sync_to_async
+    def _sync_conversation_presence(
+        self,
+        conversation_id,
+    ):
+        PresenceBroadcastService.sync_presence_to_user(
+            requester_id=self.user.id,
+            conversation_id=conversation_id,
+        )
+
+
+    @database_sync_to_async
     def _unsubscribe_conversation_presence(
         self,
         conversation_id,
@@ -89,6 +104,13 @@ class RealtimeConsumer(
     # =====================================
 
     async def connect(self):
+
+        print("========== WS CONNECT ==========")
+        print(
+        "WS CONNECT USER",
+        self.scope["user"].id,
+        self.scope["user"].email,
+    )
 
         user = self.scope.get("user")
 
@@ -112,6 +134,16 @@ class RealtimeConsumer(
         await self._connect_user_presence()
 
         await self.accept()
+
+        await self.send_json({
+            "type": "TEST",
+            "message": "CONNECTED"
+        })
+
+        await self.send_json({
+            "type": "DEBUG_TEST",
+            "message": "FROM_CONSUMER"
+        })
 
     # =====================================
     # DISCONNECT
@@ -140,6 +172,10 @@ class RealtimeConsumer(
         content,
         **kwargs,
     ):
+        print(
+            "RAW WS MESSAGE:",
+            content
+        )
 
         event_type = content.get("type")
 
@@ -200,6 +236,10 @@ class RealtimeConsumer(
             conversation_id = content.get(
                 "conversation_id"
             )
+            print(
+                "SUBSCRIBE_CONVERSATION",
+                conversation_id
+            )
 
             if not conversation_id:
                 return
@@ -245,6 +285,10 @@ class RealtimeConsumer(
             )
 
             await self._subscribe_conversation_presence(
+                conversation_id
+            )
+
+            await self._sync_conversation_presence(
                 conversation_id
             )
 
@@ -349,6 +393,12 @@ class RealtimeConsumer(
         self,
         event,
     ):
+        
+        print(
+            "WS SEND CONVERSATION_UPDATED TO",
+            self.user.id,
+            event["data"].get("unread_count"),
+        )
 
         await self.send_json({
             "type": "CONVERSATION_UPDATED",
