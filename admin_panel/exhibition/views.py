@@ -139,7 +139,7 @@ class ExhibitionSubmissionDecisionAPIView(APIView):
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\سجل المعارض\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class ExhibitionHistoryAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanManageExhibition]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
 
         data = ExhibitionHistoryQueryService.list_exhibitions()

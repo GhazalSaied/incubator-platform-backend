@@ -114,9 +114,10 @@ class LoginAPIView(TokenObtainPairView):
         #  تحقق تغيير كلمة المرور
         if user.must_change_password:
             return Response({
-                "error": "يجب تغيير كلمة المرور",
-                "force_password_change": True
-            }, status=status.HTTP_403_FORBIDDEN)
+        **serializer.validated_data,
+        "roles": user.role_codes,
+        "force_password_change": True,
+    }, status=status.HTTP_200_OK)
 
         return Response({**serializer.validated_data, "roles": user.role_codes}, status=status.HTTP_200_OK)
 
