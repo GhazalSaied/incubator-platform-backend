@@ -123,7 +123,7 @@ class ExhibitionAdminService:
             required = q_data.get("required", False)
 
             # توليد key تلقائي
-            key = slugify(label, allow_unicode=True)
+            key = label
 
             # yes/no options auto
             options = q_data.get("options", [])

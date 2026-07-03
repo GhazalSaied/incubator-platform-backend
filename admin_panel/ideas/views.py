@@ -19,20 +19,29 @@ class IdeaDetailsAPIView(APIView):
         idea = Idea.objects.get(pk=pk)
 
         serializer = ProjectDetailsSerializer(idea)
-
-        team_members = idea.team_members.select_related("user").all()
-        team_data = [
-            {
-                "name": member.user.full_name,
-                "email": member.user.email
-            }
-            for member in team_members
-        ]
+      
         idea_id = idea.id
-        specialization = idea.answers.get("specialization", "غير محدد")
-        expected_duration = idea.answers.get("expected_duration")
+        specialization = idea.answers.get("الاختصاص", "غير محدد")
+        sector = idea.sector
+        expected_duration = idea.answers.get("المدة المتوقعة لانجاز المشروع")
+        team_names = idea.answers.get("اسماء اعضاء الفريق", [])
+        team_emails = idea.answers.get("ايميلات اعضاء الفريق", [])
+
+        if isinstance(team_names, str):
+            team_names = team_names.split(",")
+
+        if isinstance(team_emails, str):
+            team_emails = team_emails.split(",")
+
+        team_members = [
+            {"name": team_names[i] if i < len(team_names) else "",
+            "email": team_emails[i] if i < len(team_emails) else ""}
+            for i in range(max(len(team_names), len(team_emails)))
+        ]
+
         response_data = serializer.data
-        response_data["team_members"] = team_data
+        response_data["team_members"] = team_members
+        response_data["sector"] = sector
         response_data["specialization"] = specialization
         response_data["expected_duration"] = expected_duration or "غير محدد"
         response_data["idea_id"] = idea_id

@@ -194,7 +194,7 @@ class ExhibitionSubmissionQueryService:
     # ======================
     # goal from form
     # ======================
-            "project_goal": get_answer_by_label("اهداف-المشروع"),
+            "project_goal": get_answer_by_label("هدف-المشروع"),
                 
 
     # ======================
@@ -310,7 +310,7 @@ class ExhibitionHistoryQueryService:
                 "title": s.project.title,
                 "category": s.project.sector,
 
-                "owner_name": s.project.owner.full_name,
+                "owner": s.project.owner.full_name,
 
                 "team_members": [
                     member.user.full_name

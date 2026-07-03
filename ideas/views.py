@@ -317,10 +317,11 @@ class PublicExhibitionProjectsAPIView(APIView):
         projects = ExhibitionPublicService.get_projects(sector)
 
         serializer = PublicExhibitionListSerializer(
-            projects,
-            many=True
-        )
-
+    projects,
+    many=True,
+    context={"request": request},
+)
+    
         return Response(serializer.data)
 
 #//////////////////////////// EXHIBITION PROJECTS DETAILS /////////////////////////

@@ -13,7 +13,7 @@ def season_published_handler(payload):
     action_url = payload.get("action_url")
 
     users = User.objects.filter(
-        is_active=True
+        is_active=True,is_staff =False
     )
 
     for user in users.iterator():

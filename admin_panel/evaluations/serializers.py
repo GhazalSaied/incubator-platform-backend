@@ -8,6 +8,7 @@ from evaluations.models import EvaluationInvitation,EvaluationCriterion
 class AssignmentDashboardSerializer(serializers.ModelSerializer):
 
     evaluators = serializers.SerializerMethodField()
+    sector = serializers.SerializerMethodField()
 
     class Meta:
         model = Idea
@@ -18,7 +19,8 @@ class AssignmentDashboardSerializer(serializers.ModelSerializer):
             "target_audience",
             "evaluators",
         ]
-
+    def get_sector(self, obj):
+        return obj.sector or "غير محدد"
     def get_evaluators(self, obj):
 
         assignments = obj.evaluation_assignments.all()

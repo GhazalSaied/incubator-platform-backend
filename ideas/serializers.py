@@ -272,7 +272,7 @@ class ExhibitionSubmissionCreateSerializer(
 
 
 #///////////////////////// ExhibitionList > تاب المشاريع ////////////////////////
-
+from django.conf import settings
 
 class PublicExhibitionListSerializer(serializers.Serializer):
 
@@ -281,9 +281,32 @@ class PublicExhibitionListSerializer(serializers.Serializer):
     sector = serializers.CharField(source="project.sector")
     team_members = serializers.SerializerMethodField()
     owner = serializers.SerializerMethodField()
-
+    image = serializers.SerializerMethodField()
     def get_title(self, obj):
         return obj.data.get("title")
+    
+
+    def get_image(self, obj):
+        image = (obj.data.get("صورة المشروع")
+            or obj.data.get("project_image")
+            or obj.data.get("logo")
+            or obj.data.get("صورة المشروع")
+            or obj.data.get("لوغو المشروع ")
+            or obj.data.get("صورة-المشروع") 
+            or obj.data.get("ارفع صورة لتكون واجهة المشروع"))
+        
+
+        if not image:
+            return None
+
+        request = self.context.get("request")
+
+        image = f"{settings.MEDIA_URL}{image}"
+
+        if request:
+            return request.build_absolute_uri(image)
+
+        return image
 
     def get_team_members(self, obj):
         return [
@@ -330,9 +353,9 @@ class PublicExhibitionDetailsSerializer(serializers.Serializer):
             or obj.data.get("project_image")
             or obj.data.get("logo")
             or obj.data.get("صورة المشروع")
-             or obj.data.get("لوغو المشروع ")
-             or obj.data.get("صورة-المشروع") 
-             or obj.data.get("ارفع صورة لتكون واجهة المشروع") 
+            or obj.data.get("لوغو المشروع ")
+            or obj.data.get("صورة-المشروع") 
+            or obj.data.get("ارفع صورة لتكون واجهة المشروع") 
         )
         if not image:
             return None

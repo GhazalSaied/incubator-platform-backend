@@ -279,7 +279,8 @@ class FormBuilderService:
 
                 # CREATE
                 else:
-
+                    label = question_data.get("label")
+                    question_data["key"] = label
                     question = (
                         FormQuestion.objects.create(
                             form=form,
