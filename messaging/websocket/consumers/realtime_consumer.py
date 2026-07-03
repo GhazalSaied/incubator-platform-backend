@@ -20,6 +20,10 @@ from messaging.websocket.services.websocket_rate_limit_service import (
     WebsocketRateLimitService,
 )
 
+from messaging.websocket.services.presence_broadcast_service import (
+    PresenceBroadcastService,
+)
+
 
 class RealtimeConsumer(
     AsyncJsonWebsocketConsumer
@@ -72,6 +76,17 @@ class RealtimeConsumer(
             user_id=self.user.id,
             conversation_id=conversation_id,
         )
+
+    @database_sync_to_async
+    def _sync_conversation_presence(
+        self,
+        conversation_id,
+    ):
+        PresenceBroadcastService.sync_presence_to_user(
+            requester_id=self.user.id,
+            conversation_id=conversation_id,
+        )
+
 
     @database_sync_to_async
     def _unsubscribe_conversation_presence(
@@ -270,6 +285,10 @@ class RealtimeConsumer(
             )
 
             await self._subscribe_conversation_presence(
+                conversation_id
+            )
+
+            await self._sync_conversation_presence(
                 conversation_id
             )
 

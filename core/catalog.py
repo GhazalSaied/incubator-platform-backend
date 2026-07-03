@@ -38,7 +38,7 @@ EVENTS = {
     "consultation_rejected": {
         "target": "IDEA_OWNER",
         "payload": ["consultation", "actor"],
-        "action_url": "/api/volunteers/consultants/"
+        "action_url": "/consultants"
     },
 
     # ===============================

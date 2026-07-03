@@ -95,18 +95,27 @@ def get_private_conversation_between_users(
         get_conversation_queryset()
         .filter(
             type=ConversationType.PRIVATE,
-            participants__user=user_1,
-        )
-        .filter(
-            participants__user=user_2,
         )
         .annotate(
-            participants_count=Count("participants")
+            participants_count=Count(
+                "participants",
+                distinct=True,
+            ),
+            matched_users=Count(
+                "participants",
+                filter=Q(
+                    participants__user_id__in=[
+                        user_1.id,
+                        user_2.id,
+                    ]
+                ),
+                distinct=True,
+            ),
         )
         .filter(
-            participants_count=2
+            participants_count=2,
+            matched_users=2,
         )
-        .distinct()
         .first()
     )
 
@@ -132,4 +141,21 @@ def get_conversation_participant(
             user=user,
         )
         .first()
+    )
+
+
+# ==========================================
+# Conversation Participant Ids
+# ==========================================
+
+def get_conversation_participant_ids(
+    conversation_id,
+):
+    return list(
+        ConversationParticipant.objects.filter(
+            conversation_id=conversation_id
+        ).values_list(
+            "user_id",
+            flat=True,
+        )
     )

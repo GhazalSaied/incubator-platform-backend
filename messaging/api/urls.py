@@ -11,7 +11,12 @@ from messaging.api.views import (
     MarkConversationAsReadAPIView,
     UnreadMessagesCountAPIView,
     GlobalUnreadMessagesCountAPIView,
+    
 )
+from messaging.api.views.contact_views import (
+    ContactUsAPIView,
+)
+
 
 urlpatterns = [
 
@@ -62,5 +67,14 @@ urlpatterns = [
     "messages/unread-count/",
     GlobalUnreadMessagesCountAPIView.as_view(),
 ),
-]
 
+
+    # =====================================
+    # Contact Us
+    # =====================================
+
+    path(
+    "contact-us/",
+    ContactUsAPIView.as_view(),
+),
+]

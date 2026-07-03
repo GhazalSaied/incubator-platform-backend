@@ -421,7 +421,7 @@ TEMPLATES = {
         "message": lambda data: (
             f"تم رفض ورشة عملك بعنوان "
             f"({data.title}). "
-            f"يرجى مراجعة سبب الرفض: "
+            f" سبب الرفض: "
             f"{data.rejection_reason}"
         )
     },
