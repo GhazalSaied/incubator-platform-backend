@@ -709,6 +709,12 @@ class CreateWorkshopAPIView(APIView):
         )
 
         print("IMAGE SAVED ===>", workshop.image)
+        EventBus.emit(
+            "workshop_submitted",
+            workshop=workshop,
+            
+            actor=request.user
+        )
 
         return Response({
             "detail": "تم إنشاء الورشة"
