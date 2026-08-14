@@ -26,19 +26,19 @@ EVENTS = {
     "consultation_requested": {
         "target": "VOLUNTEER",
         "payload": ["consultation", "actor"],
-        "action_url": "/volunteers/consultations/"
+        "action_url": "/api/volunteers/consultations/"
     },
 
     "consultation_accepted": {
         "target": "IDEA_OWNER",
         "payload": ["consultation", "actor"],
-        "action_url": None
+        "action_url": "/api/messaging/conversations/start/"
     },
 
     "consultation_rejected": {
         "target": "IDEA_OWNER",
         "payload": ["consultation", "actor"],
-        "action_url": "/consultants"
+        "action_url": "/api/volunteers/consultants/<str:primary_skill>/"
     },
 
     # ===============================
@@ -54,14 +54,14 @@ EVENTS = {
     "volunteer_joined_team": {
         "target": "IDEA_OWNER",
         "payload": ["idea", "volunteer"],
-        "action_url": "/api/ideas/team-dashboard/"
+        "action_url": "/api/ideas/team/"
     },
 
 
     "join_request_accepted": {
     "target": "IDEA_OWNER",
     "payload": ["join_request", "actor"],
-    "action_url": "/api/ideas/team-dashboard/"
+    "action_url": "/api/ideas/team/"
     },
 
     "join_request_rejected": {
@@ -72,7 +72,7 @@ EVENTS = {
     "team_member_added": {
         "target": "INCUBATOR",
         "payload": ["idea", "volunteer"],
-        "action_url": "/api/ideas/team-dashboard/"
+        "action_url": "/api/ideas/team/"
     },
 
     # ===============================
@@ -268,7 +268,7 @@ EVENTS = {
     "idea_rejected" : {
         "target": "IDEA_OWNER",
         "payload": ["idea"],
-        "action_url": ""},
+        "action_url": "/api/evaluations/ideas/<int:idea_id>/notes/"},
     
    
     "season_phase_changed" : {
@@ -339,7 +339,7 @@ EVENTS = {
     "evaluation_invitation_sent": {
         "target": "VOLUNTEER",
         "payload": ["invitation"],
-        "action_url": ""
+        "action_url": "/api/evaluations/invitation-details/<int:invitation_id>/"
     },
     
     "volunteers_suggested": {
