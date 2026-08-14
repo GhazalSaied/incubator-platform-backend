@@ -38,10 +38,7 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     def get_has_action(self, obj):
 
-        return (
-            obj.type != Notification.INFO
-            and bool(obj.action_url)
-        )
+        return bool(obj.action_url)
     
 
     def to_representation(self, instance):
