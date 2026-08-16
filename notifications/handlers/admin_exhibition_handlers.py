@@ -60,7 +60,7 @@ def handle_exhibition_form_published(payload):
             user=idea.owner,
             event_name="exhibition_form_published",
             obj=idea,
-            action_url="ideas/exhibition/dashboard/",
+            action_url="/api/ideas/exhibition/dashboard/",
             target_role= "INCUBATOR"
         )
 EventBus.register("exhibition_form_published",handle_exhibition_form_published )

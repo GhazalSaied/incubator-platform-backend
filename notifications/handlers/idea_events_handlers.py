@@ -31,7 +31,6 @@ def idea_status_changed_handler(payload):
         )
 
 
-EventBus.register("idea_status_changed", idea_status_changed_handler)
 
 
 

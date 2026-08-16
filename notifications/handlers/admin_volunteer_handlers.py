@@ -127,6 +127,7 @@ def workshop_rejected_handler(payload):
             "rejection_reason": rejection_reason
         },
         target_role="VOLUNTEER",
+        action_url=f"/api/volunteers/workshop-details/{workshop.id}/",
         related_object=workshop
     )
 

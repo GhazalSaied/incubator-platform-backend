@@ -17,29 +17,40 @@ def consultation_requested_handler(payload):
     )
 
 def consultation_accepted_handler(payload):
+
     consultation = payload.get("consultation")
-    if not consultation:
+    conversation = payload.get("conversation")
+
+    if not consultation or not conversation:
         return
+
     NotificationService.send(
         user=consultation.requester,
         event_name="consultation_accepted",
         obj=consultation,
         actor=payload.get("actor"),
-        target_role="INCUBATOR" )
-
+        action_type="START_CHAT",
+        action_url=f"/chat/{conversation.id}",
+        target_role="INCUBATOR",
+    )
 
 def consultation_rejected_handler(payload):
     consultation = payload.get("consultation")
+
     if not consultation:
         return
+
+    primary_skill = consultation.required_skill
+
     NotificationService.send(
         user=consultation.requester,
         event_name="consultation_rejected",
         obj=consultation,
         actor=payload.get("actor"),
-        action_url="/api/volunteers/consultants/",
-        target_role="INCUBATOR" )
-
+        action_type="VIEW_CONSULTANTS",
+        action_url=f"/api/volunteers/consultants/{primary_skill}/",
+        target_role="INCUBATOR",
+    )
 EventBus.register("consultation_requested", consultation_requested_handler)
 EventBus.register("consultation_accepted", consultation_accepted_handler)
 EventBus.register("consultation_rejected", consultation_rejected_handler)

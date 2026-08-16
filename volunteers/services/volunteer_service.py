@@ -11,7 +11,6 @@ from volunteers.models import (
 )
 from django.utils import timezone
 from core.events import EventBus
-from messaging.models import Conversation
 from notifications.services.notification_service import NotificationService
 from ideas.models import TeamMember 
 from ideas.services.team_service import TeamService
@@ -19,9 +18,10 @@ from ideas.models import TeamStatus
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 from django.db.models import Prefetch
+from messaging.models import Conversation, ConversationParticipant
+from messaging.domain.constants.messaging_constants import ConversationType
 
-
-
+from messaging.domain.services.conversation_service import ConversationService
 class VolunteerService:
 
 #//////////////////// GET PROFILE /////////////////
@@ -93,25 +93,19 @@ class VolunteerService:
 
             consultation.status = ConsultationRequest.ACCEPTED
 
-            #  إنشاء محادثة
-            #conversation = Conversation.objects.filter(
-            #    participants=user
-            #).filter(
-            #   participants=consultation.requester
-            #).first()
+        # إنشاء أو جلب المحادثة بين المستشار وصاحب الطلب
+            conversation = ConversationService.start_private_conversation(
+            creator=user,
+            target_user=consultation.requester,
+        )
 
-            #if not conversation:
-            #   conversation = Conversation.objects.create()
-             #   conversation.participants.add(user, consultation.requester)
-            
-
+        # إرسال الإشعار مع المحادثة
             EventBus.emit(
-                "consultation_accepted",
-                consultation=consultation,
-                actor=user,
-                
-            )
-
+            "consultation_accepted",
+            consultation=consultation,
+            actor=user,
+            conversation=conversation,
+        )
         else:
             consultation.status = ConsultationRequest.REJECTED
             

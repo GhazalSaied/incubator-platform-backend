@@ -60,7 +60,7 @@ def join_request_accepted_handler(payload):
         event_name="join_request_accepted",
         obj=join_request,
         actor=payload.get("actor"),
-        action_url="/api/ideas/team-dashboard/",
+        action_url="/api/ideas/team/",
         target_role="INCUBATOR" )
 
 

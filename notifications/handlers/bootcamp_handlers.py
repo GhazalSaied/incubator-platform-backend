@@ -201,30 +201,42 @@ EventBus.register("bootcamp_sessions_ended", handle_bootcamp_ended)
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
-
-
 def bootcamp_absence_request_submitted_handler(payload):
+
+    print("🔥🔥 ABSENCE HANDLER STARTED")
 
     absence_request = payload.get("absence_request")
     actor = payload.get("actor")
 
+    print("ABSENCE REQUEST:", absence_request)
+    print("ACTOR:", actor)
+
     if not absence_request:
+        print("❌ NO ABSENCE REQUEST")
         return
 
-    admins = User.objects.filter(is_staff=True, is_active=True)
+    season_id = absence_request.session.phase.season.id
+
+    print("✅ SEASON ID:", season_id)
+
+    admins = User.objects.filter(
+        is_staff=True,
+        is_active=True
+    )
+
+    print("👑 ADMINS:", list(admins.values_list("id", "email")))
 
     for admin in admins.iterator():
+
+        print("📨 SENDING TO ADMIN:", admin.id)
 
         NotificationService.send(
             user=admin,
             event_name="bootcamp_absence_request_submitted",
             obj=absence_request,
             actor=actor,
-            action_url="/api/admin/bootcamp/absence/"
+            action_url=f"/admin/camp-management/{season_id}",
         )
 
-
-EventBus.register(
-    "bootcamp_absence_request_submitted",
-    bootcamp_absence_request_submitted_handler
-)
+        print("✅ NOTIFICATION SENT TO:", admin.id)
+EventBus.register("bootcamp_absence_request_submitted", bootcamp_absence_request_submitted_handler)

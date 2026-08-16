@@ -20,6 +20,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             "type",
             "has_action",
             "action_url",
+            "action_type",
             "target_role",
             "is_read",
             "formatted_created_at",
@@ -27,19 +28,14 @@ class NotificationSerializer(serializers.ModelSerializer):
         ]
 
     def get_time_since(self, obj):
-       return timesince(obj.created_at, now())
-    
-    
+        return timesince(obj.created_at, now())
+
     def get_formatted_created_at(self, obj):
         local_date = localtime(obj.created_at)
-
         return local_date.strftime("%A %I:%M %p")
-    
 
     def get_has_action(self, obj):
-
-        return bool(obj.action_url)
-    
+        return bool(obj.action_url and obj.action_url.strip())
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

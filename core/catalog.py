@@ -36,10 +36,10 @@ EVENTS = {
     },
 
     "consultation_rejected": {
-        "target": "IDEA_OWNER",
-        "payload": ["consultation", "actor"],
-        "action_url": "/api/volunteers/consultants/<str:primary_skill>/"
-    },
+    "target": "INCUBATOR",
+    "payload": ["consultation", "actor"],
+    "action_url": None,
+},
 
     # ===============================
     # TEAM JOIN REQUESTS
@@ -140,7 +140,7 @@ EVENTS = {
     "bootcamp_absence_request_submitted": {
     "target": "ADMIN",
     "payload": ["absence_request"],
-    "action_url":"/api/admin/bootcamp/absence/"
+    "action_url":None
     },
 
     # ===============================
@@ -366,13 +366,13 @@ EVENTS = {
     
 
     "workshop_rejected": {
-        "target": "VOLUNTEER",
-        "payload": [
-            "workshop",
-            "rejection_reason"
-        ],
-        "action_url": "api/volunteers/workshop-details/{workshop.id}"
-    },
+    "target": "VOLUNTEER",
+    "payload": [
+        "workshop",
+        "rejection_reason"
+    ],
+    "action_url": None
+},
     
 # ==============================
 # ADMIN BROADCAST

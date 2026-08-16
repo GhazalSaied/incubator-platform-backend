@@ -65,6 +65,7 @@ def evaluation_accepted_handler(payload, actor=None):
         obj=idea,
         extra={"message": message},
         actor=actor,
+        
         target_role="IDEA_OWNER"
     )
     
@@ -76,14 +77,14 @@ EventBus.register("idea_accepted", evaluation_accepted_handler)
 def evaluation_rejected_handler(payload, actor=None):
 
     idea = payload.get("idea")
-    action_url = payload.get("action_url")
+    
 
     NotificationService.send(
         user=idea.owner,
         event_name="idea_rejected",
         obj=idea,
         actor=actor,
-        action_url=action_url,
+        action_url=f"/api/evaluations/ideas/{idea.id}/notes/",
         target_role="IDEA_OWNER"
     )
 
