@@ -98,14 +98,17 @@ class OwnerNextBootcampSessionAPIView(APIView):
 
 #////////////////////////// ABSENCE REQUEST /////////////////////////////
 
-
 class CreateBootcampAbsenceRequestAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanSubmitBootcampAbsence]
+    permission_classes = [
+        IsAuthenticated,
+        CanSubmitBootcampAbsence
+    ]
 
     def post(self, request):
         serializer = BootcampAbsenceRequestCreateSerializer(
             data=request.data
         )
+
         serializer.is_valid(raise_exception=True)
 
         try:
@@ -113,10 +116,20 @@ class CreateBootcampAbsenceRequestAPIView(APIView):
                 user=request.user,
                 reason=serializer.validated_data["reason"],
             )
+
         except ValidationError as e:
+            detail = e.detail
+
+            if isinstance(detail, list):
+                message = detail[0]
+            elif isinstance(detail, dict):
+                message = next(iter(detail.values()))[0]
+            else:
+                message = str(detail)
+
             return Response(
                 {
-                    "message": str(e)
+                    "message": message
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -127,8 +140,6 @@ class CreateBootcampAbsenceRequestAPIView(APIView):
             },
             status=status.HTTP_201_CREATED
         )
-
-
 
 #//////////////////////////// VOLUNTEER BOOTCAMP SESSIONS > TRAINER ////////////////////
 

@@ -219,10 +219,28 @@ class SuggestVolunteersAPIView(APIView):
 
         volunteer_ids = request.data.get("volunteer_ids", [])
 
-        data = TeamSuggestionService.suggest_volunteers(
-            team_request_id=team_request_id,
-            volunteer_ids=volunteer_ids,
-            actor=request.user
-        )
+        try:
+            data = TeamSuggestionService.suggest_volunteers(
+                team_request_id=team_request_id,
+                volunteer_ids=volunteer_ids,
+                actor=request.user
+            )
 
-        return Response(data)
+        except ValidationError as e:
+
+            detail = e.detail
+
+            if isinstance(detail, list):
+                detail = detail[0]
+
+            return Response(
+                {
+                    "error": str(detail)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            data,
+            status=status.HTTP_200_OK
+        )

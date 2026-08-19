@@ -9,51 +9,55 @@ from volunteers.models import Workshop
 from accounts.role_service import RoleService
 User = get_user_model()
 
-
 class AdminUserService:
 
     @staticmethod
     @transaction.atomic
     def create_user(
-    *,
-    full_name,
-    email,
-    password,
-    role_code=None,
-    created_by
-):
+        *,
+        full_name,
+        email,
+        password,
+        role_code=None,
+        created_by
+    ):
 
-    # ✅ إنشاء المستخدم أولاً
+        email = email.strip().lower()
+        full_name = full_name.strip()
+
+        # التحقق من البريد قبل إنشاء المستخدم
+        if User.objects.filter(email=email).exists():
+            raise ValidationError({
+                "email": "البريد الإلكتروني مستخدم مسبقاً"
+            })
+
         user = User.objects.create_user(
-        email=email.strip().lower(),
-        password=password,
-        full_name=full_name.strip()
-    )
+            email=email,
+            password=password,
+            full_name=full_name
+        )
 
         user.must_change_password = True
         user.save(update_fields=["must_change_password"])
 
-    # ✅ إذا تم اختيار دور فقط
+        # إذا تم اختيار دور
         if role_code:
             role = Role.objects.filter(
-            code=role_code
-        ).first()
+                code=role_code
+            ).first()
 
             if not role:
-               raise ValidationError(
-                "الدور غير موجود"
-            )
+                raise ValidationError({
+                    "role_code": "الدور المحدد غير موجود"
+                })
 
             RoleService.assign_role(
-            user=user,
-            role_code=role_code,
-            assigned_by=created_by
-        )
+                user=user,
+                role_code=role_code,
+                assigned_by=created_by
+            )
 
         return user
-    
-    
-
     @staticmethod
     @transaction.atomic
     def update_user_roles(

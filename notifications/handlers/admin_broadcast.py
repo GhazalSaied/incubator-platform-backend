@@ -9,7 +9,6 @@ def admin_broadcast_notification_handler(payload):
 
     message = payload["message"]
 
-    action_url = payload.get("action_url")
 
     for user in users:
 
@@ -22,7 +21,7 @@ def admin_broadcast_notification_handler(payload):
                 "message": message
             },
 
-            action_url=action_url,
+            
 
             notification_type="INFO",
 

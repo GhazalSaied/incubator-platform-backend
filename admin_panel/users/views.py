@@ -24,9 +24,8 @@ class AdminUserListView(APIView):
         return Response(serializer.data)
  #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\اضافة مستخدم جديد مع دور\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   
 
-
 class CreateUserView(APIView):
-    permission_classes = [IsAuthenticated,CanManageUsers]
+    permission_classes = [IsAuthenticated, CanManageUsers]
 
     def post(self, request):
         serializer = CreateUserSerializer(data=request.data)
@@ -36,17 +35,20 @@ class CreateUserView(APIView):
             full_name=serializer.validated_data["full_name"],
             email=serializer.validated_data["email"],
             password=serializer.validated_data["password"],
-            role_code=serializer.validated_data["role_code"],
+            role_code=serializer.validated_data.get("role_code"),
             created_by=request.user
         )
 
-        return Response({
-            "message": "تم إنشاء المستخدم بنجاح",
-            "user": {
-                "id": user.id,
-                "email": user.email
-            }
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "message": "تم إنشاء المستخدم بنجاح",
+                "user": {
+                    "id": user.id,
+                    "email": user.email
+                }
+            },
+            status=status.HTTP_201_CREATED
+        )
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض الادوار\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class RoleListAPIView(APIView):

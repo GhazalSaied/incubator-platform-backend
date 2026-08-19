@@ -15,10 +15,14 @@ from .services.query_service import ExhibitionHistoryQueryService, ExhibitionQue
 
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\انشاء معرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-
 class CreateExhibitionView(APIView):
-    permission_classes = [IsAuthenticated,CanDecideExhibition]
+    permission_classes = [
+        IsAuthenticated,
+        CanDecideExhibition
+    ]
+
     def post(self, request):
+
         date = request.data.get("date")
         time = request.data.get("time")
 
@@ -27,15 +31,28 @@ class CreateExhibitionView(APIView):
                 date=date,
                 time=time
             )
-        except ValidationError as e:
-            return Response({"error": e.message}, status=400)
 
-        return Response({
-            "message": "تم إنشاء المعرض بنجاح",
-            "datetime": season.exhibition_datetime
-        })
-        
-        
+        except ValidationError as e:
+
+            detail = e.detail
+
+            if isinstance(detail, list):
+                detail = detail[0]
+
+            return Response(
+                {
+                    "detail": str(detail)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            {
+                "message": "تم إنشاء المعرض بنجاح",
+                "datetime": season.exhibition_datetime
+            },
+            status=status.HTTP_200_OK
+        )
 #\\\\\\\\\\\\\\\\\\\\\\\\\انشاء بطاقة المعرض \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 class ExhibitionFormBuilderView(APIView):
@@ -115,26 +132,36 @@ class ExhibitionSubmissionDetailsAPIView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\قبول او رفض الطلب \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class ExhibitionSubmissionDecisionAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanDecideExhibition]
+    permission_classes = [IsAuthenticated, CanDecideExhibition]
 
     def post(self, request, submission_id):
         decision = request.data.get("decision")
         message = request.data.get("message")
 
-        submission = (
-            ExhibitionSubmissionManagementService
-            .process_decision(
-                submission_id=submission_id,
-                decision=decision,
-                admin_message=message,
-                actor=request.user
+        try:
+            submission = (
+                ExhibitionSubmissionManagementService
+                .process_decision(
+                    submission_id=submission_id,
+                    decision=decision,
+                    admin_message=message,
+                    actor=request.user
+                )
             )
-        )
 
-        return Response({
-            "detail": "تم اتخاذ القرار بنجاح",
-            "status": submission.status
-        })
+        except ValidationError as e:
+            return Response(
+                {"error": e.message},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            {
+                "detail": "تم اتخاذ القرار بنجاح",
+                "status": submission.status
+            },
+            status=status.HTTP_200_OK
+        )
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\سجل المعارض\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 

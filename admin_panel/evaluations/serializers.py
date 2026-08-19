@@ -78,7 +78,12 @@ class SeasonEvaluatorSerializer(serializers.ModelSerializer):
 class AssignEvaluatorsSerializer(serializers.Serializer):
 
     evaluators_ids = serializers.ListField(
-        child=serializers.IntegerField()
+        child=serializers.IntegerField(),
+        allow_empty=False,
+        error_messages={
+            "required": "يجب اختيار مقيم واحد على الأقل",
+            "empty": "يجب اختيار مقيم واحد على الأقل",
+        }
     )
     
 #\\\\\\\\\\\\\\\\\\\\\\\\MeetingDashboardSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -128,9 +133,19 @@ class EvaluatorInfoSerializer(serializers.Serializer):
     
 #\\\\\\\\\\\\\\\\\\\SetMeetingSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class SetMeetingSerializer(serializers.Serializer):
-    date = serializers.DateField()
-    time = serializers.TimeField()
-    
+    date = serializers.DateField(
+        error_messages={
+            "required": "الرجاء تحديد تاريخ التقييم",
+            "invalid": "تاريخ التقييم غير صالح",
+        }
+    )
+
+    time = serializers.TimeField(
+        error_messages={
+            "required": "الرجاء تحديد وقت التقييم",
+            "invalid": "وقت التقييم غير صالح",
+        }
+    )
     
 #\\\\\\\\\\\\\\EvaluationCriteriaSerializer\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class EvaluationCriteriaSerializer(serializers.ModelSerializer):

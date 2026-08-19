@@ -10,6 +10,12 @@ from bootcamp.services.bootcamp_owner_service import BootcampOwnerService
 
 class BootcampSessionSerializer(serializers.ModelSerializer):
     trainer_name = serializers.SerializerMethodField()
+ 
+
+from django.utils import timezone
+from rest_framework import serializers
+
+
 class BootcampSessionCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -24,6 +30,38 @@ class BootcampSessionCreateSerializer(serializers.ModelSerializer):
             "end_time",
         ]
 
+    def validate(self, data):
+        date = data.get("date")
+        start_time = data.get("start_time")
+        end_time = data.get("end_time")
+
+        now = timezone.localtime()
+
+        # منع تاريخ في الماضي
+        if date and date < now.date():
+            raise serializers.ValidationError({
+                "date": "لا يمكن إضافة جلسة بتاريخ سابق"
+            })
+
+        # منع وقت سابق إذا كانت الجلسة اليوم
+        if (
+            date
+            and start_time
+            and date == now.date()
+            and start_time <= now.time()
+        ):
+            raise serializers.ValidationError({
+                "start_time": "لا يمكن إضافة جلسة بوقت بدء سابق للوقت الحالي"
+            })
+
+        # النهاية يجب أن تكون بعد البداية
+        if start_time and end_time:
+            if end_time <= start_time:
+                raise serializers.ValidationError({
+                    "end_time": "يجب أن يكون وقت انتهاء الجلسة بعد وقت البدء"
+                })
+
+        return data
 #/////////////////////////// BOOTCAMP SESSION ////////////////////////
 
 
