@@ -4,7 +4,8 @@ from .models import (VolunteerProfile,
                      VolunteerAvailability , 
                      ConsultationRequest,
                      Workshop,
-                     JoinRequest
+                     JoinRequest,
+                     VolunteerVacation
                      )
 from ideas.services.idea_service import IdeaService
 from ideas.models import  TeamStatus ,SuggestedVolunteer
@@ -50,13 +51,17 @@ class VolunteerAvailabilityCreateUpdateSerializer(serializers.ModelSerializer):
         fields = ["id", "day", "start_time", "end_time"]
 
     def validate(self, data):
+
         if data["start_time"] >= data["end_time"]:
             raise serializers.ValidationError(
                 "وقت البداية يجب أن يكون قبل وقت النهاية"
             )
-    
 
-        volunteer = self.instance.volunteer if self.instance else self.context["request"].user.volunteer_profile
+        volunteer = (
+            self.instance.volunteer
+            if self.instance
+            else self.context["request"].user.volunteer_profile
+        )
 
         overlaps = VolunteerAvailability.objects.filter(
             volunteer=volunteer,
@@ -69,7 +74,33 @@ class VolunteerAvailabilityCreateUpdateSerializer(serializers.ModelSerializer):
             overlaps = overlaps.exclude(id=self.instance.id)
 
         if overlaps.exists():
-            raise serializers.ValidationError("يوجد تداخل في الأوقات")
+            raise serializers.ValidationError(
+                "يوجد تداخل في الأوقات"
+            )
+
+        days = [
+            "SUNDAY",
+            "MONDAY",
+            "TUESDAY",
+            "WEDNESDAY",
+            "THURSDAY",
+            "FRIDAY",
+            "SATURDAY",
+        ]
+
+        current_day = days.index(data["day"])
+
+        vacations = volunteer.vacations.all()
+
+        for vacation in vacations:
+
+            start = days.index(vacation.start_day)
+            end = days.index(vacation.end_day)
+
+            if start <= current_day <= end:
+                raise serializers.ValidationError(
+                    "لا يمكن إضافة توفر في يوم إجازة."
+                )
 
         return data
     
@@ -371,3 +402,62 @@ class ConsultantListSerializer(serializers.ModelSerializer):
             "primary_skills",
             "availability",
         ]
+
+
+
+
+
+class VolunteerVacationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VolunteerVacation
+        fields = [
+            "id",
+            "start_day",
+            "end_day",
+        ]
+
+    def validate(self, data):
+
+        
+
+        days = [
+            "SUNDAY",
+            "MONDAY",
+            "TUESDAY",
+            "WEDNESDAY",
+            "THURSDAY",
+            "FRIDAY",
+            "SATURDAY",
+        ]
+
+        start = days.index(data["start_day"])
+        end = days.index(data["end_day"])
+
+        if start > end:
+            raise serializers.ValidationError(
+                "يجب أن يكون يوم البداية قبل أو يساوي يوم النهاية"
+            )
+
+        volunteer = self.context["request"].user.volunteer_profile
+
+
+        selected_days = days[start:end + 1]
+
+        print("Selected:", selected_days)
+
+        qs = VolunteerAvailability.objects.filter(
+            volunteer=volunteer,
+            day__in=selected_days
+        )
+
+        print("Count:", qs.count())
+
+        for a in qs:
+            print(a.day)
+
+        if qs.exists():
+            raise serializers.ValidationError(
+                "لا يمكن إضافة الإجازة لأنها تتداخل مع أوقات التوفر."
+            )
+
+        return data
