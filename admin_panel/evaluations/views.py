@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from core.permissions import CanManageEvaluationDecisions, CanManageEvaluations,sharedEvaluationPermissions,sharedPermissions
+from rest_framework.exceptions import ValidationError
 
 from .services.evaluation_results_service import EvaluationDecisionService, EvaluationDetailsService, EvaluationResultsService
 from .services.EvaluationCriteriaService import EvaluationCriteriaService
@@ -76,35 +77,60 @@ class AvailableEvaluatorsView(APIView):
     
     
 #\\\\\\\\\\\\\\\\\\\تعيين مقيمين على فكرة معينة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-
 class AssignEvaluatorsToIdeaView(APIView):
-    
-    permission_classes = [IsAuthenticated, CanManageEvaluationDecisions]
+
+    permission_classes = [
+        IsAuthenticated,
+        CanManageEvaluationDecisions
+    ]
+
     def post(self, request, idea_id):
-        
+
         try:
             idea = Idea.objects.get(id=idea_id)
+
         except Idea.DoesNotExist:
-            return Response({"error": "الفكرة غير موجودة"}, status=404)
-        serializer = AssignEvaluatorsSerializer(data=request.data)
+            return Response(
+                {"error": "الفكرة غير موجودة"},
+                status=404
+            )
+
+        serializer = AssignEvaluatorsSerializer(
+            data=request.data
+        )
 
         serializer.is_valid(raise_exception=True)
 
-        evaluators_ids = serializer.validated_data["evaluators_ids"]
+        evaluators_ids = serializer.validated_data[
+            "evaluators_ids"
+        ]
 
         season = SeasonPhaseService.get_current_season()
 
-        EvaluationAssignmentService.assign_evaluators_to_idea(
-            idea=idea,
-            evaluators_ids=evaluators_ids,
-            season=season
-        )
+        try:
+            result = EvaluationAssignmentService.assign_evaluators_to_idea(
+                idea=idea,
+                evaluators_ids=evaluators_ids,
+                season=season
+            )
+
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=400
+            )
+
+        assigned_count = len(result["assigned"])
+        skipped = result["skipped"]
 
         return Response(
-            {"message": "Evaluators assigned successfully"},
+            {
+                "message": "تم تعيين المقيمين بنجاح",
+                "assigned_count": assigned_count,
+                "skipped": skipped,
+            },
             status=status.HTTP_200_OK
         )
-        
         
 #\\\\\\\\\\\\\\\\\\\\\\عرض جدول المشاريع لتحديد موعد اللجنة \\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class MeetingDashboardAPIView(APIView):
@@ -152,25 +178,61 @@ class IdeaEvaluatorsAPIView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\\\تحديد موعد اللجنة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class SetMeetingAPIView(APIView):
-    permission_classes = [IsAuthenticated, sharedEvaluationPermissions]    
-    def post(self, request,idea_id):
+    permission_classes = [
+        IsAuthenticated,
+        sharedEvaluationPermissions
+    ]
 
-        serializer = SetMeetingSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        date = serializer.validated_data["date"]
-        time = serializer.validated_data["time"]
-        
-        idea = get_object_or_404(Idea, id=idea_id)
+    def post(self, request, idea_id):
 
-
-        schedule_meeting(
-            idea=idea,
-            date=date,
-            time=time
+        serializer = SetMeetingSerializer(
+            data=request.data
         )
 
-        return Response({"message": "Meeting scheduled"})
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "error": serializer.errors
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
+        date = serializer.validated_data["date"]
+        time = serializer.validated_data["time"]
+
+        idea = get_object_or_404(
+            Idea,
+            id=idea_id
+        )
+
+        try:
+            schedule_meeting(
+                idea=idea,
+                date=date,
+                time=time,
+                actor=request.user
+            )
+
+        except ValidationError as e:
+
+            detail = e.detail
+
+            if isinstance(detail, list):
+                detail = detail[0]
+
+            return Response(
+                {
+                    "error": str(detail)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            {
+                "message": "تم تحديد موعد التقييم بنجاح"
+            },
+            status=status.HTTP_200_OK
+        )
 #\\\\\\\\\\\\\\\\\\\\\\\انشاء معيار تقييم\\\\\\\\\\\\\\\\\\\\\\
 class CriteriaListCreateView(APIView):
     permission_classes = [IsAuthenticated, sharedPermissions]
@@ -291,30 +353,75 @@ class EvaluationDetailsView(APIView):
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\قبول فكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class AcceptIdeaView(APIView):
-    permission_classes = [IsAuthenticated, CanManageEvaluationDecisions]
+    permission_classes = [
+        IsAuthenticated,
+        CanManageEvaluationDecisions
+    ]
 
     def post(self, request, idea_id):
 
         idea = get_object_or_404(Idea, id=idea_id)
 
-        EvaluationDecisionService.accept_idea(
-            idea=idea
-        )
+        try:
+            EvaluationDecisionService.accept_idea(
+                idea=idea
+            )
 
-        return Response({"message": "تم قبول الفكرة"})
-    
-    
+        except ValidationError as e:
+            detail = e.detail
+
+            if isinstance(detail, list):
+                detail = detail[0]
+
+            return Response(
+                {
+                    "error": str(detail)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            {
+                "message": "تم قبول الفكرة"
+            },
+            status=status.HTTP_200_OK
+        )
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\رفض فكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class RejectIdeaView(APIView):
-    
-    permission_classes = [IsAuthenticated, CanManageEvaluationDecisions]
+
+    permission_classes = [
+        IsAuthenticated,
+        CanManageEvaluationDecisions
+    ]
+
     def post(self, request, idea_id):
-        
-        idea = get_object_or_404(Idea, id=idea_id)
 
-
-        EvaluationDecisionService.reject_idea(
-            idea=idea,
+        idea = get_object_or_404(
+            Idea,
+            id=idea_id
         )
 
-        return Response({"message": "تم رفض الفكرة"})
+        try:
+            EvaluationDecisionService.reject_idea(
+                idea=idea
+            )
+
+        except ValidationError as e:
+            detail = e.detail
+
+            if isinstance(detail, list):
+                detail = detail[0]
+
+            return Response(
+                {
+                    "error": str(detail)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            {
+                "message": "تم رفض الفكرة"
+            },
+            status=status.HTTP_200_OK
+        )

@@ -31,14 +31,18 @@ class AbsenceQueryService:
         )
 
 
-
 @transaction.atomic
 def process_absence_decision(request_id, decision, actor=None):
 
-    absence = get_object_or_404(BootcampAbsenceRequest, id=request_id)
+    absence = get_object_or_404(
+        BootcampAbsenceRequest,
+        id=request_id
+    )
 
     if absence.status != "pending":
-        raise ValidationError("تم اتخاذ قرار مسبقاً")
+        raise ValidationError({
+            "detail": "تم اتخاذ قرار مسبقاً على طلب الغياب هذا."
+        })
 
     if decision == "approve":
         absence.status = "approved"
@@ -47,10 +51,11 @@ def process_absence_decision(request_id, decision, actor=None):
         absence.status = "warned"
 
     else:
-        raise ValidationError("قرار غير صالح")
+        raise ValidationError({
+            "detail": "القرار المرسل غير صالح."
+        })
 
     absence.save(update_fields=["status"])
-
 
     EventBus.emit(
         "absence_decision_made",

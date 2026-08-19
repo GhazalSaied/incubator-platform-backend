@@ -1,8 +1,7 @@
 from datetime import datetime
-
+from rest_framework.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
-from rest_framework.exceptions import ValidationError
 
 from core.events import EventBus
 from evaluations.models import EvaluationAssignment

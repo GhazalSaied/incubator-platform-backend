@@ -187,45 +187,74 @@ class TeamSuggestionService:
     def suggest_volunteers(*, team_request_id, volunteer_ids, actor):
 
         try:
-            team_request = TeamRequest.objects.select_related("idea__owner").get(id=team_request_id)
+            team_request = TeamRequest.objects.select_related(
+            "idea__owner"
+        ).get(id=team_request_id)
+
         except TeamRequest.DoesNotExist:
             raise ValidationError("طلب الفريق غير موجود")
 
-        #  لازم يكون PENDING
         if team_request.status != "PENDING":
             raise ValidationError("تم معالجة هذا الطلب مسبقاً")
 
+        if not volunteer_ids:
+            raise ValidationError("يجب اختيار متطوع واحد على الأقل")
+
+        forbidden_roles = [
+            SystemRoles.IDEA_OWNER,
+            SystemRoles.INCUBATOR,
+        ]
+
+        volunteers = []
+
+    # التحقق أولاً
+        for vid in volunteer_ids:
+
+            try:
+                volunteer = VolunteerProfile.objects.select_related(
+                "user"
+            ).get(id=vid)
+
+            except VolunteerProfile.DoesNotExist:
+                raise ValidationError(
+                "أحد المتطوعين المحددين غير موجود"
+            )
+
+            if any(
+            role in volunteer.user.role_codes
+            for role in forbidden_roles
+        ):
+                raise ValidationError(
+                f"لا يمكن اقتراح المتطوع "
+                f"{volunteer.user.full_name} "
+                f"لأنه صاحب فكرة أو محتضن"
+            )
+
+            volunteers.append(volunteer)
+
+    # بعد نجاح كل التحققات، أنشئ الاقتراحات
         suggestions = []
 
-        for vid in volunteer_ids:
-            try:
-                volunteer = VolunteerProfile.objects.get(id=vid)
-            except VolunteerProfile.DoesNotExist:
-                continue
-            forbidden_roles = [SystemRoles.IDEA_OWNER,SystemRoles.INCUBATOR,]
-            if any(role in volunteer.user.role_codes
-                   for role in forbidden_roles):
-                raise ValidationError( f"لا يمكن اقتراح المتطوع {volunteer.user.full_name} لأنه صاحب فكرة أو محتضن")
+        for volunteer in volunteers:
 
             suggestion = SuggestedVolunteer.objects.create(
-                team_request=team_request,
-                volunteer=volunteer
-            )
+            team_request=team_request,
+            volunteer=volunteer
+        )
+
             suggestions.append(suggestion)
 
-        #  تغيير حالة الطلب
         team_request.status = "APPROVED"
         team_request.save(update_fields=["status"])
 
-        #  إشعار لصاحب الفكرة
         EventBus.emit(
-            "volunteers_suggested",
-            idea=team_request.idea,
-            volunteers=volunteer_ids,
-            actor=actor
-        )
+        "volunteers_suggested",
+        idea=team_request.idea,
+        volunteers=volunteer_ids,
+        actor=actor
+    )
 
         return {
-            "team_request_id": team_request.id,
-            "suggested_count": len(suggestions)
-        }
+        "team_request_id": team_request.id,
+        "suggested_count": len(suggestions)
+    }

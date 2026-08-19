@@ -340,6 +340,7 @@ class CreateConsultationRequestAPIView(APIView):
             action="accept",
             actor=request.user,
         )
+       
 
         
 

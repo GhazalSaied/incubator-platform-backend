@@ -379,12 +379,12 @@ EVENTS = {
 # ==============================   
     "admin_manual_notification": {
         "target": "USER",
-        "action_url": "/notifications"
+        "action_url": None
     },
 
     "ADMIN_BROADCAST_NOTIFICATION": {
         "target": "SYSTEM",
-        "action_url": "/notifications"
+        "action_url": None
     },
 }
         

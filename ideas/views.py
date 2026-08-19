@@ -177,7 +177,8 @@ class CurrentSeasonAPIView(APIView):
         return Response({
             "season": {
                 "season_id": season.id,
-                "season_name": season.name
+                "season_name": season.name,
+                "season_status": season.is_open
             }
 
         })
@@ -345,22 +346,65 @@ class PublicExhibitionProjectDetailsAPIView(APIView):
 
 
 #//////////////////////////// CREATE TEAM REQUEST VIEW ////////////////////////
-
 class CreateTeamRequestAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-
         try:
             IdeaService.create_team_request(
                 user=request.user,
                 data=request.data
             )
-        except Exception as e:
-            return Response({"detail": str(e)}, status=400)
 
-        return Response({"detail": "طلبك قيد المراجعة"})
+            return Response(
+                {
+                    "message": "طلبك قيد المراجعة"
+                },
+                status=status.HTTP_201_CREATED
+            )
 
+        except ValidationError as e:
+            detail = e.detail
+
+            if isinstance(detail, dict):
+                messages = []
+
+                for field_errors in detail.values():
+                    if isinstance(field_errors, list):
+                        messages.extend(
+                            str(error)
+                            for error in field_errors
+                        )
+                    else:
+                        messages.append(str(field_errors))
+
+                detail = " ".join(messages)
+
+            elif isinstance(detail, list):
+                detail = " ".join(str(error) for error in detail)
+
+            return Response(
+                {
+                    "error": str(detail)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except ValueError as e:
+            return Response(
+                {
+                    "error": str(e)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except Exception:
+            return Response(
+                {
+                    "error": "حدث خطأ أثناء إرسال طلب الفريق"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 #/////////////////////////// SUGGESTED VOLUNTREES ///////////////////////////

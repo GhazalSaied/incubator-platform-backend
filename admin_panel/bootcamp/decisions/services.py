@@ -67,7 +67,6 @@ class BootcampIdeaQueryService:
 
 #\\\\decision logic\\\\\\
 
-
 def check_all_attendance_submitted(idea):
     pending = BootcampAttendance.objects.filter(
         idea=idea,
@@ -75,18 +74,21 @@ def check_all_attendance_submitted(idea):
     ).exists()
 
     if pending:
-        raise ValidationError("لا يمكن اتخاذ قرار قبل إرسال جميع سجلات الحضور")
-    
+        raise ValidationError({
+            "detail": "لا يمكن اتخاذ قرار قبل إرسال جميع سجلات الحضور."
+        })
 @transaction.atomic
 def process_bootcamp_decision(*, idea_id, decision, actor=None):
 
     idea = get_object_or_404(Idea, id=idea_id)
+
     check_all_attendance_submitted(idea)
 
     if hasattr(idea, "bootcamp_decision"):
-        raise ValidationError("تم اتخاذ القرار مسبقاً لهذه الفكرة")
+        raise ValidationError({
+            "detail": "تم اتخاذ القرار مسبقاً لهذه الفكرة."
+        })
 
-    #  . decision mapping
     if decision == "approve":
         new_status = IdeaStatus.EVALUATION
         decision_value = "accepted"
@@ -96,13 +98,13 @@ def process_bootcamp_decision(*, idea_id, decision, actor=None):
         decision_value = "rejected"
 
     else:
-        raise ValidationError("قرار غير صالح")
+        raise ValidationError({
+            "detail": "القرار المرسل غير صالح."
+        })
 
-    #  4. حساب attendance
     total, absent, absence_percentage = calculate_absence(idea)
     attendance_rate = 100 - absence_percentage
 
-    #  5. حفظ القرار + attendance
     BootcampDecision.objects.update_or_create(
         idea=idea,
         defaults={
@@ -111,7 +113,6 @@ def process_bootcamp_decision(*, idea_id, decision, actor=None):
         }
     )
 
-    #  6. تغيير الحالة عبر النظام المركزي
     IdeaStateService.change_status(
         idea=idea,
         to_status=new_status,
@@ -127,8 +128,6 @@ def process_bootcamp_decision(*, idea_id, decision, actor=None):
     )
 
     return idea
-
-
 
 
 

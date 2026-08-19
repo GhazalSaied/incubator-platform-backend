@@ -11,7 +11,7 @@ from .services.season_query_service import SeasonQueryService
 from .services.season_admin_service import SeasonAdminService
 from ideas.models import Season, SeasonStatus
 
-
+from rest_framework.exceptions import ValidationError
 from ideas.serializers import (
     SeasonCreateSerializer,SeasonDetailsSerializer
 )
@@ -41,18 +41,26 @@ class CreateSeasonAPIView(APIView):
             "id": season.id
         })
 #\\\\\\Publish Season\\\\
-
 class PublishSeasonAPIView(APIView):
-    permission_classes = [IsAuthenticated, sharedPermissions]
-    def post(self, request, pk):
-        season = get_object_or_404(Season, pk=pk)
 
-        SeasonAdminService.publish_season(season)
+    permission_classes = [
+        IsAuthenticated,
+        sharedPermissions
+    ]
+
+    def post(self, request, pk):
+        season = get_object_or_404(
+            Season,
+            pk=pk
+        )
+
+        SeasonAdminService.publish_season(
+            season
+        )
 
         return Response({
             "message": "تم نشر الموسم وفتح باب التقديم"
         })
-        
         
 #\\\\\\\Close Season\\\\
 class CloseSubmissionAPIView(APIView):

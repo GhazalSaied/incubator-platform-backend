@@ -8,7 +8,7 @@ from ideas.services.season_phase_service import SeasonPhaseService
 from django.utils.timezone import datetime, now
 from ideas.phases import SeasonPhase
 from django.utils import timezone
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from accounts.models import User
 from django.db import transaction
@@ -119,8 +119,9 @@ class SeasonAdminService:
     
     
    
-    @transaction.atomic
+    
     @staticmethod
+    @transaction.atomic
     def close_submissions(season):
         if season.status != SeasonStatus.PUBLISHED:
             raise ValidationError({

@@ -9,7 +9,6 @@ def admin_manual_notification_handler(payload):
         user=user,
         event_name="admin_manual_notification",
         extra=payload.get("extra"),
-        action_url=payload.get("action_url"),
         target_role="USER"
     )
 EventBus.register(

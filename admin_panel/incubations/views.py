@@ -76,23 +76,34 @@ class RemoveMentorsView(APIView):
 
     
 #\\\\\\\\\\\\\\\\\\\\\\\\\تعيين مقيمين للفكرة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-
 class AssignMentorsView(APIView):
-    
-    permission_classes = [IsAuthenticated,CanManageIncubationDecisions]
+
+    permission_classes = [
+        IsAuthenticated,
+        CanManageIncubationDecisions
+    ]
+
     def post(self, request, idea_id):
 
-        mentor_user_ids = request.data.get("mentor_user_ids", [])
+        mentor_user_ids = request.data.get(
+            "mentor_user_ids",
+            []
+        )
 
         try:
             idea = Idea.objects.get(id=idea_id)
+
         except Idea.DoesNotExist:
             return Response(
                 {"error": "الفكرة غير موجودة"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        season = season_phase_service.SeasonPhaseService.get_current_season()
+        season = (
+            season_phase_service
+            .SeasonPhaseService
+            .get_current_season()
+        )
 
         if not season:
             return Response(
@@ -109,7 +120,9 @@ class AssignMentorsView(APIView):
 
         except ValidationError as e:
             return Response(
-                {"error": e.message},
+                {
+                    "error": str(e.detail)
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -119,13 +132,16 @@ class AssignMentorsView(APIView):
             "skipped": result["skipped"]
         })
         
-        
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\جدولة جلسة متابعة \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+class ScheduleMeetingView(APIView):
 
-class  ScheduleMeetingView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+        sharedIncubationPermissions
+    ]
 
-    permission_classes = [IsAuthenticated,sharedIncubationPermissions]
     def post(self, request, idea_id):
+
         idea = get_object_or_404(
             Idea,
             id=idea_id
@@ -134,22 +150,40 @@ class  ScheduleMeetingView(APIView):
         date = request.data.get("date")
         time = request.data.get("time")
 
-        review = IncubationMeetingService.schedule_meeting(
-            idea=idea,
-            date=date,
-            time=time,
-            created_by=request.user
-        )
+        try:
+            review = IncubationMeetingService.schedule_meeting(
+                idea=idea,
+                date=date,
+                time=time,
+                created_by=request.user
+            )
+
+        except ValidationError as e:
+
+            detail = e.detail
+
+            if isinstance(detail, list):
+                detail = detail[0]
+
+            return Response(
+                {
+                    "detail": str(detail)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         return Response(
             {
                 "detail": "تم تحديد موعد لجنة الاحتضان بنجاح",
                 "idea_id": idea.id,
-                "meeting_date": review[0].meeting_date if review else None
+                "meeting_date": (
+                    review[0].meeting_date
+                    if review
+                    else None
+                )
             },
             status=status.HTTP_200_OK
         )
-        
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\عرض ملاحظات اخر جلسة\\\\\\\\\\\\\\\\\\\\\\
 
@@ -173,37 +207,63 @@ class IdeaLatestReviewView(APIView):
         return Response(data)
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\تخريج فكرة\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class GraduateIdeaView(APIView):
-    permission_classes = [IsAuthenticated,CanManageIncubationDecisions]
-    
+    permission_classes = [
+        IsAuthenticated,
+        CanManageIncubationDecisions
+    ]
+
     def post(self, request, idea_id):
 
-        action = request.data.get("action")  # positive / negative
+        action = request.data.get("action")
 
-        idea = get_object_or_404(Idea, id=idea_id)
+        idea = get_object_or_404(
+            Idea,
+            id=idea_id
+        )
 
         try:
+
             if action == "positive":
-                GraduationService.graduate_positive(idea=idea)
+
+                GraduationService.graduate_positive(
+                    idea=idea,
+                    actor=request.user
+                )
 
             elif action == "negative":
-                GraduationService.graduate_negative(idea=idea)
+
+                GraduationService.graduate_negative(
+                    idea=idea,
+                    actor=request.user
+                )
 
             else:
-                return Response(
-                    {"error": "نوع العملية غير صحيح"},
-                    status=status.HTTP_400_BAD_REQUEST
+
+                raise ValidationError(
+                    "نوع العملية غير صحيح"
                 )
 
         except ValidationError as e:
+
+            detail = e.detail
+
+            if isinstance(detail, list):
+                detail = detail[0]
+
             return Response(
-                {"error": e.message},
+                {
+                    "detail": str(detail)
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        return Response({
-            "message": "تم تحديث حالة الفكرة بنجاح",
-            "status": idea.status
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "message": "تم تحديث حالة الفكرة بنجاح",
+                "status": idea.status
+            },
+            status=status.HTTP_200_OK
+        )
         
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class GraduatedProjectsView(APIView):

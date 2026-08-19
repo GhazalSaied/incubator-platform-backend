@@ -6,6 +6,8 @@ from .services import (
     WorkshopManagementService,
     WorkshopQueryService
 )
+from rest_framework.exceptions import ValidationError
+from rest_framework import status
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\كل الورشات \\\\\\\\\\\\\\\\\\\\\\\\\
 class WorkshopListAPIView(APIView):
@@ -35,11 +37,21 @@ class ApproveWorkshopAPIView(APIView):
 
     def post(self, request, workshop_id):
 
-        WorkshopManagementService.approve_workshop(
-            workshop_id=workshop_id
-        )
+        try:
+            WorkshopManagementService.approve_workshop(
+                workshop_id=workshop_id
+            )
 
-        return Response({"message": "تم قبول الورشة بنجاح"})
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            {"message": "تم قبول الورشة بنجاح"},
+            status=status.HTTP_200_OK
+        )
 
 
 class RejectWorkshopAPIView(APIView):
@@ -50,9 +62,19 @@ class RejectWorkshopAPIView(APIView):
 
         rejection_reason = request.data.get("rejection_reason")
 
-        WorkshopManagementService.reject_workshop(
-            workshop_id=workshop_id,
-            rejection_reason=rejection_reason
-        )
+        try:
+            WorkshopManagementService.reject_workshop(
+                workshop_id=workshop_id,
+                rejection_reason=rejection_reason
+            )
 
-        return Response({"message": "تم رفض الورشة"})
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            {"message": "تم رفض الورشة بنجاح"},
+            status=status.HTTP_200_OK
+        )

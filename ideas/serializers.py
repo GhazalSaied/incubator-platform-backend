@@ -133,7 +133,48 @@ class MyIdeaListSerializer(serializers.ModelSerializer):
 
 #/////////////////////////// TEAM REQUEST SERIALIZER /////////////////////
 
+from rest_framework import serializers
+from .models import TeamRequest
+
+
 class TeamRequestSerializer(serializers.ModelSerializer):
+
+    title = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        error_messages={
+            "required": "عنوان الفكرة مطلوب",
+            "blank": "عنوان الفكرة لا يمكن أن يكون فارغاً",
+        }
+    )
+
+    skill_required = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        error_messages={
+            "required": "الرجاء اختيار المهارة المطلوبة",
+            "blank": "الرجاء اختيار المهارة المطلوبة",
+        }
+    )
+
+    members_needed = serializers.IntegerField(
+        required=True,
+        error_messages={
+            "required": "عدد المتطوعين مطلوب",
+            "invalid": "عدد المتطوعين يجب أن يكون رقماً صحيحاً",
+            "null": "عدد المتطوعين مطلوب",
+        }
+    )
+
+    description = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        error_messages={
+            "required": "شرح الفكرة مطلوب",
+            "blank": "شرح الفكرة لا يمكن أن يكون فارغاً",
+        }
+    )
+
     class Meta:
         model = TeamRequest
         fields = [
@@ -142,6 +183,33 @@ class TeamRequestSerializer(serializers.ModelSerializer):
             "members_needed",
             "description",
         ]
+
+    def validate(self, attrs):
+        errors = {}
+
+        # منع النص الفارغ أو المسافات فقط
+        if not attrs.get("title", "").strip():
+            errors["title"] = "عنوان الفكرة مطلوب"
+
+        if not attrs.get("skill_required", "").strip():
+            errors["skill_required"] = "الرجاء اختيار مهارة واحدة على الأقل"
+
+        if not attrs.get("description", "").strip():
+            errors["description"] = "شرح الفكرة مطلوب"
+
+        # عدد المتطوعين
+        members_needed = attrs.get("members_needed")
+
+        if members_needed is not None:
+            if members_needed < 1 or members_needed > 3:
+                errors["members_needed"] = (
+                    "عدد المتطوعين يجب أن يكون بين 1 و 3 فقط"
+                )
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return attrs
         
 
 
@@ -603,8 +671,6 @@ class SeasonDetailsSerializer(serializers.Serializer):
     ideas = IdeaRowSerializer(many=True)
     
 
-
-
 class SeasonUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Season
@@ -613,21 +679,47 @@ class SeasonUpdateSerializer(serializers.ModelSerializer):
             "description",
             "start_date",
             "end_date",
-            "exhibition_datetime",
-            "is_open",
         ]
+
+        extra_kwargs = {
+            "name": {
+                "error_messages": {
+                    "required": "اسم الموسم مطلوب",
+                    "blank": "اسم الموسم لا يمكن أن يكون فارغاً",
+                }
+            },
+            "description": {
+                "error_messages": {
+                    "required": "وصف الموسم مطلوب",
+                    "blank": "وصف الموسم لا يمكن أن يكون فارغاً",
+                }
+            },
+            "start_date": {
+                "error_messages": {
+                    "required": "تاريخ بداية التقديم مطلوب",
+                    "blank": "تاريخ بداية التقديم لا يمكن أن يكون فارغاً",
+                    "null": "تاريخ بداية التقديم مطلوب",
+                }
+            },
+            "end_date": {
+                "error_messages": {
+                    "required": "تاريخ انتهاء التقديم مطلوب",
+                    "blank": "تاريخ انتهاء التقديم لا يمكن أن يكون فارغاً",
+                    "null": "تاريخ انتهاء التقديم مطلوب",
+                }
+            },
+        }
 
     def validate(self, data):
         start_date = data.get("start_date")
         end_date = data.get("end_date")
 
         if start_date and end_date and start_date > end_date:
-            raise serializers.ValidationError(
-                "تاريخ بداية الموسم لازم يكون قبل تاريخ النهاية"
-            )
+            raise serializers.ValidationError({
+                "end_date": "تاريخ انتهاء التقديم يجب أن يكون بعد تاريخ البداية"
+            })
 
         return data
-    
 class ChoiceSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     value = serializers.CharField()

@@ -2,8 +2,6 @@ from rest_framework.exceptions import ValidationError
 from django.db import transaction
 
 from evaluations.models import EvaluationAssignment, EvaluationInvitation
-
-
 class EvaluationAssignmentService:
 
     @staticmethod
@@ -15,11 +13,16 @@ class EvaluationAssignmentService:
         season
     ):
         """
-        Assign evaluators to an idea based on accepted invitations
+        Assign evaluators to an idea based on accepted invitations.
         """
 
         if not evaluators_ids:
-            raise ValidationError("يجب اختيار مقيم واحد على الأقل")
+            raise ValidationError(
+                "يجب اختيار مقيم واحد على الأقل"
+            )
+
+        # إزالة التكرار من الـ IDs
+        evaluators_ids = list(set(evaluators_ids))
 
         accepted_invitations = EvaluationInvitation.objects.filter(
             season=season,
@@ -27,25 +30,36 @@ class EvaluationAssignmentService:
             user_id__in=evaluators_ids
         ).select_related("user")
 
-        if not accepted_invitations.exists():
-            raise ValidationError("لا يوجد مقيمون مقبولون بهذه المعطيات")
+        accepted_user_ids = set(
+            accepted_invitations.values_list("user_id", flat=True)
+        )
+
+        skipped_users = []
+
+        # المقيمون الذين تم اختيارهم ولكن ليس لديهم دعوة مقبولة
+        invalid_user_ids = set(evaluators_ids) - accepted_user_ids
+
+        for user_id in invalid_user_ids:
+            skipped_users.append({
+                "user_id": user_id,
+                "reason": "هذا المستخدم لا يملك دعوة تقييم مقبولة في الموسم الحالي"
+            })
 
         assignments = []
-        skipped_users = []
 
         for invitation in accepted_invitations:
 
             evaluator = invitation.user
 
-            #  1. منع صاحب الفكرة
+            # 1. منع صاحب الفكرة من تقييم مشروعه
             if evaluator.id == idea.owner_id:
                 skipped_users.append({
-    "user_id": evaluator.id,
-    "reason": "لا يمكن لصاحب الفكرة تقييم مشروعه"
-})
+                    "user_id": evaluator.id,
+                    "reason": "لا يمكن لصاحب الفكرة تقييم مشروعه"
+                })
                 continue
 
-            #  2. منع التكرار
+            # 2. منع التكرار
             exists = EvaluationAssignment.objects.filter(
                 idea=idea,
                 evaluator=evaluator,
@@ -54,12 +68,12 @@ class EvaluationAssignmentService:
 
             if exists:
                 skipped_users.append({
-    "user_id": evaluator.id,
-    "reason": "تم تعيين هذا المقيم مسبقاً"
-})
+                    "user_id": evaluator.id,
+                    "reason": "تم تعيين هذا المقيم مسبقاً لهذا المشروع"
+                })
                 continue
 
-            #  إنشاء التعيين
+            # 3. إنشاء التعيين
             assignment = EvaluationAssignment.objects.create(
                 evaluator=evaluator,
                 idea=idea,
@@ -68,6 +82,17 @@ class EvaluationAssignmentService:
             )
 
             assignments.append(assignment)
+
+        # إذا لم يتم تعيين أي مقيم
+        if not assignments:
+            if skipped_users:
+                raise ValidationError(
+                    "لم يتم تعيين أي مقيم. يرجى التحقق من المقيمين المختارين."
+                )
+
+            raise ValidationError(
+                "لم يتم تعيين أي مقيم"
+            )
 
         return {
             "assigned": assignments,

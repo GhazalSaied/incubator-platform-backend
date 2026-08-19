@@ -5,22 +5,25 @@ from ideas.phases import SeasonPhase
 from core.events import EventBus
 from django.db import transaction
 
+
+
 @transaction.atomic
 def create_bootcamp_session(serializer, season):
     phase = SeasonPhaseService.get_current_phase(season)
 
     if not phase:
-        raise ValidationError("لا يوجد مرحلة حالية")
+        raise ValidationError({
+            "detail": "لا توجد مرحلة حالية لهذا الموسم"
+        })
+
     session = serializer.save(phase=phase)
 
-    # Trigger Event
     EventBus.emit(
         "bootcamp_session_created",
         session=session
     )
 
     return session
-
 class BootcampSessionQueryService:
 
     @staticmethod
