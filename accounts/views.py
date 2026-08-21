@@ -387,3 +387,17 @@ class ResetPasswordConfirmAPIView(APIView):
             status=status.HTTP_200_OK
         )
 
+# accounts/views.py
+
+class MeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        return Response({
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "roles": user.role_codes,
+        })
