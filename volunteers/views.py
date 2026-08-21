@@ -148,7 +148,13 @@ class VolunteerProfileUpdateAPIView(APIView):
         profile.residence = request.data.get("residence", profile.residence)
         profile.years_of_experience = request.data.get("years_of_experience", profile.years_of_experience)
         profile.primary_skills = request.data.get("primary_skills", profile.primary_skills)
-        profile.additional_skills = request.data.get("additional_skills", profile.additional_skills)
+        additional_skills = request.data.get("additional_skills")
+
+        if additional_skills:
+            try:
+                profile.additional_skills = json.loads(additional_skills)
+            except (json.JSONDecodeError, TypeError):
+                profile.additional_skills = [additional_skills]
         profile.volunteer_type = request.data.get("volunteer_type", profile.volunteer_type)
         profile.availability_type = request.data.get("availability_type", profile.availability_type)
         profile.projects_count = request.data.get("projects_count",profile.projects_count)
@@ -949,6 +955,7 @@ class PublicVolunteerProfileAPIView(APIView):
             "user_id": user.id,
             "name": user.full_name,
             "email": user.email,
+            "phone" : user.phone,
             "residence": profile.residence,
             "avatar": user.avatar.url if user.avatar else None,
             "availability": availability_data,
