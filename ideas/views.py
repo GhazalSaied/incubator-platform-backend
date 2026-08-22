@@ -346,6 +346,7 @@ class PublicExhibitionProjectDetailsAPIView(APIView):
 
 
 #//////////////////////////// CREATE TEAM REQUEST VIEW ////////////////////////
+
 class CreateTeamRequestAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -361,6 +362,14 @@ class CreateTeamRequestAPIView(APIView):
                     "message": "طلبك قيد المراجعة"
                 },
                 status=status.HTTP_201_CREATED
+            )
+
+        except ValueError as e:
+            return Response(
+                {
+                    "error": str(e)
+                },
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         except ValidationError as e:
@@ -381,19 +390,13 @@ class CreateTeamRequestAPIView(APIView):
                 detail = " ".join(messages)
 
             elif isinstance(detail, list):
-                detail = " ".join(str(error) for error in detail)
+                detail = " ".join(
+                    str(error) for error in detail
+                )
 
             return Response(
                 {
                     "error": str(detail)
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        except ValueError as e:
-            return Response(
-                {
-                    "error": str(e)
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -405,8 +408,6 @@ class CreateTeamRequestAPIView(APIView):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-
 #/////////////////////////// SUGGESTED VOLUNTREES ///////////////////////////
 
 class SuggestedVolunteersAPIView(APIView):
