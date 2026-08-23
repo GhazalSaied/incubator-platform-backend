@@ -24,7 +24,7 @@ class IdeaDetailsAPIView(APIView):
         specialization = idea.answers.get("الاختصاص", "غير محدد")
         sector = idea.sector
         expected_duration = idea.answers.get("المدة المتوقعة لانجاز المشروع")
-        team_names = idea.answers.get("اسماء اعضاء الفريق", [])
+        team_names = idea.answers.get("اعضاء الفريق", [])
         team_emails = idea.answers.get("ايميلات اعضاء الفريق", [])
 
         if isinstance(team_names, str):

@@ -550,7 +550,9 @@ class ProjectDetailsSerializer(serializers.ModelSerializer):
                 or obj.answers.get("المشكلة")
                 or obj.answers.get("مشكلة")
                 or obj.answers.get("المشكلة التي يحلها المشروع")
-                or obj.answers.get("المشكلة-التي-يحلها-المشروع"))
+                or obj.answers.get("المشكلة-التي-يحلها-المشروع")
+                or obj.answers.get("المشكلة-التي-يحلها")
+                or obj.answers.get("المشكلة التي يحلها"))
                             
 
 

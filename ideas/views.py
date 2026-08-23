@@ -411,7 +411,7 @@ class CreateTeamRequestAPIView(APIView):
 #/////////////////////////// SUGGESTED VOLUNTREES ///////////////////////////
 
 class SuggestedVolunteersAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanViewTeamCandidates]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
 

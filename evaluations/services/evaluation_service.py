@@ -155,7 +155,7 @@ class EvaluationService:
                     "id": assignment.id,
                     "idea_id": assignment.idea.id,
                     "title": assignment.idea.title,
-                    "product_type": assignment.idea.answers.get("product_type"),
+                    "product_type": assignment.idea.answers.get("نوع المنتج"),
                     "target_audience": assignment.idea.target_audience,
                 }
                 for assignment in assignments
@@ -176,7 +176,7 @@ class EvaluationService:
                     "id": assignment.id,
                     "idea_id": assignment.idea.id,
                     "title": assignment.idea.title,
-                    "product_type": assignment.idea.answers.get("product_type"),
+                    "product_type": assignment.idea.answers.get("نوع المنتج"),
                     "target_audience": assignment.idea.target_audience,
                 }
                 for assignment in assignments

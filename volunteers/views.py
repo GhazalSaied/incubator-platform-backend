@@ -421,7 +421,7 @@ class JoinRequestDetailAPIView(APIView):
             "project": {
                 "title": idea.title,
                 "target_audience":  idea.target_audience,
-                "problem": idea.answers.get("problem"),
+                "problem": idea.answers.get("المشكلة التي يحلها"),
             },
             "request": {
                 "required_skill": jr.required_skill,
