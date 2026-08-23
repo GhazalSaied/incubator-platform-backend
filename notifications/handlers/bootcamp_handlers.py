@@ -152,10 +152,10 @@ def handle_bootcamp_decision_notification(payload):
     # =====================================
 
     if decision == "accepted":
-        event_name = "idea_approved"
+        event_name = "idea_bootcamp_approved"
 
     elif decision == "rejected":
-        event_name = "idea_rejected"
+        event_name = "idea_bootcamp_rejected"
 
     else:
         return
@@ -203,32 +203,26 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 def bootcamp_absence_request_submitted_handler(payload):
 
-    print("🔥🔥 ABSENCE HANDLER STARTED")
 
     absence_request = payload.get("absence_request")
     actor = payload.get("actor")
 
-    print("ABSENCE REQUEST:", absence_request)
-    print("ACTOR:", actor)
 
     if not absence_request:
-        print("❌ NO ABSENCE REQUEST")
+        
         return
 
     season_id = absence_request.session.phase.season.id
 
-    print("✅ SEASON ID:", season_id)
-
+    
     admins = User.objects.filter(
         is_staff=True,
         is_active=True
     )
 
-    print("👑 ADMINS:", list(admins.values_list("id", "email")))
+    
 
     for admin in admins.iterator():
-
-        print("📨 SENDING TO ADMIN:", admin.id)
 
         NotificationService.send(
             user=admin,
@@ -238,5 +232,5 @@ def bootcamp_absence_request_submitted_handler(payload):
             action_url=f"/admin/camp-management/{season_id}",
         )
 
-        print("✅ NOTIFICATION SENT TO:", admin.id)
+       
 EventBus.register("bootcamp_absence_request_submitted", bootcamp_absence_request_submitted_handler)

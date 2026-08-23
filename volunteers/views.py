@@ -32,8 +32,6 @@ from .serializers import (
     CreateJoinRequestSerializer,
     JoinRequestSerializer,
     ConsultantListSerializer,
-    VolunteerVacationSerializer,
-   
 
     ConsultationRequestSerializer,
 
@@ -423,7 +421,7 @@ class JoinRequestDetailAPIView(APIView):
             "project": {
                 "title": idea.title,
                 "target_audience":  idea.target_audience,
-                "problem": idea.answers.get("problem"),
+                "problem": idea.answers.get("المشكلة التي يحلها"),
             },
             "request": {
                 "required_skill": jr.required_skill,
@@ -977,39 +975,30 @@ class VolunteerVacationAPIView(APIView):
 
     def get(self, request):
         vacations = request.user.volunteer_profile.vacations.all()
-
         data = [
             {
-                "id": vacation.id,
-                "start_day": vacation.start_day,
-                "end_day": vacation.end_day,
+                "id": v.id,
+                "start_day": v.start_day,
+                "end_day": v.end_day,
             }
-            for vacation in vacations
+            for v in vacations
         ]
-
         return Response(data)
 
     def post(self, request):
-
         profile = request.user.volunteer_profile
 
-        serializer = VolunteerVacationSerializer(
-            data=request.data,
-            context={"request": request}
+        vacation = VolunteerVacation.objects.create(
+            volunteer=profile,
+            start_day=request.data["start_day"],
+            end_day=request.data["end_day"],
         )
 
-        serializer.is_valid(
-            raise_exception=True
-        )
-
-        vacation = serializer.save(
-            volunteer=profile
-        )
-
-        return Response(
-            VolunteerVacationSerializer(vacation).data,
-            status=status.HTTP_201_CREATED
-        )
+        return Response({
+            "id": vacation.id,
+            "start_day": vacation.start_day,
+            "end_day": vacation.end_day,
+        }, status=201)
 
 
 #////////////////////// DELETE VACATION //////////////////////

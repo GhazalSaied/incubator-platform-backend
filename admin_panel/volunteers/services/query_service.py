@@ -233,42 +233,55 @@ class VolunteerQueryService:
             "idea_id": tr.idea.id,
         }
     }
-
     @staticmethod
     def get_available_approved_volunteers():
 
-        volunteers = VolunteerProfile.objects.filter(
-            status="APPROVED"
-        ).exclude(
+        volunteers = (
+        VolunteerProfile.objects
+        .filter(status="APPROVED")
+        .exclude(
             user__userrole__role__code__in=[
                 SystemRoles.IDEA_OWNER,
                 SystemRoles.INCUBATOR
             ],
             user__userrole__is_active=True
-        ).select_related("user").distinct()
+        )
+            .select_related("user")
+            .prefetch_related("availabilities")
+            .distinct()
+        )
+
         data = []
-        for v in volunteers :
+
+        for v in volunteers:
             user = v.user
-            avatar = user.avatar
+
+        # Avatar
+            avatar = None
+
             if hasattr(user, "avatar") and user.avatar:
                 try:
                     avatar = user.avatar.url
-                except:
+                except (ValueError, AttributeError):
                     avatar = None
+
+        # Availability
             times = []
+
             for a in v.availabilities.all():
                 times.append({
-                    "day": a.day,
-                    "start_time": str(a.start_time.strftime("%H:%M")),
-                    "end_time": str(a.end_time.strftime("%H:%M")),
-                })
-            data.append({
-                "id": v.id,
-                "request_id": v.id,
-                "name": user.full_name,
-                "avatar": avatar,
-                "primary_skills": v.primary_skills,
-                "availability": times
+                "day": a.day,
+                "start_time": a.start_time.strftime("%H:%M"),
+                "end_time": a.end_time.strftime("%H:%M"),
             })
+
+            data.append({
+            "id": v.id,
+            "request_id": v.id,
+            "name": user.full_name,
+            "avatar": avatar,
+            "primary_skills": v.primary_skills,
+            "availability": times,
+        })
 
         return data

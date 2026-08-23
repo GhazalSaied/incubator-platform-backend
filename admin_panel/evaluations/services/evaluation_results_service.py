@@ -50,8 +50,13 @@ class EvaluationResultsService:
     def get_results(*, sector=None, status=None):
 
         ideas = Idea.objects.select_related(
-            "owner"
-        )
+    "owner"
+).filter(
+    status__in=[
+        IdeaStatus.EVALUATION,
+        IdeaStatus.EVALUATED,
+    ]
+)
 
         if sector:
             ideas = ideas.filter(
@@ -228,8 +233,3 @@ class EvaluationDecisionService:
     
     
     
-
-
-
-
-

@@ -223,7 +223,7 @@ TEMPLATES = {
             f"بتاريخ {session.date}"
         )
     },
-    "idea_approved": {
+    "idea_bootcamp_approved": {
         "title": "تم قبول فكرتك 🎉",
 
         "message": lambda idea, actor=None: (
@@ -233,7 +233,7 @@ TEMPLATES = {
         )
     },
 
-    "idea_rejected": {
+    "idea_bootcamp_rejected": {
         "title": "تم رفض الفكرة",
 
         "message": lambda idea, actor=None: (
@@ -447,6 +447,3 @@ TEMPLATES = {
 
 }
 
-
-
-  
