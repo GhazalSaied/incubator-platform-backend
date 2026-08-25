@@ -351,8 +351,7 @@ class PublicExhibitionListSerializer(serializers.Serializer):
     owner = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
     def get_title(self, obj):
-        return obj.data.get("title")
-    
+        return obj.project.title or ""
 
     def get_image(self, obj):
         image = (obj.data.get("صورة المشروع")
