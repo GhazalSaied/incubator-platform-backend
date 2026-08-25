@@ -26,7 +26,7 @@ from .services.bootcamp_owner_service import (
 #/////////////////////////// BOOTCAMP SESSIONS ///////////////////////
 
 class OwnerBootcampSessionsAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanViewBootcamp]
+    #permission_classes = [IsAuthenticated,CanViewBootcamp]
 
     def get(self, request):
         try:
@@ -61,7 +61,7 @@ class OwnerBootcampSessionsAPIView(APIView):
 #/////////////////////////// NEXT SESSION ///////////////////////////
 
 class OwnerNextBootcampSessionAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanViewBootcamp]
+    #permission_classes = [IsAuthenticated,CanViewBootcamp]
 
     def get(self, request):
         try:
@@ -99,10 +99,10 @@ class OwnerNextBootcampSessionAPIView(APIView):
 #////////////////////////// ABSENCE REQUEST /////////////////////////////
 
 class CreateBootcampAbsenceRequestAPIView(APIView):
-    permission_classes = [
-        IsAuthenticated,
-        CanSubmitBootcampAbsence
-    ]
+   # permission_classes = [IsAuthenticated,CanSubmitBootcampAbsence]
+        
+        
+    
 
     def post(self, request):
         serializer = BootcampAbsenceRequestCreateSerializer(
@@ -145,7 +145,7 @@ class CreateBootcampAbsenceRequestAPIView(APIView):
 
 
 class MyAssignedBootcampSessionsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+   # permission_classes = [IsAuthenticated]
 
     def get(self, request):
         sessions = VolunteerBootcampService.get_my_sessions(
@@ -168,7 +168,7 @@ class MyAssignedBootcampSessionsAPIView(APIView):
 #/////////////////////////// BOOTCAMP IDEA ATTENDANCE LIST ////////////////
 
 class BootcampSessionIdeasAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+   # permission_classes = [IsAuthenticated]
 
     def get(self, request, session_id):
         session = VolunteerBootcampService.get_session_or_none(
@@ -211,7 +211,7 @@ class BootcampSessionIdeasAPIView(APIView):
 #/////////////////////////// BOOTCAMP IDEA ATTENDANCE CREATE ///////////////
 
 class CreateBootcampAttendanceAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    #permission_classes = [IsAuthenticated]
 
     def post(self, request, session_id):
         session = VolunteerBootcampService.get_session_or_none(

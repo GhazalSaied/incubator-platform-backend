@@ -854,26 +854,28 @@ class RegisterWorkshopAPIView(APIView):
         return Response({"detail": "تم التسجيل"})
 
 #//////////////////////// NEAREST WORKSHOP /////////////////////////////
-
 class NearestWorkshopAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanManageWorkshop]
+    permission_classes = [IsAuthenticated, CanManageWorkshop]
 
     def get(self, request):
         today = timezone.now().date()
 
         workshop = Workshop.objects.filter(
             status="ACCEPTED",
-            start_date__gte=today
+            start_date__gte=today,
+            created_by=request.user
         ).order_by("start_date").first()
 
         if not workshop:
-            return Response({"detail": "لا يوجد ورشات قادمة"})
+            return Response({
+                "detail": "لا يوجد ورشات قادمة"
+            })
 
         return Response({
             "title": workshop.title,
             "date": workshop.start_date.strftime("%A %Y-%m-%d"),
             "time": f"{workshop.time_from.strftime('%I').lstrip('0')}-{workshop.time_to.strftime('%I %p')}"
-        })      
+        })     
 
 
 #/////////////////// CANCEL WORKSHOP REGISTRATION /////////////

@@ -23,7 +23,7 @@ from .services import (
 
 
 class OverviewStatisticsAPIView(APIView):
-    permission_classes = [IsAuthenticated, CanManageSeason]
+   # permission_classes = [IsAuthenticated, CanManageSeason]
 
     def get(self, request):
 
@@ -35,7 +35,7 @@ class OverviewStatisticsAPIView(APIView):
 
 
 class LifecycleStatisticsAPIView(APIView):
-    permission_classes = [IsAuthenticated, CanManageSeason]
+    #permission_classes = [IsAuthenticated, CanManageSeason]
 
     def get(self, request):
 
@@ -46,7 +46,7 @@ class LifecycleStatisticsAPIView(APIView):
     
 
 class SectorStatisticsAPIView(APIView):
-    permission_classes = [IsAuthenticated, CanManageSeason]
+    #permission_classes = [IsAuthenticated, CanManageSeason]
 
     def get(self, request):
 
@@ -57,7 +57,7 @@ class SectorStatisticsAPIView(APIView):
     
 
 class ExpertiseStatisticsAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanManageSeason]
+   # permission_classes = [IsAuthenticated,CanManageSeason]
 
     def get(self, request):
 
@@ -71,7 +71,7 @@ class ExpertiseStatisticsAPIView(APIView):
 
 
 class SeasonComparisonAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanManageSeason]
+    #permission_classes = [IsAuthenticated,CanManageSeason]
 
     def get(self, request):
 
@@ -85,7 +85,7 @@ class SeasonComparisonAPIView(APIView):
 
 
 class CurrentSeasonStatisticsAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanManageSeason]
+   # permission_classes = [IsAuthenticated,CanManageSeason]
 
     def get(self, request):
 
@@ -100,7 +100,7 @@ class CurrentSeasonStatisticsAPIView(APIView):
 
 
 class GraduatedProjectsChartAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanManageSeason]
+   # permission_classes = [IsAuthenticated,CanManageSeason]
 
     def get(self, request):
 
@@ -116,7 +116,7 @@ class GraduatedProjectsChartAPIView(APIView):
 
 
 class AdminBroadcastAPIView(APIView):
-    permission_classes = [IsAuthenticated,CanManageSeason]
+    #permission_classes = [IsAuthenticated,CanManageSeason]
 
     def post(self, request):
 
