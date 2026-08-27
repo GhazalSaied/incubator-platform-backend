@@ -352,6 +352,7 @@ class PublicExhibitionListSerializer(serializers.Serializer):
     image = serializers.SerializerMethodField()
     def get_title(self, obj):
         return obj.project.title or ""
+    
 
     def get_image(self, obj):
         image = (obj.data.get("صورة المشروع")
@@ -555,19 +556,7 @@ class ProjectDetailsSerializer(serializers.ModelSerializer):
                             
 
 
-#//////////////////////////// EXHIBITION  /////////////////////////////
-#unused
-class ExhibitionSerializer(serializers.ModelSerializer):
 
-    class Meta:
-        model = Idea
-        fields = [
-            "title",
-            "exhibition_image",
-            "project_goal",
-            "project_services",
-            "contact_email"
-        ]
 
 #//////////////////////// IDEA FOR EVALUATER ///////////////////////
 #unused

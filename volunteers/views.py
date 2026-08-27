@@ -875,7 +875,9 @@ class NearestWorkshopAPIView(APIView):
             "title": workshop.title,
             "date": workshop.start_date.strftime("%A %Y-%m-%d"),
             "time": f"{workshop.time_from.strftime('%I').lstrip('0')}-{workshop.time_to.strftime('%I %p')}"
-        })
+        })     
+
+
 #/////////////////// CANCEL WORKSHOP REGISTRATION /////////////
 
 class CancelWorkshopRegistrationAPIView(APIView):
