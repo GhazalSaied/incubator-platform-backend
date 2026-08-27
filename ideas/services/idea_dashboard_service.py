@@ -235,7 +235,7 @@ STAGE_PROVIDERS = {
     IdeaStatus.BOOTCAMP:
         BootcampDashboardProvider,
 
-    IdeaStatus.EVALUATION:
+    IdeaStatus.EVALUATION or IdeaStatus.EVALUATED:
         EvaluationDashboardProvider,
 
     IdeaStatus.INCUBATION:
